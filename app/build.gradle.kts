@@ -14,7 +14,7 @@ android {
     defaultConfig {
         // The applicationId, on the other hand, stays the bare domain: it is the app's identity
         // on the device, not a source package.
-        applicationId = "com.multistore"
+        applicationId = "com.deela.apps"
         versionCode = 8
         versionName = "0.8.0-BETA"
 
