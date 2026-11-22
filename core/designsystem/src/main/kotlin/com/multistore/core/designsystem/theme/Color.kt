@@ -16,13 +16,13 @@ import androidx.compose.ui.graphics.Color
  * this palette and would produce off-key pairings on some surfaces only.
  */
 
-// --- Brand seed: indigo-violet, with a rose tertiary ---------------------------------------
-private val Indigo10 = Color(0xFF06006C)
-private val Indigo20 = Color(0xFF1B2278)
-private val Indigo30 = Color(0xFF343A90)
-private val Indigo40 = Color(0xFF4F5BD5)
-private val Indigo80 = Color(0xFFBFC2FF)
-private val Indigo90 = Color(0xFFE0E0FF)
+// --- Brand seed: DEELA burgundy, with a rose tertiary ---------------------------------------
+private val Indigo10 = Color(0xFF410A22)
+private val Indigo20 = Color(0xFF58112F)
+private val Indigo30 = Color(0xFF752044)
+private val Indigo40 = Color(0xFF912D55)
+private val Indigo80 = Color(0xFFF1B2CB)
+private val Indigo90 = Color(0xFFFFD9E6)
 
 private val Slate10 = Color(0xFF191A2C)
 private val Slate20 = Color(0xFF2E2F42)
