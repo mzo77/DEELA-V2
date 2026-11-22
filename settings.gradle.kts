@@ -30,7 +30,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "multistore"
+rootProject.name = "DEELA-V2"
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
