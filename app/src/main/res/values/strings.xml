@@ -6,7 +6,7 @@
   and TranslationParityTest fails the build if that happens.
 -->
 <resources>
-    <string name="app_name" translatable="false">MultiStore</string>
+    <string name="app_name" translatable="false">DEELA APPS</string>
     <string name="nav_home">Home</string>
     <string name="nav_search">Search</string>
     <string name="nav_myapps">My apps</string>
