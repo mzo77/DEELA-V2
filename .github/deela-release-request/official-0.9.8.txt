@@ -7,3 +7,5 @@ Do not publish an unsigned or debug-signed APK.
 Trigger attempt 2: corrected YAML release-notes quoting; no signing secrets committed.
 
 Fresh release run after owner added GitHub Actions repository secrets.
+
+Fresh signing retry after normalizing mobile clipboard Base64 whitespace.
