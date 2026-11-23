@@ -19,7 +19,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 private data class OwnerMember(val id:String,val email:String,val role:String,val active:Boolean,val suspended:Boolean,val endsAt:String)
-private data class OwnerData(val members:List<OwnerMember>,val audit:List<String>,val email:String)
+private data class OwnerRequest(val id:String,val email:String,val months:Int,val platform:String)
+private data class OwnerData(val members:List<OwnerMember>,val audit:List<String>,val email:String,val requests:List<OwnerRequest>)
 private object OwnerApi {
     private val client=OkHttpClient()
     private val base get()=BuildConfig.DEELA_API_BASE_URL.trimEnd('/')
@@ -30,23 +31,34 @@ private object OwnerApi {
             val body=JSONObject(response.body.string())
             val members=body.optJSONArray("members")?:JSONArray()
             val audit=body.optJSONArray("audit")?:JSONArray()
+            val requests=body.optJSONArray("requests")?:JSONArray()
             OwnerData(
                 (0 until members.length()).map { i ->
                     val m=members.getJSONObject(i)
                     OwnerMember(m.optString("id"),m.optString("email"),m.optString("role"),m.optBoolean("active"),m.optBoolean("suspended"),m.optString("ends_at").takeUnless { it=="null" }?:"")
                 },
                 (0 until audit.length()).map { i -> val a=audit.getJSONObject(i);a.optString("action")+" — "+a.optString("created_at").take(16) },
-                body.optJSONObject("owner")?.optString("email")?:""
+                body.optJSONObject("owner")?.optString("email")?:"",
+                (0 until requests.length()).map { i -> val r=requests.getJSONObject(i);OwnerRequest(r.optString("id"),r.optString("email"),r.optInt("months"),r.optString("platform")) }
             )
         }
     }
-    suspend fun subscription(token:String,id:String,action:String)=withContext(Dispatchers.IO) {
-        val payload=JSONObject().put("user_id",id).put("action",action)
+    suspend fun subscription(token:String,id:String,action:String,months:Int)=withContext(Dispatchers.IO) {
+        val payload=JSONObject().put("user_id",id).put("action",action).put("months",months)
         val request=Request.Builder().url(base+"/api/owner/subscription")
             .header("Authorization","Bearer "+token)
             .post(payload.toString().toRequestBody("application/json".toMediaType())).build()
         client.newCall(request).execute().use { response ->
             if(!response.isSuccessful) error("تعذر تعديل الاشتراك: "+response.code)
+        }
+    }
+    suspend fun review(token:String,id:String,decision:String)=withContext(Dispatchers.IO) {
+        val payload=JSONObject().put("id",id).put("decision",decision)
+        val request=Request.Builder().url(base+"/api/owner/requests/review")
+            .header("Authorization","Bearer "+token)
+            .post(payload.toString().toRequestBody("application/json".toMediaType())).build()
+        client.newCall(request).execute().use { response ->
+            if(!response.isSuccessful) error("تعذر مراجعة الطلب: "+response.code)
         }
     }
 }
@@ -59,11 +71,26 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
     var busy by remember { mutableStateOf(false) }
     var pending by remember { mutableStateOf<Pair<OwnerMember,String>?>(null) }
     var reload by remember { mutableIntStateOf(0) }
+    var selectedMonths by remember { mutableIntStateOf(1) }
+    var requestReview by remember { mutableStateOf<Pair<OwnerRequest,String>?>(null) }
     LaunchedEffect(session.token,reload) {
         busy=true
         try { data=OwnerApi.dashboard(session.token);error=null }
         catch(e:Exception) { error=e.message?:"تعذر الاتصال" }
         finally { busy=false }
+    }
+    requestReview?.let { (request,decision) ->
+        AlertDialog(onDismissRequest={requestReview=null},title={Text("مراجعة طلب الاشتراك")},
+            text={Text(request.email+" — "+request.months+" شهر — "+request.platform)},
+            confirmButton={TextButton(onClick={
+                requestReview=null;busy=true
+                scope.launch {
+                    try {OwnerApi.review(session.token,request.id,decision);reload++}
+                    catch(e:Exception){error=e.message?:"تعذر مراجعة الطلب"}
+                    finally{busy=false}
+                }
+            }){Text(if(decision=="approved")"تفعيل" else "رفض")}},
+            dismissButton={TextButton(onClick={requestReview=null}){Text("إلغاء")}})
     }
     pending?.let { (member,action) ->
         AlertDialog(
@@ -73,7 +100,7 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
             confirmButton={ TextButton(onClick={
                 pending=null;busy=true
                 scope.launch {
-                    try { OwnerApi.subscription(session.token,member.id,action);reload++ }
+                    try { OwnerApi.subscription(session.token,member.id,action,selectedMonths);reload++ }
                     catch(e:Exception) { error=e.message?:"فشل التعديل" }
                     finally { busy=false }
                 }
@@ -88,7 +115,7 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
             Text("لوحة تحكم المالك 👑",style=MaterialTheme.typography.titleLarge)
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-                listOf("الرئيسية","المشتركون","السجل").forEach { tab ->
+                listOf("الرئيسية","الطلبات","المشتركون","السجل").forEach { tab ->
                     FilterChip(selected=page==tab,onClick={page=tab},label={Text(tab)})
                 }
             }
@@ -106,6 +133,8 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                         Spacer(Modifier.height(16.dp))
                         Text("إجمالي المشتركين: "+subscribers.size,style=MaterialTheme.typography.titleMedium)
                         Text("الاشتراكات النشطة: "+subscribers.count {it.active})
+                        Text("طلبات الاشتراك المعلقة: "+current.requests.size)
+                        Button(onClick={page="الطلبات"}) {Text("مراجعة طلبات الاشتراك") }
                         Text("غير النشطة: "+subscribers.count {!it.active})
                         Spacer(Modifier.height(16.dp))
                         Button(onClick={page="المشتركون"}) {Text("إدارة المشتركين والاشتراكات")}
@@ -114,7 +143,28 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                         Text("قوة غاشمة ⚡",style=MaterialTheme.typography.titleMedium)
                         Text("الأدوات المتقدمة لم تُنقل بعد.")
                     }
+                    "الطلبات" -> {
+                        LazyColumn(modifier=Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(10.dp)) {
+                            items(current.requests,key={it.id}) { request ->
+                                ElevatedCard(Modifier.fillMaxWidth()) {
+                                    Column(Modifier.padding(12.dp)) {
+                                        Text(request.email,style=MaterialTheme.typography.titleSmall)
+                                        Text("المدة: "+request.months+" شهر — "+request.platform)
+                                        Row {
+                                            TextButton(enabled=!busy,onClick={requestReview=request to "approved"}){Text("موافقة وتفعيل")}
+                                            TextButton(enabled=!busy,onClick={requestReview=request to "rejected"}){Text("رفض")}
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                     "المشتركون" -> {
+                        Row(horizontalArrangement=Arrangement.spacedBy(5.dp)) {
+                            listOf(1,2,3,6,12).forEach { m ->
+                                FilterChip(selected=selectedMonths==m,onClick={selectedMonths=m},label={Text(if(m==12)"سنة" else "$m ش")})
+                            }
+                        }
                         LazyColumn(verticalArrangement=Arrangement.spacedBy(10.dp),modifier=Modifier.weight(1f)) {
                             items(current.members.filter {it.role!="owner"},key={it.id}) {member->
                                 ElevatedCard(Modifier.fillMaxWidth()) {
@@ -124,7 +174,7 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                                         if(member.endsAt.isNotBlank()) Text("ينتهي: "+member.endsAt.take(10),style=MaterialTheme.typography.bodySmall)
                                         Row(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
                                             TextButton(enabled=!busy,onClick={pending=member to "trial"}) {Text("تجربة 24 ساعة")}
-                                            TextButton(enabled=!busy,onClick={pending=member to "renew"}) {Text("تجديد 30 يوم")}
+                                            TextButton(enabled=!busy,onClick={pending=member to "renew"}) {Text("تجديد "+(if(selectedMonths==12)"سنة" else "$selectedMonths شهر"))}
                                         }
                                         Row(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
                                             TextButton(enabled=!busy&&member.active,onClick={pending=member to "suspend"}) {Text("إيقاف")}
