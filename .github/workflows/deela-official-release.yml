@@ -1,0 +1,156 @@
+name: DEELA Official Signed Release
+
+# The owner deliberately publishes a release after setting up a permanent signing key.
+# Never ship an unsigned or ephemeral debug-signed APK as an official update.
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: "Reviewed DEELA source branch or SHA to release"
+        required: true
+        type: string
+        default: feature/admin-source-updates-and-signup-requests
+      release_notes:
+        description: "Short update notes shown to subscribers"
+        required: false
+        type: string
+        default: "تحديث تطبيقات ديلا: تحسين تسجيل الدخول، الاشتراكات، إدارة المصادر، والاستقرار."
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deela-official-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 85
+    steps:
+      - name: Check out the reviewed Android source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          persist-credentials: true
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install Android platform and signing tools
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --channel=3 --install "platforms;android-37.0" "build-tools;36.1.0"
+          test -x "$ANDROID_HOME/build-tools/36.1.0/apksigner"
+
+      - name: Verify release signing secrets and restore private keystore
+        env:
+          DEELA_RELEASE_KEYSTORE_BASE64: ${{ secrets.DEELA_RELEASE_KEYSTORE_BASE64 }}
+          DEELA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.DEELA_RELEASE_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "$DEELA_RELEASE_KEYSTORE_BASE64" ] || [ -z "$DEELA_RELEASE_KEYSTORE_PASSWORD" ]; then
+            echo "::error::Set DEELA_RELEASE_KEYSTORE_BASE64 and DEELA_RELEASE_KEYSTORE_PASSWORD in Settings → Secrets and variables → Actions. Official release is blocked without a permanent signing key."
+            exit 1
+          fi
+          umask 077
+          printf '%s' "$DEELA_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/deela-release.p12"
+          test -s "$RUNNER_TEMP/deela-release.p12"
+
+      - name: Build release APK with the permanent DEELA signing certificate
+        env:
+          AuraStoreFile: ${{ runner.temp }}/deela-release.p12
+          AuraStorePassword: ${{ secrets.DEELA_RELEASE_KEYSTORE_PASSWORD }}
+          AuraStoreKeyPassword: ${{ secrets.DEELA_RELEASE_KEYSTORE_PASSWORD }}
+          AuraStoreKeyAlias: deela_release
+          DEELA_API_BASE_URL: https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-control
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon :app:assembleRelease
+          test -s app/build/outputs/apk/release/app-release.apk
+
+      - name: Verify signature identity, version, and APK digest
+        id: verify
+        run: |
+          set -euo pipefail
+          VERSION="$(sed -n 's/.*val appVersionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Unexpected Android version"; exit 1; }
+          TAG="v$VERSION"
+          if GH_TOKEN="${{ github.token }}" gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::Official release $TAG already exists. Bump the version before publishing."
+            exit 1
+          fi
+          SIGNER_REPORT="$RUNNER_TEMP/deela-signature.txt"
+          "$ANDROID_HOME/build-tools/36.1.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk > "$SIGNER_REPORT"
+          SIGNER="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$SIGNER_REPORT" | tr -d ':' | tr '[:upper:]' '[:lower:]' | head -n 1)"
+          PIN="83698bc6e21ddabb83eaf45d3386170d676dcf96270081c163f8b2e107fdef3c"
+          if [ "$SIGNER" != "$PIN" ]; then
+            echo "::error::APK signing certificate does not match DEELA's permanent official signing identity."
+            exit 1
+          fi
+          PKG="$("$ANDROID_HOME/build-tools/36.1.0/aapt" dump badging app/build/outputs/apk/release/app-release.apk | head -n 1)"
+          echo "$PKG" | grep -Fq "name='com.deela.apps'"
+          echo "$PKG" | grep -Fq "versionName='$VERSION'"
+          mkdir -p dist
+          APK="DEELA-$VERSION-release.apk"
+          cp app/build/outputs/apk/release/app-release.apk "dist/$APK"
+          (cd dist && sha256sum "$APK" > "$APK.sha256")
+          test -s "dist/$APK.sha256"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "apk=$APK" >> "$GITHUB_OUTPUT"
+          echo "Signer fingerprint (public): $SIGNER"
+
+      - name: Save signed APK and checksum for owner
+        uses: actions/upload-artifact@v4
+        with:
+          name: DEELA-${{ steps.verify.outputs.version }}-official-signed-APK
+          path: dist/
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Publish public, stable GitHub Release for in-app update notifications
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_NOTES: ${{ inputs.release_notes }}
+          TAG: ${{ steps.verify.outputs.tag }}
+          APK: ${{ steps.verify.outputs.apk }}
+        run: |
+          set -euo pipefail
+          echo "تطبيقات ديلا ❤️" > "$RUNNER_TEMP/release-notes.txt"
+          printf '\n%s\n\n' "$RELEASE_NOTES" >> "$RUNNER_TEMP/release-notes.txt"
+          cat >> "$RUNNER_TEMP/release-notes.txt" <<'NOTES'
+          هذا إصدار رسمي موقّع من تطبيقات ديلا. تُفحص بصمة SHA-256 قبل التثبيت.
+
+          تنبيه: أول انتقال من نسخة Debug التجريبية إلى هذا الإصدار قد يتطلب إزالة النسخة القديمة ثم تسجيل الدخول من جديد بسبب اختلاف شهادة التوقيع.
+          بعد تثبيت النسخة الرسمية، ستعمل تحديثات الإصدارات الرسمية التالية فوقها مع الاحتفاظ ببيانات التطبيق.
+          NOTES
+          gh release create "$TAG" "dist/$APK" "dist/$APK.sha256" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$(git rev-parse HEAD)" \
+            --title "تطبيقات ديلا $TAG — إصدار رسمي" \
+            --notes-file "$RUNNER_TEMP/release-notes.txt" \
+            --latest
+
+      - name: Confirm public release and APK metadata are visible to subscribers
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.verify.outputs.tag }}
+          APK: ${{ steps.verify.outputs.apk }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq '.tag_name' | grep -Fx "$TAG"
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | grep -Fx "$APK"
+          echo "Official release is live. DEELA's startup update checker will offer this signed APK to compatible installations."
+
+      - name: Remove signing key from temporary runner
+        if: always()
+        run: rm -f "$RUNNER_TEMP/deela-release.p12"
