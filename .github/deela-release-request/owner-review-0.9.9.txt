@@ -1,0 +1,2 @@
+Owner requested internally signed DEELA v0.9.9 preview with redesigned owner panel, full DEELA 3.7 command-center tools and AI bridge.
+This is NOT a public stable release, does not alter subscriber update feed and must not publish to /releases/latest.
