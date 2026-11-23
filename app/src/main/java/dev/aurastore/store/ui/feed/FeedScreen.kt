@@ -1099,7 +1099,7 @@ private fun HeroCarousel(hero: List<Hero>, onOpenPost: (Long) -> Unit) {
             HeroCard(
                 imageUrl = item.image,
                 title = item.title.ifBlank { featured },
-                subtitle = item.subtitle,
+                subtitle = item.subtitle?.let { subscriberLabel(it) },
                 badge = featured,
                 onClick = { if (item.id > 0) onOpenPost(item.id) },
             )
