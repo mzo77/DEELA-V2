@@ -1,5 +1,6 @@
 package dev.aurastore.store.ui.source
 
+import dev.aurastore.store.ui.modDescriptionArabic
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -239,7 +240,7 @@ fun SourceAppScreen(
                         .filter { it.isNotBlank() }
                         .forEach { line ->
                             Text(
-                                line,
+                                modDescriptionArabic(line),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -301,7 +302,7 @@ fun SourceAppScreen(
             item { SectionHeader(stringResource(R.string.detail_about_title)) }
             item {
                 Text(
-                    about,
+                    modDescriptionArabic(about),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = if (aboutExpanded) Int.MAX_VALUE else 6,
@@ -358,7 +359,7 @@ private fun SourceFileRow(file: SourceFile, onDownload: () -> Unit) {
     ) {
         Column(Modifier.weight(1f)) {
             Text(
-                file.label,
+                modDescriptionArabic(file.label),
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -367,7 +368,7 @@ private fun SourceFileRow(file: SourceFile, onDownload: () -> Unit) {
                 .joinToString(" · ")
             if (detail.isNotBlank()) {
                 Text(
-                    detail,
+                    modDescriptionArabic(detail),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
