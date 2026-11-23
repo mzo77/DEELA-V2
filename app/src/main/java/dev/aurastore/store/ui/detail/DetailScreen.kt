@@ -1051,10 +1051,12 @@ private fun DetailHero(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(Modifier.height(4.dp))
+                val genreLabel = modDescriptionArabic(post?.genre.orEmpty())
+                val typeLabel = subscriberLabel(post?.type.orEmpty())
                 Text(
                     listOfNotNull(
-                        post?.genre?.takeIf { it.isNotBlank() }?.let { modDescriptionArabic(it).split(" · ").joinToString(" · ") { part -> subscriberLabel(part) } },
-                        post?.type?.takeIf { it.isNotBlank() }?.let { subscriberLabel(it) },
+                        genreLabel.takeIf { it.isNotBlank() },
+                        typeLabel.takeIf { it.isNotBlank() },
                         formatSize(post?.size),
                     ).joinToString(" · ").ifBlank { " " },
                     style = MaterialTheme.typography.bodySmall,
