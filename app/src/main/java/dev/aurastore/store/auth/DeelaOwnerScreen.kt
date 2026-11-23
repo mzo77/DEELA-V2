@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import dev.aurastore.store.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -70,6 +71,36 @@ private object OwnerApi {
 }
 @Composable
 fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit,onOpenStore:()->Unit) {
+    // Keep the owner's palette separate: subscriber storefront retains its existing brand.
+    val baseColors = MaterialTheme.colorScheme
+    val ownerColors = baseColors.copy(
+        primary = Color(0xFF80D6D6),
+        onPrimary = Color(0xFF0C2433),
+        primaryContainer = Color(0xFF244953),
+        onPrimaryContainer = Color(0xFFDBFAF7),
+        secondary = Color(0xFFADC5FA),
+        onSecondary = Color(0xFF16243F),
+        secondaryContainer = Color(0xFF2A4166),
+        onSecondaryContainer = Color(0xFFE0ECFF),
+        error = Color(0xFFD9B683),
+        onError = Color(0xFF261C11),
+        errorContainer = Color(0xFF433D30),
+        onErrorContainer = Color(0xFFF6E6C4),
+        background = Color(0xFF0E1929),
+        onBackground = Color(0xFFE7F2FC),
+        surface = Color(0xFF18273A),
+        onSurface = Color(0xFFEAF4FF),
+        surfaceVariant = Color(0xFF263B52),
+        onSurfaceVariant = Color(0xFFCBDCEA),
+        outline = Color(0xFF587089)
+    )
+    MaterialTheme(colorScheme = ownerColors) {
+        DeelaOwnerScreenBody(session=session,onLogout=onLogout,onOpenStore=onOpenStore)
+    }
+}
+
+@Composable
+private fun DeelaOwnerScreenBody(session:DeelaSession,onLogout:()->Unit,onOpenStore:()->Unit) {
     val context=LocalContext.current
     val openCenter={
         context.startActivity(
