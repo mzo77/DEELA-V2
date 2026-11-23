@@ -1,6 +1,8 @@
 package dev.aurastore.store.auth
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
@@ -114,8 +116,8 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
             Text("تطبيقات ديلا ❤️",style=MaterialTheme.typography.headlineMedium,color=MaterialTheme.colorScheme.primary)
             Text("لوحة تحكم المالك 👑",style=MaterialTheme.typography.titleLarge)
             Spacer(Modifier.height(12.dp))
-            Row(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-                listOf("الرئيسية","الطلبات","المشتركون","السجل").forEach { tab ->
+            Row(modifier=Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                listOf("الرئيسية","الطلبات","المشتركون","السجل","التحديثات").forEach { tab ->
                     FilterChip(selected=page==tab,onClick={page=tab},label={Text(tab)})
                 }
             }
@@ -139,6 +141,7 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                         Spacer(Modifier.height(16.dp))
                         Button(onClick={page="المشتركون"}) {Text("إدارة المشتركين والاشتراكات")}
                         OutlinedButton(onClick={reload++}) {Text("تحديث البيانات")}
+                        Button(onClick={page="التحديثات"}) {Text("تحديثات جميع المصادر") }
                         HorizontalDivider()
                         Text("قوة غاشمة ⚡",style=MaterialTheme.typography.titleMedium)
                         Text("الأدوات المتقدمة لم تُنقل بعد.")
@@ -186,6 +189,7 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                             }
                         }
                     }
+                    "التحديثات" -> DeelaOwnerSources(session.token)
                     "السجل" -> LazyColumn(modifier=Modifier.weight(1f)) {
                         items(current.audit) {event->
                             Text(event,modifier=Modifier.padding(vertical=8.dp))
@@ -194,9 +198,11 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                     }
                 }
             }
-            Spacer(Modifier.height(8.dp))
-            OutlinedButton(onClick=onLogout,modifier=Modifier.fillMaxWidth()) {Text("تسجيل الخروج")}
-            Spacer(Modifier.height(16.dp))
+            if (page != "التحديثات") {
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(onClick=onLogout,modifier=Modifier.fillMaxWidth()) {Text("تسجيل الخروج")}
+                Spacer(Modifier.height(16.dp))
+            }
         }
     }
 }
