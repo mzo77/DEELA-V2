@@ -1,0 +1,47 @@
+name: Verify DEELA Owner iOS Android Subscriber Cards
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/control/**'
+      - '.github/workflows/deela-control-mobile-cards-ci.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate standalone owner page JavaScript and mobile layout
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,subprocess
+          html=Path("docs/control/index.html").read_text(encoding="utf-8")
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',html,re.DOTALL|re.IGNORECASE)
+          assert len(scripts)==1, f"Expected one inline JavaScript block, got {len(scripts)}"
+          Path("/tmp/deela-owner-script.js").write_text(scripts[0],encoding="utf-8")
+          assert subprocess.run(["node","--check","/tmp/deela-owner-script.js"],check=False).returncode==0
+          for required in ('data-platform-filter="ios"','data-platform-filter="android"','data-platform-filter="all"',
+                           'id="memberCards"','id="memberSearch"','id="renewMonths"','id="iosCount"',
+                           'id="androidCount"','function renderMembers()','member-card',
+                           "filter(m=>m.role!=='owner')","months:action==='renew'?months:undefined"):
+              assert required in html, required
+          assert '<tbody id="rows">' not in html
+          assert '@media(max-width:640px)' in html
+          assert "textContent" in html
+          print("Control page: valid JS, separate iOS/Android cards, month-based subscription renewal.")
+          PY
+      - name: Check new GitHub Pages HTML is reachable
+        run: |
+          set -euo pipefail
+          URL='https://mzo77.github.io/DEELA-V2/control/'
+          curl --fail-with-body --location --retry 6 --retry-all-errors --retry-delay 3 \
+            --max-time 30 -H 'Cache-Control: no-cache' "$URL" -o /tmp/deela-owner-live.html
+          grep -q 'memberCards' /tmp/deela-owner-live.html
+          grep -q 'data-platform-filter="ios"' /tmp/deela-owner-live.html
+          grep -q 'data-platform-filter="android"' /tmp/deela-owner-live.html
+          echo "Owner subscription cards are live."
