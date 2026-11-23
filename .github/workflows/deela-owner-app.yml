@@ -64,7 +64,7 @@ jobs:
           chmod +x gradlew
           ./gradlew :ownerapp:assembleDebug --no-daemon
           test -s ownerapp/build/outputs/apk/debug/ownerapp-debug.apk
-          "$ANDROID_HOME/build-tools/36.1.0/aapt" dump badging ownerapp/build/outputs/apk/debug/ownerapp-debug.apk | grep -F "package: name='com.deela.owner.control' versionCode='4'"
+          "$ANDROID_HOME/build-tools/36.1.0/aapt" dump badging ownerapp/build/outputs/apk/debug/ownerapp-debug.apk | grep -F "package: name='com.deela.owner.loginfix' versionCode='4'"
           mkdir -p dist
           cp ownerapp/build/outputs/apk/debug/ownerapp-debug.apk dist/DEELA-Owner-preview.apk
           "$ANDROID_HOME/build-tools/36.1.0/apksigner" verify --print-certs dist/DEELA-Owner-preview.apk
