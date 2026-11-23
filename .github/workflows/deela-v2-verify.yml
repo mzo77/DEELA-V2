@@ -40,14 +40,13 @@ jobs:
             echo "::error::Android SDK command-line tools not found in $SDK_ROOT/cmdline-tools"
             exit 1
           fi
-          # Prefer the compile SDK declared by the project; use 36 only when 37 is unavailable.
-          if "$SDKMANAGER" --sdk_root="$SDK_ROOT" "platforms;android-37" "build-tools;36.0.0"; then
-            echo "Using project compileSdk 37"
-          else
-            echo "::warning::Android platform 37 is unavailable; testing a runner-only compileSdk 36 fallback"
-            "$SDKMANAGER" --sdk_root="$SDK_ROOT" "platforms;android-36" "build-tools;36.0.0"
-            sed -i 's/compileSdk = 37/compileSdk = 36/' app/build.gradle.kts
-          fi
+          # All current AndroidX dependencies require API 37 or newer.
+          # Never silently downgrade compileSdk to 36: it fails AAR metadata checks.
+          "$SDKMANAGER" --sdk_root="$SDK_ROOT" --list | grep -E 'platforms;android-37([ .;]|$)' || true
+          "$SDKMANAGER" --sdk_root="$SDK_ROOT" "platforms;android-37" "build-tools;36.0.0" || {
+            echo "::error::Required Android API 37 SDK is not available from this runner's SDK repository. No APK was built."
+            exit 1
+          }
       - name: Allow Gradle wrapper execution
         run: chmod +x ./gradlew
       - name: Build debug APK
