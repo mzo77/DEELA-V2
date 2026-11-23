@@ -14,9 +14,9 @@ import java.util.concurrent.TimeUnit
 /**
  * One APK asset of a release: which signature it carries, where its bytes are, and what they hash to.
  *
- * The release publishes a signed build and a debug build side by side. [debug] is read from the
- * asset's name, which is the only signal GitHub gives; [sha256] prefers the API's asset digest and
- * falls back to the sibling `.sha256` file for older releases.
+ * Official releases carry a permanently signed APK. Older preview releases may contain a
+ * separate debug build. [debug] is read from the asset's name; [sha256] prefers GitHub's
+ * digest and falls back to the sibling `.sha256` asset.
  */
 data class AppBuild(
     val name: String,
@@ -31,11 +31,10 @@ data class AppBuild(
 /**
  * One published build of this app, as GitHub's release API describes it.
  *
- * [builds] is everything the release published, signed build first. [installed] is the one that
- * carries this installation's signature: a debug install takes the debug APK, a release install the
- * signed one, because Android will not accept the other signature over it. An update may still be
- * asked for either build — [build] answers that — and a build that does not match is saved rather
- * than handed to the installer.
+ * [builds] contains all published builds, with the signed one first. [installed] prefers
+ * the matching build class; old debug installs may be offered a stable signed APK for
+ * announcement purposes. Android update compatibility is verified against the *actual*
+ * signing certificates after download. Incompatible APKs are saved, not handed to the installer.
  *
  * [sha256] is the hash the download must match before it reaches the installer; null means the
  * release published none, and [dev.aurastore.store.update.AppUpdater] refuses to install that.
@@ -72,12 +71,11 @@ data class AppRelease(
 }
 
 /**
- * The project's own releases, read from GitHub.
+ * The project's own official releases, read from GitHub.
  *
- * This is the store updating itself, not a catalogue: the repository is fixed, the answer is the
- * newest non-draft, non-pre-release release, and the asset is chosen by the signature this build
- * carries. The API is public and answers without a token; a check is cheap and infrequent, so the
- * unauthenticated hourly limit is not something a user can reach by tapping.
+ * The repository is fixed, only the newest non-draft stable release is considered, and
+ * the artifact must have a verifiable SHA-256 before installation. UI checks are rate
+ * limited per running process to reduce API traffic.
  */
 object AppReleases {
 
