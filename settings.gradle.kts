@@ -31,3 +31,4 @@ plugins {
 
 rootProject.name = "DEELA APPS"
 include(":app")
+include(":ownerapp")
