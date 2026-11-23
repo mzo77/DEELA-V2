@@ -14,3 +14,24 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{
 .owner-dialog-actions button{min-width:110px}
 .owner-dialog-actions .owner-danger{background:#c05e73;color:#fff}
 @media(max-width:420px){.owner-dialog-card{padding:21px}.owner-dialog-actions button{flex:1;min-width:0}}
+
+/* Owner-only calm blue/teal palette: errors remain visible without aggressive red. */
+#feedback.error {
+  background:#233c4c;
+  color:#e5f6ff;
+  border-color:#648e9d;
+}
+.member-actions .danger {
+  border-color:#786b57;
+  color:#ead7b5;
+  background:#354354;
+}
+.file-actions button.delete { color:#e2c49a; }
+.owner-dialog-actions .owner-danger {
+  background:linear-gradient(120deg,#c3ae85,#a3b5cc);
+  color:#172638;
+}
+#feedback {
+  top:calc(env(safe-area-inset-top,0px) + 18px);
+  max-width:min(440px,calc(100vw - 28px));
+}
