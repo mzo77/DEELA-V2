@@ -82,7 +82,7 @@ fun dynamicPaletteSupported(): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_
  * own colours, an older one opens in the house palette. It is a *starting* value only — the first
  * move of the Colours row writes a preference and this answer is never consulted again.
  */
-fun firstRunPalette(): PaletteMode = if (dynamicPaletteSupported()) PaletteMode.WALLPAPER else PaletteMode.HOUSE
+fun firstRunPalette(): PaletteMode = PaletteMode.HOUSE
 
 /**
  * How the floating download panel draws a transfer in progress.

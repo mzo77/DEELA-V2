@@ -894,7 +894,11 @@ fun FeedScreen(
     LazyColumn(state = listState, modifier = Modifier.fillMaxSize().then(serverSwipe), contentPadding = PaddingValues(bottom = 28.dp + LocalNavBarInset.current)) {
         item {
             Text(
-                kind.title,
+                when (kind) {
+                    FeedKind.GAMES -> stringResource(R.string.tab_games)
+                    FeedKind.APPS -> stringResource(R.string.tab_apps)
+                    FeedKind.BROWSE -> stringResource(R.string.tab_browse)
+                },
                 style = MaterialTheme.typography.displaySmall,
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 10.dp),
             )

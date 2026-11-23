@@ -4,5 +4,5 @@
          it and the first composition. It has to live here because that paint happens before any of our
          code runs. These values mirror Ink50 and NightBase in theme/Color.kt, and ThemeSettingsTest
          fails the build if the two copies drift apart. -->
-    <color name="store_background">#FFFBF8F4</color>
+    <color name="store_background">#FFFFF7FA</color>
 </resources>

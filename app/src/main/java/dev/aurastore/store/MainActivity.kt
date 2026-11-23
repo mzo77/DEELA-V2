@@ -28,6 +28,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyListState
@@ -94,6 +95,10 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.aurastore.store.data.AppState
 import dev.aurastore.store.data.BackgroundTheme
+import dev.aurastore.store.data.PaletteMode
+import dev.aurastore.store.auth.DeelaAccessScreen
+import dev.aurastore.store.auth.DeelaAuthApi
+import dev.aurastore.store.auth.DeelaSession
 import dev.aurastore.store.data.NavOrder
 import dev.aurastore.store.data.Settings
 import dev.aurastore.store.data.ThemeMode
@@ -216,10 +221,23 @@ class MainActivity : ComponentActivity() {
             // straight through instead of replaying the nib; the tour, once open, survives rotation.
             var splashDone by rememberSaveable { mutableStateOf(savedInstanceState != null) }
             var tourOpen by rememberSaveable { mutableStateOf(false) }
-            LaunchedEffect(splashDone, tourSeen) {
-                if (splashDone && !tourSeen) {
+            // Never render the store before a live, server-verified entitlement.
+            // Tokens stay in memory; closing the app signs the subscriber out.
+            var deelaSession by remember { mutableStateOf<DeelaSession?>(null) }
+            LaunchedEffect(deelaSession) {
+                while (deelaSession != null) {
+                    kotlinx.coroutines.delay(60_000)
+                    val current = deelaSession ?: break
+                    if (!DeelaAuthApi.check(current.token)) {
+                        deelaSession = null
+                        tourOpen = false
+                    }
+                }
+            }
+            LaunchedEffect(splashDone, tourSeen, deelaSession) {
+                if (splashDone && deelaSession != null && !tourSeen) {
                     tourOpen = true
-                } else if (splashDone) {
+                } else if (splashDone && deelaSession != null) {
                     // One ask per install, and never while the first-open tour is on screen: a
                     // system dialog on top of page one hides the very thing it is introducing.
                     askNotificationPermission()
@@ -236,7 +254,8 @@ class MainActivity : ComponentActivity() {
             }
             AuraStoreTheme(
                 themeMode = if (amoled) ThemeMode.DARK else themeMode,
-                palette = palette,
+                // DEELA brand colors stay consistent even with a wallpaper palette preference.
+                palette = PaletteMode.HOUSE,
                 seed = seed,
             ) {
                 // With weather on, or AMOLED, the shell must stop painting its own paper or the
@@ -258,10 +277,14 @@ class MainActivity : ComponentActivity() {
                                     amoled = amoled,
                                 )
                             }
-                            StoreApp(deepLink)
+                            if (splashDone && deelaSession != null) {
+                                StoreApp(deepLink)
+                            } else if (splashDone) {
+                                DeelaAccessScreen(onAuthenticated = { deelaSession = it })
+                            }
                             // The tour sits between the store and the splash. When the splash fades it
                             // reveals the first page instead of handing over to an empty feed for a beat.
-                            if (tourOpen && splashDone) {
+                            if (tourOpen && splashDone && deelaSession != null) {
                                 AppTour(
                                     onDone = {
                                         Settings.markTourSeen(this@MainActivity)
@@ -1057,12 +1080,20 @@ private fun BrandBar(
             }
         }
         Spacer(Modifier.width(10.dp))
-        Text(
-            stringResource(R.string.app_name),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.weight(1f),
-        )
+        Column(Modifier.weight(1f)) {
+            Text(
+                stringResource(R.string.app_name),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                stringResource(R.string.deela_welcome_marquee),
+                modifier = Modifier.fillMaxWidth().basicMarquee(),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
+            )
+        }
         BadgeButton(count = activeDownloads, iconUrl = activeIcon, onClick = onDownloads)
         Spacer(Modifier.width(10.dp))
         // The same picture, frame and live choice the profile wears, at the size a bar can hold.

@@ -192,7 +192,8 @@ fun SettingsScreen(
         item { PageBar(stringResource(R.string.settings_title), onBack) }
         item {
             Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 12.dp)) {
-                HubRow(updates, apps)
+                // Subscriber-facing settings omit the source management and site branding.
+                HubRow(updates, null)
                 Spacer(Modifier.height(12.dp))
                 HubRow(appearance, background)
                 Spacer(Modifier.height(12.dp))
@@ -200,7 +201,7 @@ fun SettingsScreen(
                 Spacer(Modifier.height(12.dp))
                 HubRow(downloads, search)
                 Spacer(Modifier.height(22.dp))
-                HubWideCard(about)
+                // Project/license acknowledgements remain in repository LICENSE, not the subscriber hub.
             }
         }
     }

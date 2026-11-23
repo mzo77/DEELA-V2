@@ -27,41 +27,41 @@ import androidx.compose.ui.graphics.Color
  */
 
 // Accent. One hue family: amber, from deep brown to pale sand.
-val Accent = Color(0xFFE0902C)
-val AccentBright = Color(0xFFF5C583)
-val AccentDeep = Color(0xFF8A5310)
-val AccentContainerLight = Color(0xFFF3DCB8)
-val AccentContainerDark = Color(0xFF3A2610)
-val OnAccentDark = Color(0xFF1C1408)
-val OnAccentLight = Color(0xFFFFFBF5)
-val OnAccentContainerLight = Color(0xFF2A1B08)
+val Accent = Color(0xFFFF234F)
+val AccentBright = Color(0xFFFF91A9)
+val AccentDeep = Color(0xFFBC1740)
+val AccentContainerLight = Color(0xFFFFDFE8)
+val AccentContainerDark = Color(0xFF421222)
+val OnAccentDark = Color(0xFF1C030A)
+val OnAccentLight = Color(0xFFFFFFFF)
+val OnAccentContainerLight = Color(0xFF330C19)
 
 /** Warm neutrals. Every grey here carries the same brown undertone — no cool grey sneaks in. */
-val Ink900 = Color(0xFF1F1A15)
-val Ink700 = Color(0xFF5D5449)
-val Ink500 = Color(0xFF8C8073)
-val Ink300 = Color(0xFFD9CFC2)
-val Ink100 = Color(0xFFF3EDE5)
-val Ink50 = Color(0xFFFBF8F4)
+val Ink900 = Color(0xFF26151B)
+val Ink700 = Color(0xFF73505A)
+val Ink500 = Color(0xFF947984)
+val Ink300 = Color(0xFFE4C8D0)
+val Ink100 = Color(0xFFF7EAF0)
+val Ink50 = Color(0xFFFFF7FA)
 
 val PaperWhite = Color(0xFFFFFFFF)
 val InkOnPaper = Color(0xFF1F1A15)
 
 /** The dark surface family, lifted off pure black so cards and sheets have somewhere to go. */
-val NightBase = Color(0xFF15120F)
-val NightLow = Color(0xFF1C1815)
-val NightHigh = Color(0xFF26211C)
-val NightHighest = Color(0xFF312A24)
-val NightLowest = Color(0xFF100D0B)
-val CreamText = Color(0xFFF2E9DE)
-val CreamMeta = Color(0xFFB9AB9B)
-val NightOutline = Color(0xFF4A4038)
+val NightBase = Color(0xFF050507)
+val NightLow = Color(0xFF101014)
+val NightHigh = Color(0xFF1D1017)
+val NightHighest = Color(0xFF291421)
+val NightLowest = Color(0xFF030305)
+val CreamText = Color(0xFFF8EDF1)
+val CreamMeta = Color(0xFFC4ACB5)
+val NightOutline = Color(0xFF592937)
 
 /**
  * Ratings stars. Held a shade deeper than the accent so a 4.1 next to an *Install* pill reads as a
  * judgement rather than as another control.
  */
-val RatingStar = Color(0xFFC97A16)
+val RatingStar = Color(0xFFFFC54C)
 
 val ErrorLight = Color(0xFFB3261E)
 val ErrorDark = Color(0xFFF2B8B5)

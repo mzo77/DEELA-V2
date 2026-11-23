@@ -29,12 +29,12 @@ import kotlin.math.floor
  * [note] says what the source *is*, so it is a resource.
  */
 enum class SourceId(val label: String, val site: String, @StringRes val note: Int) {
-    LITEAPKS("LiteAPKs", "https://liteapks.com/", R.string.source_note_liteapks),
-    NINEMOD("9MOD", "https://9mod.com/", R.string.source_note_ninemod),
-    FIVEPLAY("5play", "https://5play.org/en/", R.string.source_note_fiveplay),
-    GETMODSAPK("GetModsAPK", "https://getmodsapk.com/", R.string.source_note_getmodsapk),
-    AN1("AN1", "https://an1.com/", R.string.source_note_an1),
-    APKVISION("ApkVision", "https://apkvision.org/", R.string.source_note_apkvision),
+    LITEAPKS("التطبيقات", "https://liteapks.com/", R.string.source_note_liteapks),
+    NINEMOD("المكتبة ١", "https://9mod.com/", R.string.source_note_ninemod),
+    FIVEPLAY("المكتبة ٢", "https://5play.org/en/", R.string.source_note_fiveplay),
+    GETMODSAPK("المكتبة ٣", "https://getmodsapk.com/", R.string.source_note_getmodsapk),
+    AN1("المكتبة ٤", "https://an1.com/", R.string.source_note_an1),
+    APKVISION("المكتبة ٥", "https://apkvision.org/", R.string.source_note_apkvision),
 }
 
 /**
