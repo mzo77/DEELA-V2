@@ -245,7 +245,10 @@ if(req.method==="POST"&&path==="/api/owner/requests/review"){
    delivery_status:"pending"
   },{onConflict:"request_id",ignoreDuplicates:true});
   if(outboxError){console.error("Failed to queue activation email",outboxError.code);emailStatus="failed";}
-  else emailStatus=await sendDeelaActivationEmail(id);
+  else {
+   try {emailStatus=await sendDeelaActivationEmail(id);}
+   catch(e){console.error("Activation email failed unexpectedly",e instanceof Error?e.name:"unknown");emailStatus="failed";}
+  }
  }
  await log(u.id,"request_"+decision,r.user_id);
  return j({ok:true,email_status:emailStatus});
@@ -263,7 +266,9 @@ if(req.method==="POST"&&path==="/api/owner/subscription-email/retry"){
  const {data:reqRow,error}=await admin.from("deela_subscription_requests").select("status").eq("id",id).maybeSingle();
  if(error)throw error;
  if(!reqRow||reqRow.status!=="approved")return fail("لا يمكن إرسال رسالة لطلب غير مفعل",409);
- const status=await sendDeelaActivationEmail(id);
+ let status:DeelaMailStatus="failed";
+ try {status=await sendDeelaActivationEmail(id);}
+ catch(e){console.error("Email retry failed unexpectedly",e instanceof Error?e.name:"unknown");}
  return j({ok:true,email_status:status});
 }
 
