@@ -11,6 +11,19 @@ async function who(req:Request){const h=req.headers.get("Authorization")||"";if(
 async function member(u:{id:string,role:string},platform="android"){if(u.role==="owner")return {active:true,expires_at_epoch:4102444800};const {data:s}=await admin.from("subscriptions").select("ends_at,suspended,platform").eq("user_id",u.id).maybeSingle();const expiry=s?.ends_at?Date.parse(s.ends_at):0;const active=!!s&&!s.suspended&&expiry>Date.now()&&(!s.platform||s.platform===platform);return {active,expires_at_epoch:active?Math.floor(expiry/1000):0};}
 async function log(actor:string,action:string,target?:string){const {error}=await admin.from("deela_control_audit").insert({actor_id:actor,action,target_user_id:target||null});if(error)console.error("audit failed",error.message)}
 async function dashboard(owner:{id:string,email:string}){const [profiles,subs,audits,alias,list]=await Promise.all([admin.from("profiles").select("id,role,display_name").limit(500),admin.from("subscriptions").select("user_id,ends_at,suspended,platform").limit(500),admin.from("deela_control_audit").select("action,created_at").order("created_at",{ascending:false}).limit(40),admin.from("deela_admin_usernames").select("username").eq("user_id",owner.id).maybeSingle(),admin.auth.admin.listUsers({page:1,perPage:500})]);if(profiles.error||subs.error)throw Error("dashboard data load failed");const map=new Map((subs.data||[]).map(s=>[s.user_id,s]));const emails=new Map((list.data?.users||[]).map(u=>[u.id,u.email||""]));const {data:pending}=await admin.from("deela_subscription_requests").select("id,user_id,months,platform,created_at").eq("status","pending").order("created_at",{ascending:false}).limit(200);return {requests:(pending||[]).map(r=>({...r,email:emails.get(r.user_id)||""})),owner:{username:alias.data?.username||"",email:owner.email},members:(profiles.data||[]).map(p=>{const s=map.get(p.id);return {id:p.id,email:emails.get(p.id)||"",display_name:p.display_name,role:p.role,platform:s?.platform||"android",ends_at:s?.ends_at||null,suspended:s?.suspended||false,active:p.role==="owner"||!!s&&!s.suspended&&Date.parse(s.ends_at)>Date.now()}}),audit:audits.data||[]};}
+
+const SCAN_SOURCES=new Set(["LITEAPKS","NINEMOD","FIVEPLAY","GETMODSAPK","AN1","APKVISION"]);
+function parts(v:string):number[] {const m=v.match(/\d+(?:\.\d+)+/);return m?m[0].split(".").map(n=>Number(n)):[];}
+function newerVersion(current:string,next:string):boolean {
+ const a=parts(current),b=parts(next);if(!a.length||!b.length)return false;
+ for(let i=0;i<Math.max(a.length,b.length);i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return y>x;}
+ return false;
+}
+async function pendingSourceCount():Promise<number> {
+ const {count,error}=await admin.from("deela_source_inventory").select("source",{count:"exact",head:true}).not("pending_version","is",null);
+ if(error)throw error;return count||0;
+}
+
 Deno.serve(async req=>{if(req.method==="OPTIONS")return new Response(null,{status:204,headers});
 const pathname=new URL(req.url).pathname,pivot=pathname.indexOf("/deela-control");const path=pivot<0?"":pathname.slice(pivot+14).replace(/\/$/,"");
 if(req.method==="GET"&&(path===""||path==="/"))return new Response(PAGE,{headers:{...headers,"Content-Type":"text/html;charset=utf-8","Content-Security-Policy":"default-src 'none';script-src 'unsafe-inline';style-src 'unsafe-inline';connect-src 'self';img-src data:;frame-ancestors 'none';base-uri 'none'"}});
@@ -41,7 +54,76 @@ if(req.method==="POST"&&path==="/api/v1/auth/refresh"){
  return j({access_token:data.session.access_token,refresh_token:data.session.refresh_token,expires_in:data.session.expires_in,role,subscription_active:subscription.active,expires_at_epoch:subscription.expires_at_epoch});
 }
 if(req.method==="GET"&&path==="/api/v1/entitlements/me"){const u=await who(req);if(!u)return fail("مطلوب تسجيل الدخول",401);return j(await member(u));}
+
+if(req.method==="GET"&&path==="/api/v1/source/updates"){
+ const u=await who(req);if(!u)return fail("مطلوب تسجيل الدخول",401);
+ const entitlement=await member(u,"android");if(!entitlement.active)return fail("الاشتراك غير نشط",403);
+ const since=new Date(Date.now()-60*86400000).toISOString();
+ const {data,error}=await admin.from("deela_published_source_updates")
+  .select("source,app_key,title,version,page_url,icon_url,published_at")
+  .gte("published_at",since).order("published_at",{ascending:false}).limit(300);
+ if(error)throw error;return j({updates:data||[]});
+}
 if(path.startsWith("/api/owner/")){const u=await who(req);if(!u||u.role!=="owner")return fail("صلاحية المالك مطلوبة",403);
+
+if(req.method==="GET"&&path==="/api/owner/source/candidates"){
+ const {data,error}=await admin.from("deela_source_inventory")
+  .select("source,app_key,title,version,pending_version,page_url,scanned_at")
+  .not("pending_version","is",null).order("scanned_at",{ascending:false}).limit(500);
+ if(error)throw error;
+ return j({pending_count:await pendingSourceCount(),updates:data||[]});
+}
+if(req.method==="POST"&&path==="/api/owner/source/scan"){
+ const b=await req.json(),source=String(b.source||"");
+ if(!SCAN_SOURCES.has(source)||!Array.isArray(b.apps)||b.apps.length>100)return fail("بيانات الفحص غير صحيحة",400);
+ const unique=new Map<string,{source:string,app_key:string,title:string,version:string,page_url:string|null,icon_url:string|null}>();
+ for(const raw of b.apps){
+  if(!raw||typeof raw!=="object")continue;
+  const key=String(raw.key||"").trim(),title=String(raw.title||"").trim(),version=String(raw.version||"").trim();
+  if(!key||key.length>300||!title||title.length>180||version.length>100||!parts(version).length)continue;
+  const url=String(raw.page_url||"").trim(),icon=String(raw.icon_url||"").trim();
+  unique.set(key,{source,app_key:key,title,version,page_url:url.startsWith("https://")&&url.length<600?url:null,icon_url:icon.startsWith("https://")&&icon.length<600?icon:null});
+ }
+ const rows=[...unique.values()];
+ if(!rows.length)return j({scanned:0,pending_count:await pendingSourceCount()});
+ const {data:old,error:readErr}=await admin.from("deela_source_inventory")
+  .select("app_key,version,pending_version,last_published_version").eq("source",source)
+  .in("app_key",rows.map(a=>a.app_key));
+ if(readErr)throw readErr;
+ const known=new Map((old||[]).map(x=>[x.app_key,x]));
+ const now=new Date().toISOString();
+ const updates=rows.map(item=>{
+  const prior=known.get(item.app_key),changed=!!prior&&newerVersion(prior.version,item.version);
+  return {...item,version:changed||!prior?item.version:prior.version,
+   pending_version:changed?item.version:(prior?.pending_version||null),
+   last_published_version:prior?.last_published_version||null,scanned_at:now};
+ });
+ const {error}=await admin.from("deela_source_inventory").upsert(updates,{onConflict:"source,app_key"});
+ if(error)throw error;
+ return j({scanned:rows.length,pending_count:await pendingSourceCount()});
+}
+if(req.method==="POST"&&path==="/api/owner/source/publish"){
+ const {data:rows,error:readErr}=await admin.from("deela_source_inventory")
+  .select("source,app_key,title,pending_version,page_url,icon_url")
+  .not("pending_version","is",null).limit(500);
+ if(readErr)throw readErr;
+ if(!rows?.length)return j({published:0,pending_count:0});
+ const now=new Date().toISOString();
+ const {error}=await admin.from("deela_published_source_updates").upsert(
+  rows.map(x=>({source:x.source,app_key:x.app_key,title:x.title,version:x.pending_version,
+   page_url:x.page_url,icon_url:x.icon_url,published_at:now})),
+  {onConflict:"source,app_key"});
+ if(error)throw error;
+ // Do not erase a newer candidate that arrived during publishing.
+ for(const row of rows) {
+   const {error:clearError}=await admin.from("deela_source_inventory")
+    .update({pending_version:null,last_published_version:row.pending_version})
+    .eq("source",row.source).eq("app_key",row.app_key).eq("pending_version",row.pending_version);
+   if(clearError)throw clearError;
+ }
+ await log(u.id,"source_updates_published");
+ return j({published:rows.length,pending_count:await pendingSourceCount()});
+}
 if(req.method==="GET"&&path==="/api/owner/dashboard")return j(await dashboard(u));
 if(req.method==="POST"&&path==="/api/owner/username"){const b=await req.json(),username=String(b.username||"").trim().toLowerCase();if(!/^[a-z][a-z0-9_.-]{2,31}$/.test(username))return fail("اسم المستخدم من 3 إلى 32 حرفًا ويبدأ بحرف إنجليزي");const {error}=await admin.from("deela_admin_usernames").upsert({user_id:u.id,username,updated_at:new Date().toISOString()},{onConflict:"user_id"});if(error)return fail("اسم المستخدم مستخدم أو غير صالح");await log(u.id,"owner_username_updated");return j({username});}
 if(req.method==="POST"&&path==="/api/owner/password"){const b=await req.json(),old=String(b.current_password||""),next=String(b.new_password||"");if(next.length<12||next.length>128)return fail("كلمة المرور الجديدة من 12 إلى 128 رمزًا");const {error:check}=await guest.auth.signInWithPassword({email:u.email,password:old});if(check)return fail("كلمة المرور الحالية غير صحيحة",401);const {error}=await admin.auth.admin.updateUserById(u.id,{password:next});if(error)throw error;await log(u.id,"owner_password_changed");return j({ok:true});}
