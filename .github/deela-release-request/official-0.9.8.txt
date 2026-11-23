@@ -3,3 +3,5 @@ Source: feature/admin-source-updates-and-signup-requests
 Requested by repository owner via ChatGPT on 2026-11-23.
 Publish only after verifying the permanent certificate, app package, and SHA-256.
 Do not publish an unsigned or debug-signed APK.
+
+Trigger attempt 2: corrected YAML release-notes quoting; no signing secrets committed.
