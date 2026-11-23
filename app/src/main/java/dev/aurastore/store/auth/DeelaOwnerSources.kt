@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit
 private data class SourceCandidate(val source: String, val key: String, val title: String, val version: String)
 private data class SourceCandidates(val count: Int, val updates: List<SourceCandidate>)
 private data class SourceScanResult(val scanned: Int, val pending: Int)
+private data class SourceScanStatus(val source: String, val result: String)
 
 private object OwnerSourcesApi {
     private val base get() = BuildConfig.DEELA_API_BASE_URL.trimEnd('/')
@@ -86,7 +87,16 @@ private object OwnerSourcesApi {
             response.apps.forEach { app -> if (app.key.isNotBlank()) found[app.key] = app }
             if (!response.hasMore) break
         }
-        if (found.isEmpty()) {
+        // Some catalogues (e.g. sitemap/WordPress lists) omit versions from paged rows.
+        // The homepage shelves may publish real versions; don't count URL-only entries as updates.
+        if (found.values.none { !it.version.isNullOrBlank() }) {
+            runCatching { source.shelves() }.getOrDefault(emptyList())
+                .flatMap { it.apps }
+                .forEach { app ->
+                    if (app.key.isNotBlank() && !app.version.isNullOrBlank()) found[app.key] = app
+                }
+        }
+        if (found.values.none { !it.version.isNullOrBlank() }) {
             runCatching { source.latest() }.getOrDefault(emptyList())
                 .forEach { app -> if (app.key.isNotBlank()) found[app.key] = app }
         }
@@ -125,6 +135,7 @@ fun DeelaOwnerSources(token: String) {
     var busy by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("الفحص الأول يسجل الإصدارات الحالية للمقارنة في المرات القادمة.") }
     var error by remember { mutableStateOf<String?>(null) }
+    var sourceResults by remember { mutableStateOf<List<SourceScanStatus>>(emptyList()) }
     LaunchedEffect(token) {
         runCatching { OwnerSourcesApi.candidates(token) }
             .onSuccess { candidates = it }
@@ -144,21 +155,30 @@ fun DeelaOwnerSources(token: String) {
                     error = null
                     scope.launch {
                         var total = 0
-                        val failed = mutableListOf<String>()
+                        val reports = mutableListOf<SourceScanStatus>()
                         try {
                             for ((index, source) in Sources.all.withIndex()) {
                                 status = "فحص ${index + 1} من ${Sources.all.size}: ${source.id.label}"
                                 val outcome = runCatching {
                                     val apps = OwnerSourcesApi.latest(source)
-                                    if (apps.isEmpty()) throw IllegalStateException("المصدر لم يُرجع أي تطبيق")
+                                    if (apps.isEmpty()) throw IllegalStateException("لم يصل رد قابل للقراءة من المصدر")
                                     OwnerSourcesApi.scan(token, source, apps)
                                 }
-                                outcome.onSuccess { total += it.scanned }
-                                    .onFailure { failed.add(source.id.label) }
+                                outcome.onSuccess { scanned ->
+                                    total += scanned.scanned
+                                    reports += SourceScanStatus(source.id.label,
+                                        if (scanned.scanned > 0) "تم تسجيل ${scanned.scanned} إصدار"
+                                        else "لا توجد إصدارات قابلة للمقارنة")
+                                }.onFailure { problem ->
+                                    reports += SourceScanStatus(source.id.label,
+                                        "تعذر الفحص: ${problem.message.orEmpty().take(90)}")
+                                }
+                                sourceResults = reports.toList()
                             }
                             candidates = OwnerSourcesApi.candidates(token)
-                            status = "تم فحص $total إدخالًا بإصدار معروف. تحديثات جديدة: ${candidates.count}." +
-                                if (failed.isEmpty()) "" else " تعذر فحص: ${failed.joinToString("، ")}"
+                            val incomplete = reports.count { !it.result.startsWith("تم تسجيل") }
+                            status = "فُحصت $total نسخة معلومة الإصدار. تحديثات جديدة: ${candidates.count}." +
+                                if (incomplete == 0) "" else " مصادر بدون نتائج كاملة: $incomplete من ${Sources.all.size}."
                         } catch (e: Exception) {
                             error = e.message ?: "تعذر إكمال فحص المصادر."
                         } finally {
@@ -200,6 +220,11 @@ fun DeelaOwnerSources(token: String) {
         ) { Text("إرسال التحديثات إلى تطبيقات البرامج") }
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         Text(status, style = MaterialTheme.typography.bodySmall)
+        if (sourceResults.isNotEmpty()) {
+            Text("نتيجة كل مصدر:", style = MaterialTheme.typography.titleSmall)
+            Text(sourceResults.joinToString("\n") { "${it.source}: ${it.result}" },
+                style = MaterialTheme.typography.bodySmall)
+        }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         OutlinedButton(enabled = !busy, onClick = {
             scope.launch {
