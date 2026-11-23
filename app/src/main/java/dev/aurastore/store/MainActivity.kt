@@ -98,6 +98,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.aurastore.store.data.AppState
 import dev.aurastore.store.data.BackgroundTheme
 import dev.aurastore.store.data.PaletteMode
+import dev.aurastore.store.auth.DeelaOwnerScreen
 import dev.aurastore.store.auth.DeelaAccessScreen
 import dev.aurastore.store.auth.DeelaAuthApi
 import dev.aurastore.store.auth.DeelaSession
@@ -237,7 +238,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             LaunchedEffect(splashDone, tourSeen, deelaSession) {
-                if (splashDone && deelaSession != null && !tourSeen) {
+                if (splashDone && deelaSession != null && deelaSession?.role != "owner" && !tourSeen) {
                     tourOpen = true
                 } else if (splashDone && deelaSession != null) {
                     // One ask per install, and never while the first-open tour is on screen: a
@@ -279,14 +280,16 @@ class MainActivity : ComponentActivity() {
                                     amoled = amoled,
                                 )
                             }
-                            if (splashDone && deelaSession != null) {
+                            if (splashDone && deelaSession?.role == "owner") {
+                                DeelaOwnerScreen(session = deelaSession!!, onLogout = { deelaSession = null })
+                            } else if (splashDone && deelaSession != null) {
                                 StoreApp(deepLink, onLogout = { deelaSession = null })
                             } else if (splashDone) {
                                 DeelaAccessScreen(onAuthenticated = { deelaSession = it })
                             }
                             // The tour sits between the store and the splash. When the splash fades it
                             // reveals the first page instead of handing over to an empty feed for a beat.
-                            if (tourOpen && splashDone && deelaSession != null) {
+                            if (tourOpen && splashDone && deelaSession?.role != "owner") {
                                 AppTour(
                                     onDone = {
                                         Settings.markTourSeen(this@MainActivity)
