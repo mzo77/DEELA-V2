@@ -658,7 +658,11 @@ fun StoreApp(deepLink: MutableState<String?> = mutableStateOf(null), onLogout: (
                     barShown = showNavBar,
                     floating = glass.floating,
                     offset = glass.offset,
-                    dockHeight = if (dockShown) with(density) { dockHeightPx.toDp() } else null,
+                    // Reserve room immediately, before the floating download card reports its measured height.
+                    // Otherwise the first frame can put content behind the install controls.
+                    dockHeight = if (dockShown) {
+                        if (dockHeightPx > 0) with(density) { dockHeightPx.toDp() } else 96.dp
+                    } else null,
                     // Both up: the panel and the sheet share an edge, so the page reserves no gap.
                     dockJoined = dockShown && showNavBar,
                 )
