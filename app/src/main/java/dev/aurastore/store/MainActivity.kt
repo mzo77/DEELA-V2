@@ -103,6 +103,8 @@ import dev.aurastore.store.auth.DeelaOwnerScreen
 import dev.aurastore.store.auth.DeelaAccessScreen
 import dev.aurastore.store.auth.DeelaAuthApi
 import dev.aurastore.store.auth.DeelaSession
+import dev.aurastore.store.auth.DeelaSessionCheck
+import dev.aurastore.store.auth.DeelaSessionStore
 import dev.aurastore.store.data.NavOrder
 import dev.aurastore.store.data.Settings
 import dev.aurastore.store.data.ThemeMode
@@ -225,16 +227,62 @@ class MainActivity : ComponentActivity() {
             // straight through instead of replaying the nib; the tour, once open, survives rotation.
             var splashDone by rememberSaveable { mutableStateOf(savedInstanceState != null) }
             var tourOpen by rememberSaveable { mutableStateOf(false) }
-            // Never render the store before a live, server-verified entitlement.
-            // Tokens stay in memory; closing the app signs the subscriber out.
+            // Never display cached privileges before the backend has re-verified them.
+            // The encrypted rotating token outlives the Activity and in-place APK updates.
             var deelaSession by remember { mutableStateOf<DeelaSession?>(null) }
-            LaunchedEffect(deelaSession) {
+            var restoringSession by remember { mutableStateOf(DeelaSessionStore.load(this@MainActivity) != null) }
+            var restoreUnavailable by remember { mutableStateOf(false) }
+            var restoreAttempt by remember { mutableIntStateOf(0) }
+            fun logout() {
+                DeelaSessionStore.clear(this@MainActivity)
+                deelaSession = null
+                tourOpen = false
+                restoreUnavailable = false
+            }
+            LaunchedEffect(restoreAttempt) {
+                val saved = DeelaSessionStore.load(this@MainActivity)
+                if (saved == null) {
+                    restoringSession = false
+                    restoreUnavailable = false
+                } else {
+                    restoringSession = true
+                    restoreUnavailable = false
+                    when (val result = DeelaAuthApi.restore(saved.refreshToken)) {
+                        is DeelaSessionCheck.Verified -> {
+                            DeelaSessionStore.save(this@MainActivity, result.session)
+                            deelaSession = result.session
+                        }
+                        DeelaSessionCheck.Invalid -> DeelaSessionStore.clear(this@MainActivity)
+                        DeelaSessionCheck.Unavailable -> restoreUnavailable = true
+                    }
+                    restoringSession = false
+                }
+            }
+            LaunchedEffect(deelaSession?.token) {
                 while (deelaSession != null) {
                     kotlinx.coroutines.delay(60_000)
                     val current = deelaSession ?: break
-                    if (current.subscriptionActive && !DeelaAuthApi.check(current.token)) {
-                        deelaSession = null
-                        tourOpen = false
+                    if (!current.subscriptionActive) continue
+                    when (val result = DeelaAuthApi.checkSession(current)) {
+                        is DeelaSessionCheck.Verified -> {
+                            if (deelaSession?.token != current.token) continue
+                            if (result.session != current) {
+                                DeelaSessionStore.save(this@MainActivity, result.session)
+                                deelaSession = result.session
+                            }
+                        }
+                        DeelaSessionCheck.Invalid -> {
+                            if (deelaSession?.token == current.token) logout()
+                        }
+                        DeelaSessionCheck.Unavailable -> {
+                            // A temporary timeout is not a logout. Do not bypass an expired entitlement.
+                            if (deelaSession?.token == current.token &&
+                                current.expiresAtEpochMs <= System.currentTimeMillis()) {
+                                val expired = current.copy(subscriptionActive = false)
+                                DeelaSessionStore.save(this@MainActivity, expired)
+                                deelaSession = expired
+                            }
+                        }
                     }
                 }
             }
@@ -281,14 +329,38 @@ class MainActivity : ComponentActivity() {
                                     amoled = amoled,
                                 )
                             }
-                            if (splashDone && deelaSession?.role == "owner") {
-                                DeelaOwnerScreen(session = deelaSession!!, onLogout = { deelaSession = null })
+                            if (splashDone && restoringSession) {
+                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    androidx.compose.material3.CircularProgressIndicator()
+                                }
+                            } else if (splashDone && restoreUnavailable) {
+                                Column(
+                                    modifier = Modifier.fillMaxSize().padding(28.dp),
+                                    verticalArrangement = Arrangement.Center,
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                ) {
+                                    Text("جلسة دخولك محفوظة، لكن تعذر الاتصال للتحقق منها.")
+                                    TextButton(onClick = { restoreAttempt++ }) { Text("إعادة المحاولة") }
+                                    TextButton(onClick = { logout() }) { Text("تسجيل الدخول بحساب آخر") }
+                                }
+                            } else if (splashDone && deelaSession?.role == "owner") {
+                                DeelaOwnerScreen(session = deelaSession!!, onLogout = { logout() })
                             } else if (splashDone && deelaSession?.subscriptionActive == false) {
-                                DeelaSubscriptionScreen(session = deelaSession!!, onActivated = { deelaSession = deelaSession?.copy(subscriptionActive = true) }, onLogout = { deelaSession = null })
+                                DeelaSubscriptionScreen(
+                                    session = deelaSession!!,
+                                    onActivated = { verified ->
+                                        DeelaSessionStore.save(this@MainActivity, verified)
+                                        deelaSession = verified
+                                    },
+                                    onLogout = { logout() },
+                                )
                             } else if (splashDone && deelaSession != null) {
-                                StoreApp(deepLink, onLogout = { deelaSession = null })
+                                StoreApp(deepLink, onLogout = { logout() })
                             } else if (splashDone) {
-                                DeelaAccessScreen(onAuthenticated = { deelaSession = it })
+                                DeelaAccessScreen(onAuthenticated = { session ->
+                                    DeelaSessionStore.save(this@MainActivity, session)
+                                    deelaSession = session
+                                })
                             }
                             // The tour sits between the store and the splash. When the splash fades it
                             // reveals the first page instead of handing over to an empty feed for a beat.
