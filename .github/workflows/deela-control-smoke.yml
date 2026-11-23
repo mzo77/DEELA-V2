@@ -1,0 +1,45 @@
+name: DEELA Control Center Smoke Test
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'control-center/**'
+      - '.github/workflows/deela-control-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Health and public portal checks
+        env:
+          BASE: https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-control
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 --retry-delay 2 --max-time 20 "$BASE/health" -o /tmp/health.json
+          python3 - <<'PY'
+          import json
+          result=json.load(open("/tmp/health.json"))
+          assert result["ok"] is True, result
+          PY
+          curl -fsSL --max-time 20 "$BASE" -o /tmp/portal.html
+          grep -q 'تسجيل دخول المالك' /tmp/portal.html
+          grep -q 'autocomplete="current-password"' /tmp/portal.html
+          grep -q 'قوة غاشمة' /tmp/portal.html
+
+      - name: Anonymous users cannot read subscriptions or owner data
+        env:
+          BASE: https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-control
+        run: |
+          set -euo pipefail
+          status="$(curl -sS -o /tmp/denied.json -w '%{http_code}' "$BASE/api/owner/dashboard")"
+          test "$status" = "403"
+          status="$(curl -sS -o /tmp/denied-member.json -w '%{http_code}' "$BASE/api/v1/entitlements/me")"
+          test "$status" = "401"
+          status="$(curl -sS -o /tmp/bad-login.json -w '%{http_code}' -X POST \
+            -H 'Content-Type: application/json' \
+            -d '{"email":"nonexistent-user","password":"wrong"}' \
+            "$BASE/api/v1/auth/login")"
+          test "$status" = "401"
