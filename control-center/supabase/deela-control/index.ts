@@ -24,6 +24,95 @@ async function pendingSourceCount():Promise<number> {
  if(error)throw error;return count||0;
 }
 
+
+type DeelaMailStatus="sent"|"pending"|"failed"|"unconfigured";
+function escapeDeelaMail(x:unknown):string{
+ return String(x??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]||char));
+}
+function localDeelaDate(value:string):string {
+ return new Intl.DateTimeFormat("ar-SA-u-ca-gregory",{
+  timeZone:"Asia/Riyadh",year:"numeric",month:"long",day:"numeric",hour:"numeric",minute:"2-digit"
+ }).format(new Date(value));
+}
+async function sendDeelaActivationEmail(requestId:string):Promise<DeelaMailStatus>{
+ const {data:entry,error}=await admin.from("deela_subscription_email_outbox").select("*").eq("request_id",requestId).maybeSingle();
+ if(error||!entry){console.error("Subscription mail record unavailable",error?.code);return "failed";}
+ if(entry.delivery_status==="sent")return "sent";
+ const token=Deno.env.get("RESEND_API_KEY")||"";
+ const from=Deno.env.get("DEELA_EMAIL_FROM")||"";
+ if(!token||!from){
+  await admin.from("deela_subscription_email_outbox").update({delivery_status:"unconfigured",
+   last_error_code:"email_provider_not_configured",updated_at:new Date().toISOString()}).eq("request_id",requestId);
+  return "unconfigured";
+ }
+ const user=await admin.auth.admin.getUserById(entry.user_id);
+ const email=user.data.user?.email||"";
+ if(user.error||!email||!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){
+  await admin.from("deela_subscription_email_outbox").update({delivery_status:"failed",
+   last_error_code:"no_valid_recipient",updated_at:new Date().toISOString()}).eq("request_id",requestId);
+  return "failed";
+ }
+ const start=localDeelaDate(entry.starts_at),end=localDeelaDate(entry.ends_at);
+ const duration=entry.months===12?"سنة واحدة":entry.months===1?"شهر واحد":entry.months+" أشهر";
+ const number=requestId.slice(0,8).toUpperCase();
+ const support=(Deno.env.get("DEELA_SUPPORT_EMAIL")||"").trim();
+ const details=[
+  "تم تفعيل اشتراكك في تطبيقات ديلا ❤️",
+  "الحالة: اشتراك فعّال","المدة: "+duration,
+  "تاريخ بداية الاشتراك (توقيت السعودية): "+start,
+  "تاريخ نهاية الاشتراك (توقيت السعودية): "+end,
+  "رقم مرجع التفعيل: "+number,
+  "حساب الدخول: "+email,
+  "للدخول افتح تطبيق ديلا وسجّل باستخدام البريد الإلكتروني وكلمة المرور التي اخترتها أثناء التسجيل.",
+  "إذا لم يتم تأكيد بريدك الإلكتروني بعد، أكمل التحقق أولاً لتسجيل الدخول.",
+  "هذه الرسالة لتأكيد الاشتراك فقط وليست إيصال دفع.",
+  ...(support?["للمساعدة: "+support]:[]),
+  "لا تشارك كلمة المرور أو رموز التحقق مع أي شخص."
+ ];
+ const safe=(x:string)=>escapeDeelaMail(x);
+ const html=`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"></head>
+ <body style="margin:0;background:#0a080b;font-family:Tahoma,Arial,sans-serif;color:#fce8ed">
+ <div style="max-width:540px;margin:24px auto;background:#170f15;border:1px solid #693047;border-radius:20px;padding:28px">
+ <div style="text-align:center;color:#ff315e;font-size:27px;font-weight:bold">تطبيقات ديلا ❤️</div>
+ <h2 style="text-align:center;color:#fff">تم تفعيل اشتراكك بنجاح ✅</h2>
+ <p style="line-height:1.9;color:#f6dce3">أهلاً بك في متجر ديلا! نؤكد لك تفعيل اشتراكك كما يلي:</p>
+ <table style="width:100%;border-collapse:collapse;color:#fff">
+ ${[["حالة الاشتراك","فعّال"],["مدة الاشتراك",duration],["بداية الاشتراك",start],
+  ["نهاية الاشتراك",end],["الرقم المرجعي",number],["حساب الدخول",email]]
+  .map(([a,b])=>`<tr><td style="padding:11px;border-bottom:1px solid #422935;color:#e1b8c3">${safe(a)}</td>
+  <td style="padding:11px;border-bottom:1px solid #422935">${safe(b)}</td></tr>`).join("")}
+ </table><p style="line-height:1.9">افتح تطبيق ديلا وسجّل الدخول بحسابك وكلمة المرور التي اخترتها. إذا لم تؤكد بريدك الإلكتروني، أكمل التحقق أولاً.</p>
+ ${support?`<p style="line-height:1.9">الدعم: ${safe(support)}</p>`:""}
+ <p style="color:#bcaab1;font-size:12px">هذه رسالة تأكيد للاشتراك وليست إيصال دفع. لا تشارك كلمة المرور أو رموز التحقق.</p>
+ </div></body></html>`;
+ let status:DeelaMailStatus="failed",lastError="provider_error",providerId:string|null=null;
+ try{
+  const response=await fetch("https://api.resend.com/emails",{
+   method:"POST",signal:AbortSignal.timeout(15000),
+   headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json",
+    "Idempotency-Key":"deela-activation-"+requestId},
+   body:JSON.stringify({from,to:[email],subject:"تأكيد تفعيل اشتراكك في تطبيقات ديلا ❤️",
+    html,text:details.join("\n")})
+  });
+  if(response.ok){
+   const result=await response.json();providerId=String(result.id||"")||null;status="sent";lastError="";
+  }else{
+   lastError="provider_http_"+response.status;
+   console.error("DEELA activation email rejected",response.status);
+  }
+ }catch(e){
+  lastError="provider_unreachable";
+  console.error("DEELA activation email failed",e instanceof Error?e.name:"unknown");
+ }
+ const {error:saveError}=await admin.from("deela_subscription_email_outbox")
+  .update({delivery_status:status,provider_message_id:providerId,
+   last_error_code:lastError||null,attempts:(entry.attempts||0)+1,
+   sent_at:status==="sent"?new Date().toISOString():null,
+   updated_at:new Date().toISOString()}).eq("request_id",requestId);
+ if(saveError)console.error("Email status save failed",saveError.code);
+ return status;
+}
+
 Deno.serve(async req=>{if(req.method==="OPTIONS")return new Response(null,{status:204,headers});
 const pathname=new URL(req.url).pathname,pivot=pathname.indexOf("/deela-control");const path=pivot<0?"":pathname.slice(pivot+14).replace(/\/$/,"");
 if(req.method==="GET"&&(path===""||path==="/"))return new Response(PAGE,{headers:{...headers,"Content-Type":"text/html;charset=utf-8","Content-Security-Policy":"default-src 'none';script-src 'unsafe-inline';style-src 'unsafe-inline';connect-src 'self';img-src data:;frame-ancestors 'none';base-uri 'none'"}});
@@ -128,7 +217,56 @@ if(req.method==="GET"&&path==="/api/owner/dashboard")return j(await dashboard(u)
 if(req.method==="POST"&&path==="/api/owner/username"){const b=await req.json(),username=String(b.username||"").trim().toLowerCase();if(!/^[a-z][a-z0-9_.-]{2,31}$/.test(username))return fail("اسم المستخدم من 3 إلى 32 حرفًا ويبدأ بحرف إنجليزي");const {error}=await admin.from("deela_admin_usernames").upsert({user_id:u.id,username,updated_at:new Date().toISOString()},{onConflict:"user_id"});if(error)return fail("اسم المستخدم مستخدم أو غير صالح");await log(u.id,"owner_username_updated");return j({username});}
 if(req.method==="POST"&&path==="/api/owner/password"){const b=await req.json(),old=String(b.current_password||""),next=String(b.new_password||"");if(next.length<12||next.length>128)return fail("كلمة المرور الجديدة من 12 إلى 128 رمزًا");const {error:check}=await guest.auth.signInWithPassword({email:u.email,password:old});if(check)return fail("كلمة المرور الحالية غير صحيحة",401);const {error}=await admin.auth.admin.updateUserById(u.id,{password:next});if(error)throw error;await log(u.id,"owner_password_changed");return j({ok:true});}
 if(req.method==="POST"&&path==="/api/owner/invite"){const b=await req.json(),email=String(b.email||"").trim().toLowerCase();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return fail("بريد إلكتروني غير صحيح");const {error}=await admin.auth.admin.inviteUserByEmail(email);if(error)return fail("تعذرت الدعوة: "+error.message);await log(u.id,"subscriber_invited");return j({ok:true});}
-if(req.method==="POST"&&path==="/api/owner/requests/review"){const b=await req.json(),id=String(b.id||""),decision=String(b.decision||"");if(!["approved","rejected"].includes(decision)||!/^[a-f0-9-]{36}$/i.test(id))return fail("طلب غير صالح",400);const {data:r}=await admin.from("deela_subscription_requests").select("*").eq("id",id).eq("status","pending").maybeSingle();if(!r)return fail("الطلب غير موجود أو تمت مراجعته",409);if(decision==="approved"){const {data:old}=await admin.from("subscriptions").select("ends_at").eq("user_id",r.user_id).maybeSingle();const now=new Date(),base=new Date(Math.max(now.getTime(),old?.ends_at?Date.parse(old.ends_at):0));base.setUTCMonth(base.getUTCMonth()+r.months);const {error}=await admin.from("subscriptions").upsert({user_id:r.user_id,starts_at:now.toISOString(),ends_at:base.toISOString(),suspended:false,platform:r.platform,updated_at:now.toISOString()},{onConflict:"user_id"});if(error)return fail("تعذر تفعيل الاشتراك",500);}const {error}=await admin.from("deela_subscription_requests").update({status:decision,reviewed_at:new Date().toISOString(),reviewed_by:u.id}).eq("id",id).eq("status","pending");if(error)return fail("تعذر إكمال مراجعة الطلب",500);await log(u.id,"request_"+decision,r.user_id);return j({ok:true});}
+if(req.method==="POST"&&path==="/api/owner/requests/review"){
+ const b=await req.json(),id=String(b.id||""),decision=String(b.decision||"");
+ if(!["approved","rejected"].includes(decision)||!/^[a-f0-9-]{36}$/i.test(id))return fail("طلب غير صالح",400);
+ const {data:r,error:requestError}=await admin.from("deela_subscription_requests").select("*").eq("id",id).eq("status","pending").maybeSingle();
+ if(requestError)throw requestError;
+ if(!r)return fail("الطلب غير موجود أو تمت مراجعته",409);
+ let startsAt="",endsAt="";
+ if(decision==="approved"){
+  const {data:old,error:oldError}=await admin.from("subscriptions").select("ends_at").eq("user_id",r.user_id).maybeSingle();
+  if(oldError)throw oldError;
+  const now=new Date(),base=new Date(Math.max(now.getTime(),old?.ends_at?Date.parse(old.ends_at):0));
+  startsAt=now.toISOString();
+  base.setUTCMonth(base.getUTCMonth()+r.months);endsAt=base.toISOString();
+  const {error}=await admin.from("subscriptions").upsert({user_id:r.user_id,starts_at:startsAt,ends_at:endsAt,suspended:false,platform:r.platform,updated_at:startsAt},{onConflict:"user_id"});
+  if(error)return fail("تعذر تفعيل الاشتراك",500);
+ }
+ const {data:reviewed,error:reviewError}=await admin.from("deela_subscription_requests")
+  .update({status:decision,reviewed_at:new Date().toISOString(),reviewed_by:u.id})
+  .eq("id",id).eq("status","pending").select("id").maybeSingle();
+ if(reviewError)throw reviewError;
+ if(!reviewed)return fail("تمت مراجعة الطلب مسبقًا؛ حدث القائمة",409);
+ let emailStatus:DeelaMailStatus|null=null;
+ if(decision==="approved"){
+  const {error:outboxError}=await admin.from("deela_subscription_email_outbox").upsert({
+   request_id:id,user_id:r.user_id,months:r.months,starts_at:startsAt,ends_at:endsAt,
+   delivery_status:"pending"
+  },{onConflict:"request_id",ignoreDuplicates:true});
+  if(outboxError){console.error("Failed to queue activation email",outboxError.code);emailStatus="failed";}
+  else emailStatus=await sendDeelaActivationEmail(id);
+ }
+ await log(u.id,"request_"+decision,r.user_id);
+ return j({ok:true,email_status:emailStatus});
+}
+if(req.method==="GET"&&path==="/api/owner/subscription-email/status"){
+ const {data:messages,error}=await admin.from("deela_subscription_email_outbox")
+  .select("request_id,delivery_status,last_error_code,sent_at,updated_at")
+  .order("created_at",{ascending:false}).limit(100);
+ if(error)throw error;
+ return j({ready:!!(Deno.env.get("RESEND_API_KEY")&&Deno.env.get("DEELA_EMAIL_FROM")),messages:messages||[]});
+}
+if(req.method==="POST"&&path==="/api/owner/subscription-email/retry"){
+ const b=await req.json(),id=String(b.request_id||"");
+ if(!/^[a-f0-9-]{36}$/i.test(id))return fail("طلب غير صالح",400);
+ const {data:reqRow,error}=await admin.from("deela_subscription_requests").select("status").eq("id",id).maybeSingle();
+ if(error)throw error;
+ if(!reqRow||reqRow.status!=="approved")return fail("لا يمكن إرسال رسالة لطلب غير مفعل",409);
+ const status=await sendDeelaActivationEmail(id);
+ return j({ok:true,email_status:status});
+}
+
 if(req.method==="POST"&&path==="/api/owner/subscription"){const b=await req.json(),id=String(b.user_id||""),action=String(b.action||"");if(!/^[a-f0-9-]{36}$/i.test(id)||!["trial","renew","suspend","resume","revoke"].includes(action))return fail("طلب غير صالح");if(id===u.id)return fail("لا يمكن تعديل المالك",403);const {data:target}=await admin.from("profiles").select("role").eq("id",id).maybeSingle();if(!target||target.role==="owner")return fail("لا يمكن تعديل هذا الحساب",403);const {data:old}=await admin.from("subscriptions").select("ends_at,suspended,platform").eq("user_id",id).maybeSingle();const now=Date.now(),oldEnd=old?.ends_at?Date.parse(old.ends_at):0;let change:Record<string,unknown>={user_id:id,updated_at:new Date().toISOString(),platform:old?.platform||"android"};
 if(action==="trial")Object.assign(change,{starts_at:new Date().toISOString(),ends_at:new Date(now+86400000).toISOString(),suspended:false});
 if(action==="renew"){const months=Number(b.months);if(![1,2,3,6,12].includes(months))return fail("مدة الاشتراك غير صحيحة",400);const base=new Date(Math.max(now,oldEnd));base.setUTCMonth(base.getUTCMonth()+months);Object.assign(change,{starts_at:new Date().toISOString(),ends_at:base.toISOString(),suspended:false});}
