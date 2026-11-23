@@ -26,6 +26,7 @@ private data class EmailDelivery(
     val sentAt: String,
 )
 private data class EmailDeliveryDashboard(val configured: Boolean, val messages: List<EmailDelivery>)
+private data class EmailTestResult(val status: String, val reason: String)
 
 private object EmailDeliveryApi {
     private val client = OkHttpClient()
@@ -50,6 +51,17 @@ private object EmailDeliveryApi {
         }
     }
 
+    suspend fun test(token: String): EmailTestResult = withContext(Dispatchers.IO) {
+        val request = Request.Builder().url(base + "/api/owner/subscription-email/test")
+            .header("Authorization", "Bearer $token")
+            .post("{}".toRequestBody("application/json".toMediaType()))
+            .build()
+        client.newCall(request).execute().use { response ->
+            val body = JSONObject(response.body.string())
+            EmailTestResult(body.optString("status", "failed"), body.optString("reason", ""))
+        }
+    }
+
     suspend fun retry(token: String, requestId: String): String = withContext(Dispatchers.IO) {
         val body = JSONObject().put("request_id", requestId).toString()
             .toRequestBody("application/json".toMediaType())
@@ -71,13 +83,14 @@ private fun mailStatusArabic(status: String): String = when (status) {
 }
 
 @Composable
-fun DeelaOwnerEmailScreen(token: String, emails: Map<String, String>) {
+fun DeelaOwnerEmailScreen(token: String, emails: Map<String, String>, ownerEmail: String) {
     val scope = rememberCoroutineScope()
     var model by remember { mutableStateOf<EmailDeliveryDashboard?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
     var reload by remember { mutableIntStateOf(0) }
     var busy by remember { mutableStateOf(false) }
+    var confirmTest by remember { mutableStateOf(false) }
     LaunchedEffect(token, reload) {
         try {
             model = EmailDeliveryApi.dashboard(token)
@@ -86,21 +99,57 @@ fun DeelaOwnerEmailScreen(token: String, emails: Map<String, String>) {
             error = e.message ?: "تعذر التحقق من خدمة البريد"
         }
     }
+    if (confirmTest) {
+        AlertDialog(
+            onDismissRequest = { confirmTest = false },
+            title = { Text("اختبار خدمة البريد") },
+            text = { Text("سيُرسل بريد اختبار واحد إلى حساب المالك: $ownerEmail، دون تعديل أي اشتراك.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmTest = false
+                    busy = true
+                    scope.launch {
+                        try {
+                            val result = EmailDeliveryApi.test(token)
+                            message = when (result.status) {
+                                "accepted" -> "قبل مزوّد البريد رسالة الاختبار. تحقق من وصولها إلى صندوق الوارد."
+                                "unconfigured" -> "خدمة البريد غير مهيأة. يجب ضبط RESEND_API_KEY و DEELA_EMAIL_FROM."
+                                else -> "فشل اختبار البريد: " + result.reason.ifBlank { "تعذر الاتصال بالمزوّد" }
+                            }
+                            error = null
+                            reload++
+                        } catch (e: Exception) {
+                            error = e.message ?: "تعذر اختبار إرسال البريد"
+                        } finally {
+                            busy = false
+                        }
+                    }
+                }) { Text("إرسال بريد تجريبي") }
+            },
+            dismissButton = { TextButton(onClick = { confirmTest = false }) { Text("إلغاء") } }
+        )
+    }
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Text("رسائل تفعيل الاشتراكات", style = MaterialTheme.typography.titleLarge)
         Text(
-            if (model?.configured == true) "خدمة البريد مهيأة للإرسال."
-            else "خدمة البريد غير مهيأة بعد. فعالية الاشتراكات لا تتوقف، لكن الرسائل لا تُرسل حتى ضبط مزود البريد.",
+            if (model?.configured == true) "تم رصد إعدادات مزوّد البريد. اضغط اختبار البريد للتحقق من الإرسال."
+            else "خدمة البريد غير مهيأة بعد. الاشتراكات تعمل، لكن لا تُرسل رسائل حتى ضبط مزوّد البريد.",
             style = MaterialTheme.typography.bodySmall,
             color = if (model?.configured == true)
                 MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.error,
         )
         Text("عند موافقتك على الطلب، تُحفظ رسالة توضح مدة الاشتراك وتاريخ البداية والنهاية. يمكنك إعادة محاولة الإرسال عند الحاجة.",
             style = MaterialTheme.typography.bodySmall)
-        OutlinedButton(enabled = !busy, onClick = { reload++ }) { Text("تحديث حالات الرسائل") }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(enabled = !busy, onClick = { reload++ }) { Text("تحديث الحالات") }
+            Button(
+                enabled = !busy && model?.configured == true && ownerEmail.isNotBlank(),
+                onClick = { confirmTest = true }
+            ) { Text("اختبار البريد") }
+        }
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         message?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
