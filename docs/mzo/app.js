@@ -29,6 +29,9 @@ const fallback=[
 ];
 data=fallback;
 $("search").addEventListener("input",()=>render($("search").value));
+$("openSearch")?.addEventListener("click",()=>{
+  setTimeout(()=>{$("search").focus({preventScroll:true});$("search").scrollIntoView({block:"center",behavior:"smooth"});},100);
+});
 $("year").textContent=new Date().getFullYear();
 if("serviceWorker" in navigator){navigator.serviceWorker.register("./sw.js",{scope:"./"}).catch(()=>{});}
 (async()=>{
