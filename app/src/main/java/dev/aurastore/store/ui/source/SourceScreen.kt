@@ -1,5 +1,7 @@
 package dev.aurastore.store.ui.source
 
+import dev.aurastore.store.ui.modDescriptionArabic
+import dev.aurastore.store.ui.subscriberLabel
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -448,7 +450,7 @@ fun SourceScreen(
                         }
                         items(state.categories, key = { it.id }) { category ->
                             PlayChip(
-                                label = category.name,
+                                label = subscriberLabel(category.name),
                                 selected = state.selectedCategory?.id == category.id,
                                 onClick = { viewModel.selectCategory(category) },
                             )
@@ -504,7 +506,7 @@ private fun SourceAppRow(
             val meta = listOfNotNull(app.version, app.size, app.subtitle).joinToString(" · ")
             if (meta.isNotBlank()) {
                 Text(
-                    meta,
+                    modDescriptionArabic(meta),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
