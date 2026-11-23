@@ -1,5 +1,14 @@
 <!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ديلا | مركز التحكم</title><style>
 :root{color-scheme:dark;--hot:#ff234f;--fg:#fff1f4;--bg:#050507}*{box-sizing:border-box}body{background:radial-gradient(ellipse at 80% 0%,#300e1a,transparent 45%),var(--bg);color:var(--fg);font-family:system-ui,Tahoma,sans-serif;margin:0}header{padding:20px;background:#190e16;border-bottom:1px solid #61293a;display:flex;align-items:center;justify-content:space-between}h1{font-size:26px}h2{font-size:19px}main{max-width:1000px;padding:16px;margin:18px auto}.card{padding:22px;border:1px solid #5a2a39;border-radius:18px;background:#191117;margin-bottom:17px}.login{max-width:470px;margin:6vh auto}input,button{font:inherit;border-radius:10px;padding:12px}input{width:100%;background:#0b090c;border:1px solid #743246;color:var(--fg);margin:5px 0 13px}button{background:var(--hot);color:white;border:0;cursor:pointer;font-weight:700}button.secondary{background:#37202b;border:1px solid #743246}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row input{flex:1;min-width:0}.muted,small{color:#c7abb3}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}.metric{font-size:32px;color:#ff7696;font-weight:900}nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}nav button{background:#3d1b29}nav button.active{background:var(--hot)}.hidden{display:none!important}table{border-collapse:collapse;width:100%;min-width:650px}td,th{padding:12px;border-bottom:1px solid #5e2a3b;text-align:right;font-size:13px}td button{padding:8px;margin:2px}.scroll{overflow-x:auto}a{color:#ffb0c4}.note{padding:14px;border-right:3px solid var(--hot);background:#26111c;border-radius:8px}#msg{padding:12px;background:#471b2a;border-radius:10px;margin-bottom:12px;display:none}@media(max-width:600px){main{padding:10px}.card{padding:16px}}
+
+/* DEELA platform-separated subscriber cards (mobile first) */
+:root{--owner-soft:#ba688f;--line-soft:#6b3f58}button:disabled{opacity:.55;cursor:not-allowed}
+.member-platforms{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:19px 0 15px}.platform-tab{display:flex;justify-content:center;align-items:center;gap:7px;flex-wrap:wrap;min-width:0;padding:12px 6px;color:#ead8e1;background:#281822;border:1px solid #6f3c53;border-radius:12px;font-size:14px}.platform-tab.active{background:#6b3656;border-color:#d98cb7;color:white}.platform-count{display:inline-grid;place-items:center;min-width:24px;height:24px;padding:0 5px;background:#160f19;border-radius:99px;font-weight:800;font-size:12px}
+.member-toolbar{display:grid;grid-template-columns:1fr minmax(125px,185px);gap:12px;margin-bottom:9px}.search-label,.months-label{display:block;min-width:0;font-size:13px;color:#dbc7d3;font-weight:650}.member-toolbar input,.member-toolbar select,.invite-row input{display:block;width:100%;margin:5px 0 0;border-radius:11px;padding:12px;min-height:45px;font-size:14px;color:#fff1f4;background:#0c090e;border:1px solid #75465f}.member-toolbar select{color-scheme:dark}.invite-row{align-items:end;margin-bottom:12px}.invite-row .search-label{flex:1;min-width:180px}.invite-row button{min-height:45px;background:#79425f}.invite-row button.secondary{background:#33232f}
+.member-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin-top:15px}.member-card{min-width:0;padding:17px;border:1px solid var(--line-soft);border-radius:17px;background:linear-gradient(160deg,#261a26,#15121b);box-shadow:0 9px 30px #0002}.member-top{display:flex;align-items:start;justify-content:space-between;gap:9px;margin-bottom:12px}.member-label{display:inline-flex;align-items:center;border-radius:99px;padding:4px 10px;font-size:12px;background:#372842;color:#ead3f5;border:1px solid #785a91}.member-label.ios{background:#2d2948;border-color:#7765a7;color:#e1d9ff}.member-label.android{background:#24362e;border-color:#426950;color:#bbefd1}.member-status{font-size:12px;font-weight:800;border-radius:99px;padding:4px 9px;white-space:nowrap;border:1px solid #67735d;background:#273529;color:#c6e6bc}.member-status.stopped{background:#38232c;border-color:#855466;color:#ffd0dc}.member-status.expired{background:#302a2a;border-color:#755e59;color:#e7c7bf}
+.member-email{font-size:15px;font-weight:800;overflow-wrap:anywhere;word-break:break-word;margin:4px 0 12px;line-height:1.6}.member-info{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;color:#cbb6c3}.member-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px}.member-actions button{min-width:0;background:#653a58;border:1px solid #865973;padding:10px 7px;font-size:12px;border-radius:10px;line-height:1.6}.member-actions button.trial-action{background:#40334d;border-color:#76638a}.member-actions button.danger-action{background:#492632;border-color:#845163}.member-actions button:disabled{opacity:.4}.member-empty{grid-column:1/-1;padding:26px 15px;border:1px dashed #684355;border-radius:14px;text-align:center;color:#cbb2c0;line-height:1.8}#memberSummary{margin:10px 0 0;font-size:13px}body{overflow-x:hidden}
+@media(max-width:640px){main{width:100%;padding:10px;max-width:100%}.member-cards{grid-template-columns:1fr}.member-platforms{gap:5px}.platform-tab{font-size:12px;padding:11px 3px}.member-toolbar{grid-template-columns:1fr 122px;gap:8px}.member-card{padding:15px}.card{padding:14px}.invite-row{gap:8px}.invite-row button{flex:1}.invite-row .search-label{flex-basis:100%}}
+@media(max-width:350px){.member-toolbar{grid-template-columns:1fr}.member-platforms{grid-template-columns:1fr 1fr}.member-platforms .platform-tab:last-child{grid-column:1/-1}}
 </style></head><body><header><strong>✦ تطبيقات ديلا <span style="color:#ff234f">👑</span></strong><button id="logout" class="secondary hidden">تسجيل الخروج</button></header><main><div id="msg"></div>
 <section id="login" class="card login"><h1>تسجيل دخول المالك</h1><p class="muted">بعد تسجيل الدخول يمكنك اختيار اسم المستخدم وتغيير كلمة المرور.</p><form id="lf">
 <label>اسم المستخدم أو البريد الإلكتروني<input name="username" id="loginName" autocomplete="username" required></label>
@@ -8,26 +17,117 @@
 <p><button id="loginBtn" type="submit">دخول لوحة المالك</button></p><small>حفظ كلمة المرور وتعبئتها تلقائيًا يتم عبر مدير كلمات المرور في هاتفك، وليس في تخزين الموقع.</small></form></section>
 <section id="app" class="hidden"><h1>مركز تحكم المالك</h1><nav><button class="active" data-tab="home">الرئيسية</button><button data-tab="members">الاشتراكات</button><button data-tab="power">قوة غاشمة ⚡</button><button data-tab="account">الحساب والأمان</button></nav>
 <div id="home" class="tab"><div class="grid"><div class="card"><small>إجمالي المستخدمين</small><p class="metric" id="total">—</p></div><div class="card"><small>اشتراكات فعالة</small><p class="metric" id="active">—</p></div><div class="card"><small>اشتراكات موقوفة</small><p class="metric" id="suspended">—</p></div></div><div class="note">المالك يتحكم بالتجربة المجانية لمدة 24 ساعة وتجديد الاشتراكات وإلغائها. لا يمكن للمشترك دخول المتجر باشتراك منتهٍ.</div><div class="card"><h2>آخر العمليات</h2><div id="logs"></div></div></div>
-<div id="members" class="tab hidden"><div class="card"><h2>إدارة المشتركين</h2><div class="row"><input type="email" id="inviteEmail" autocomplete="off" placeholder="بريد المشترك لدعوته"><button id="invite">إرسال دعوة</button><button id="reload" class="secondary">تحديث</button></div><div class="scroll"><table><thead><tr><th>المشترك</th><th>الدور</th><th>الحالة</th><th>الانتهاء</th><th>الإجراءات</th></tr></thead><tbody id="rows"></tbody></table></div></div></div>
+<div id="members" class="tab hidden">
+ <section class="card">
+  <h2>إدارة المشتركين</h2>
+  <p class="muted">لوحة واحدة لآيفون وأندرويد. اختر المنصة لعرض حساباتها وتجديد اشتراكاتها وإيقافها. حساب المالك منفصل عن المشتركين.</p>
+  <div class="member-platforms" role="group" aria-label="اختيار منصة المشتركين">
+   <button type="button" class="platform-tab active" data-platform-filter="ios" aria-pressed="true">◉ الآيفون <span id="iosCount" class="platform-count">0</span></button>
+   <button type="button" class="platform-tab" data-platform-filter="android" aria-pressed="false">▣ أندرويد <span id="androidCount" class="platform-count">0</span></button>
+   <button type="button" class="platform-tab" data-platform-filter="all" aria-pressed="false">الكل <span id="allCount" class="platform-count">0</span></button>
+  </div>
+  <div class="member-toolbar">
+   <label class="search-label" for="memberSearch">البحث عن مشترك<input id="memberSearch" type="search" autocomplete="off" placeholder="اكتب البريد أو الاسم..."></label>
+   <label class="months-label" for="renewMonths">مدة التجديد<select id="renewMonths"><option value="1">شهر واحد</option><option value="2">شهران</option><option value="3">3 أشهر</option><option value="6">6 أشهر</option><option value="12">سنة</option></select></label>
+  </div>
+  <div class="row invite-row">
+   <label class="search-label" for="inviteEmail">دعوة مشترك بالبريد<input type="email" id="inviteEmail" autocomplete="off" placeholder="البريد الإلكتروني للمشترك"></label>
+   <button type="button" id="invite">إرسال دعوة</button><button type="button" id="reload" class="secondary">تحديث البيانات</button>
+  </div>
+  <p id="memberSummary" class="muted" aria-live="polite">جارٍ عرض المشتركين...</p>
+  <div id="memberCards" class="member-cards" aria-live="polite"></div>
+ </section>
+</div>
 <div id="power" class="tab hidden"><div class="card"><h2>⚡ قوة غاشمة — خاص بالمالك</h2><p class="muted">نقلت تنظيم أدوات مركز الأوامر من مشروعك الأول. الوصول للروابط يعمل الآن؛ تشغيل أدوات المختبر المحلية كاملة يحتاج نقلها في مرحلة مستقلة.</p><div class="grid"><div class="card"><h3>⌘ دليل الأوامر</h3><a href="https://github.com/mzo77/DEELA-APPS/blob/main/app/src/main/assets/index.html" target="_blank" rel="noopener">فتح الكود القديم</a></div><div class="card"><h3>⌨ مختبر البرمجة</h3><a href="https://github.com/mzo77/DEELA-APPS" target="_blank" rel="noopener">المشروع الأول</a></div><div class="card"><h3>⚙ أدوات المطور</h3><a href="https://github.com/mzo77/DEELA-V2/actions" target="_blank" rel="noopener">بناء تطبيقات ديلا</a></div><div class="card"><h3>🎮 مختبر ملفات الألعاب</h3><a href="https://github.com/mzo77/DEELA-APPS" target="_blank" rel="noopener">المصدر الأصلي</a></div><div class="card"><h3>◇ مركز الأمان</h3><a href="https://supabase.com/dashboard/project/rxlynynjetajtsqlhkrq" target="_blank" rel="noopener">إعدادات الخادم</a></div></div></div></div>
 <div id="account" class="tab hidden"><div class="card"><h2>اسم المستخدم الخاص بك</h2><form id="uf"><label>اختر اسم المستخدم<input id="newUsername" autocomplete="off" minlength="3" maxlength="32" pattern="[A-Za-z][A-Za-z0-9_.-]{2,31}" placeholder="Mzo" required></label><button>حفظ اسم المستخدم</button></form></div>
 <div class="card"><h2>تغيير كلمة المرور</h2><form id="pf"><label>كلمة المرور الحالية<input type="password" autocomplete="current-password" id="current" required></label><label>كلمة مرور جديدة (12 رمزًا على الأقل)<input type="password" autocomplete="new-password" id="next" minlength="12" required></label><button>تغيير كلمة المرور</button></form></div></div></section></main>
 <script>
-(function(){'use strict';const $=id=>document.getElementById(id),base='https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-control';let token=sessionStorage.getItem('deela-token')||'';
+(function(){'use strict';const $=id=>document.getElementById(id),base='https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-control';let token=sessionStorage.getItem('deela-token')||'',membersCache=[],platformFilter='ios',memberBusy=false;
 function say(s){$('msg').textContent=s;$('msg').style.display='block'}function go(tab){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('hidden',x.id!==tab));document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));}
 async function call(path,method,body){let r=await fetch(base+path,{method:method||'GET',cache:'no-store',headers:{'Content-Type':'application/json',...(token?{'Authorization':'Bearer '+token}:{})},body:body?JSON.stringify(body):undefined}),j=await r.json();if(!r.ok)throw Error(j.error||'تعذرت العملية');return j}
 function authed(){ $('login').classList.add('hidden');$('app').classList.remove('hidden');$('logout').classList.remove('hidden')}
 function out(){token='';sessionStorage.removeItem('deela-token');$('app').classList.add('hidden');$('login').classList.remove('hidden');$('logout').classList.add('hidden');$('loginPass').value=''}
-function cell(tr,s){const td=tr.insertCell();td.textContent=String(s||'—');return td}function button(p,label,fn){const b=document.createElement('button');b.textContent=label;b.className='secondary';b.onclick=fn;p.append(b)}
-function date(s){return s?new Date(s).toLocaleString('ar-SA'):'—'}
-async function load(){const data=await call('/api/owner/dashboard');authed();$('total').textContent=data.members.length;$('active').textContent=data.members.filter(x=>x.active).length;$('suspended').textContent=data.members.filter(x=>x.suspended).length;$('newUsername').value=data.owner.username||'';
-const logs=$('logs');logs.replaceChildren();for(const x of data.audit){const p=document.createElement('p');p.textContent=date(x.created_at)+' · '+x.action;logs.append(p)}
-const rows=$('rows');rows.replaceChildren();for(const m of data.members){const tr=rows.insertRow();cell(tr,m.email||m.display_name||m.id);cell(tr,m.role==='owner'?'المالك':m.platform==='ios'?'مشترك iOS':'مشترك Android');cell(tr,m.role==='owner'?'دائم':m.suspended?'موقوف':m.active?'ساري':'غير نشط');cell(tr,m.role==='owner'?'—':date(m.ends_at));const td=tr.insertCell();if(m.role!=='owner'){button(td,'تجربة 24 ساعة',()=>act(m,'trial'));button(td,'+30 يوم',()=>act(m,'renew'));button(td,m.suspended?'استئناف':'إيقاف',()=>act(m,m.suspended?'resume':'suspend'));button(td,'إلغاء',()=>act(m,'revoke'))}}}
-async function act(m,action){if(['suspend','revoke'].includes(action)&&!confirm('هل تريد تنفيذ الإجراء؟'))return;try{await call('/api/owner/subscription','POST',{user_id:m.id,action,platform:m.platform||'android'});say('تم تحديث اشتراك المشترك.');await load()}catch(e){say(e.message)}}
+
+function date(s){if(!s)return '—';const d=new Date(s);return Number.isFinite(d.getTime())?d.toLocaleString('ar-SA'):'—'}
+function element(tag,cls,value){const e=document.createElement(tag);if(cls)e.className=cls;if(value!==undefined)e.textContent=String(value);return e}
+function infoRow(card,label,value){const row=element('div','member-info');row.append(element('span','',label),element('strong','',value));card.append(row)}
+function statusOf(m){if(m.suspended)return {label:'موقوف',cls:'stopped'};if(m.active)return {label:'ساري',cls:''};return {label:m.ends_at?'منتهي':'غير مفعّل',cls:'expired'}}
+function filteredMembers(){
+ const q=$('memberSearch').value.trim().toLocaleLowerCase();
+ return membersCache.filter(m=>
+  (platformFilter==='all'||m.platform===platformFilter)&&
+  (!q||[m.email,m.display_name,m.id].some(v=>String(v||'').toLocaleLowerCase().includes(q)))
+ );
+}
+function renderMembers(){
+ const subscribers=membersCache;
+ $('iosCount').textContent=subscribers.filter(m=>m.platform==='ios').length;
+ $('androidCount').textContent=subscribers.filter(m=>m.platform==='android').length;
+ $('allCount').textContent=subscribers.length;
+ document.querySelectorAll('[data-platform-filter]').forEach(b=>{
+  const chosen=b.dataset.platformFilter===platformFilter;
+  b.classList.toggle('active',chosen);b.setAttribute('aria-pressed',String(chosen));
+ });
+ const cards=$('memberCards');cards.replaceChildren();
+ const matches=filteredMembers();
+ const label=platformFilter==='ios'?'الآيفون':platformFilter==='android'?'الأندرويد':'جميع المنصات';
+ $('memberSummary').textContent=matches.length+' مشترك في '+label+' · حساب المالك غير مدرج';
+ if(!matches.length){cards.append(element('div','member-empty','لا توجد حسابات مطابقة في هذا القسم. جرّب البحث أو اختر منصة أخرى.'));return}
+ for(const m of matches){
+  const card=element('article','member-card');
+  const top=element('div','member-top');
+  top.append(element('span','member-label '+(m.platform==='ios'?'ios':'android'),m.platform==='ios'?'◉ آيفون · iOS':'▣ أندرويد · Android'));
+  const status=statusOf(m);top.append(element('span','member-status '+status.cls,status.label));card.append(top);
+  card.append(element('div','member-email',m.email||m.display_name||'مشترك'));
+  infoRow(card,'نهاية الاشتراك',date(m.ends_at));
+  const actions=element('div','member-actions');
+  const addAction=(label,action,className,disabled=false)=>{
+   const b=element('button',className,label);b.type='button';b.disabled=disabled||memberBusy;
+   b.addEventListener('click',()=>act(m,action));actions.append(b);
+  };
+  addAction('تجربة 24 ساعة','trial','trial-action');
+  addAction('تجديد الاشتراك','renew','');
+  addAction(m.suspended?'استئناف':'إيقاف',m.suspended?'resume':'suspend','',!m.ends_at);
+  addAction('إلغاء الاشتراك','revoke','danger-action',!m.ends_at);
+  card.append(actions);cards.append(card);
+ }
+}
+async function load(){
+ const data=await call('/api/owner/dashboard');
+ authed();
+ $('total').textContent=data.members.length;
+ $('active').textContent=data.members.filter(x=>x.active).length;
+ $('suspended').textContent=data.members.filter(x=>x.suspended).length;
+ $('newUsername').value=data.owner.username||'';
+ const logs=$('logs');logs.replaceChildren();
+ for(const x of data.audit){const p=document.createElement('p');p.textContent=date(x.created_at)+' · '+x.action;logs.append(p)}
+ membersCache=data.members.filter(m=>m.role!=='owner').map(m=>({...m,platform:m.platform==='ios'?'ios':'android'}));
+ renderMembers();
+}
+async function act(m,action){
+ if(memberBusy)return;
+ const months=Number($('renewMonths').value);
+ const label=action==='trial'?'تفعيل تجربة مجانية لمدة 24 ساعة':
+  action==='renew'?'تجديد الاشتراك لمدة '+months+' شهر':
+  action==='suspend'?'إيقاف اشتراك المشترك':
+  action==='resume'?'استئناف اشتراك المشترك':'إلغاء اشتراك المشترك';
+ if(!confirm(label+' على '+(m.platform==='ios'?'الآيفون':'الأندرويد')+' للحساب '+(m.email||m.id)+'؟'))return;
+ memberBusy=true;renderMembers();
+ try{
+  await call('/api/owner/subscription','POST',{
+   user_id:m.id,action,platform:m.platform,months:action==='renew'?months:undefined
+  });
+  say('تم تنفيذ الإجراء بنجاح.');
+  await load();
+ }catch(e){say(e.message)}
+ finally{memberBusy=false;renderMembers()}
+}
 $('lf').onsubmit=async e=>{e.preventDefault();const b=$('loginBtn');b.disabled=true;try{const name=$('loginName').value.trim(),r=await call('/api/v1/auth/login','POST',{email:name,password:$('loginPass').value,platform:'android'});token=r.access_token;sessionStorage.setItem('deela-token',token);await load();if($('remember').checked)localStorage.setItem('deela-username',name);else localStorage.removeItem('deela-username');say('تم الدخول بحساب المالك')}catch(x){out();say(x.message)}finally{b.disabled=false}};
 $('eye').onclick=()=>{const p=$('loginPass');p.type=p.type==='password'?'text':'password';$('eye').setAttribute('aria-label',p.type==='text'?'إخفاء كلمة المرور':'إظهار كلمة المرور')};
 $('logout').onclick=out;document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>go(b.dataset.tab));
 $('reload').onclick=()=>load().catch(e=>say(e.message));
+document.querySelectorAll('[data-platform-filter]').forEach(b=>b.addEventListener('click',()=>{platformFilter=b.dataset.platformFilter;renderMembers()}));
+$('memberSearch').addEventListener('input',renderMembers);
 $('invite').onclick=async()=>{try{await call('/api/owner/invite','POST',{email:$('inviteEmail').value.trim()});say('تم إرسال الدعوة');await load()}catch(e){say(e.message)}};
 $('uf').onsubmit=async e=>{e.preventDefault();try{const x=await call('/api/owner/username','POST',{username:$('newUsername').value});say('تم اعتماد اسم المستخدم: '+x.username)}catch(x){say(x.message)}};
 $('pf').onsubmit=async e=>{e.preventDefault();try{await call('/api/owner/password','POST',{current_password:$('current').value,new_password:$('next').value});out();say('تم تغيير كلمة المرور، ادخل مجددًا.')}catch(x){say(x.message)}finally{$('current').value='';$('next').value=''}};
