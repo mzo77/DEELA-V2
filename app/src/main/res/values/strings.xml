@@ -287,7 +287,7 @@
          translating them would break the match. -->
     <string name="detail_load_failed">Could not load this app</string>
     <string name="action_share">Share</string>
-    <string name="share_app_fallback">App on liteapks</string>
+    <string name="share_app_fallback">App in DEELA Store</string>
     <string name="clipboard_link_label">download link</string>
     <string name="detail_open_playstore">Open in Play Store</string>
     <string name="detail_open_source_browser">Open source page in browser</string>
@@ -392,7 +392,7 @@
     <string name="about_updates">Updates</string>
     <string name="about_updates_body">Apps installed from here are compared build label against build label, so an update goes in place. Other apps on the device are matched against the catalogue\'s listing and checked for a strictly newer version; those are only fetched when you ask, because a build published by someone else may not install over the one you have.</string>
     <string name="about_servers">The servers</string>
-    <string name="about_servers_body">This app hosts nothing. It reads LiteAPKs, 9MOD, 5play, GetModsAPK, AN1 and ApkVision, and the files come from those sites\' own storage servers. Each of them keeps the ownership of its content and its trademarks. Thanks to the people who run them.</string>
+    <string name="about_servers_body">DEELA displays apps from independent catalogues. Downloaded files remain hosted by their providers, and each provider retains ownership of its content and trademarks.</string>
     <string name="about_tour">Show the tour again</string>
     <string name="about_tour_body">The three pages from the first open, from the bar to the dock animations.</string>
 
@@ -401,7 +401,7 @@
     <string name="profile_picker_title">Profile picture</string>
     <string name="profile_picker_body">A game face, an anime portrait from the Special pack, or one of your own. Everything is cropped square.</string>
     <string name="profile_gallery">Choose from gallery</string>
-    <string name="profile_default">Use the Aura mark</string>
+    <string name="profile_default">Use the DEELA mark</string>
     <string name="profile_crop_title">Crop photo</string>
     <string name="profile_crop_hint">Pinch to zoom, drag to move.</string>
     <string name="profile_cancel">Cancel</string>
@@ -647,7 +647,7 @@
     <string name="settings_notif_managed">Managed in system settings</string>
     <string name="settings_why_switch">Why the switch exists</string>
     <string name="settings_why_switch_body">A normal app cannot install packages silently — that is enforced by Android itself. Allowing this app once lets installs continue without leaving the app again; the system\'s own confirmation still appears for each package.</string>
-    <string name="settings_sources_note">LiteAPKs is this app\'s own feed and cannot be switched off. The others are searched only when their switch is on; a source you turn off stops appearing in the \"Download from\" pickers.</string>
+    <string name="settings_sources_note">The store uses several internal catalogues to find available files. Source routing remains enabled behind the subscriber interface.</string>
     <string name="settings_default_source">Default download source</string>
     <string name="settings_default_source_note">Where a download comes from when you have not chosen another source.</string>
     <string name="settings_source_store">This store</string>
@@ -657,7 +657,7 @@
     <string name="settings_clear_finished">Clear finished</string>
     <string name="settings_save_apks">Save downloaded APKs</string>
     <string name="settings_save_apks_note">Saved copies go to Downloads/DEELA APPS and survive clearing the queue</string>
-    <string name="settings_about_body">A Play-Store-shaped client for the liteapks catalogue. Every download is hashed while streaming and parsed before it can be installed.</string>
+    <string name="settings_about_body">DEELA is an independent Android store. Each download is hashed during transfer and its package details are checked before installation.</string>
     <string name="settings_about_disclaimer">Not affiliated with Google Play or with the apps it lists.</string>
     <string name="settings_done">Done</string>
     <!-- The three auto-update choices, in Play's own wording. -->
@@ -718,8 +718,8 @@
     <string name="theme_light_note">Always the light scheme</string>
     <string name="theme_dark">Dark</string>
     <string name="theme_dark_note">Always the dark scheme</string>
-    <string name="palette_house">DEELA APPS amber</string>
-    <string name="palette_house_note">The house palette, checked for contrast in both schemes</string>
+    <string name="palette_house">DEELA signature pink</string>
+    <string name="palette_house_note">DEELA's original house palette for dark and light themes</string>
     <string name="palette_wallpaper">Match my wallpaper</string>
     <string name="palette_wallpaper_note">Take accent colours from the wallpaper, like the Play Store does</string>
     <string name="palette_wallpaper_unsupported">Needs Android 12 or newer — showing the house palette</string>
