@@ -68,8 +68,30 @@ jobs:
             exit 1
           fi
           umask 077
-          printf '%s' "$DEELA_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/deela-release.p12"
-          test -s "$RUNNER_TEMP/deela-release.p12"
+          # The mobile clipboard can add whitespace or zero-width characters.
+          # Decode inside the runner without printing certificate bytes to logs.
+          python3 - <<'PY'
+          import base64, os, pathlib, re, sys
+          raw = os.environ["DEELA_RELEASE_KEYSTORE_BASE64"]
+          cleaned = "".join(c for c in raw if not c.isspace() and c not in "\\u200b\\u200c\\u200d\\ufeff")
+          candidates = [cleaned]
+          candidates.extend(sorted(re.findall(r"[A-Za-z0-9+/]{500,}={0,2}", cleaned), key=len, reverse=True))
+          recovered = None
+          for candidate in candidates:
+              try:
+                  value = base64.b64decode(candidate, validate=True)
+                  if 1024 <= len(value) <= 65536 and value[:1] == b"\\x30":
+                      recovered = value
+                      break
+              except (ValueError, base64.binascii.Error):
+                  pass
+          if recovered is None:
+              print("::error::Invalid PKCS12 Base64 secret. Replace DEELA_RELEASE_KEYSTORE_BASE64 with the complete original value from DEELA_SECRET_1_COPY_VALUE.txt.")
+              sys.exit(1)
+          pathlib.Path(os.environ["RUNNER_TEMP"],"deela-release.p12").write_bytes(recovered)
+          print("PKCS12 Base64 decoded locally in the runner.")
+          PY
+          openssl pkcs12 -info -noout -in "$RUNNER_TEMP/deela-release.p12" -passin env:DEELA_RELEASE_KEYSTORE_PASSWORD >/dev/null
 
       - name: Align and sign without exposing secrets to project build scripts
         env:
