@@ -118,10 +118,15 @@ class AppReleasesTest {
     }
 
     @Test
-    fun aBuildWithNoMatchingSignatureHasNothingToOffer() {
-        val onlySigned = release(assets = asset("Aura-Store-v1.1.0.apk", "https://example.test/a.apk", 10))
-        assertNull(AppReleases.parse(onlySigned, debuggable = true))
-        val onlyDebug = release(assets = asset("Aura-Store-v1.1.0-debug.apk", "https://example.test/a.apk", 10))
+    fun aStableSignedReleaseIsVisibleToDebugPreviewUsersAsASaveOnlyOffer() {
+        // Old debug users should learn that the official edition exists. AppUpdater
+        // checks actual certificate compatibility and saves rather than installing.
+        val onlySigned = release(assets = asset("DEELA-0.9.8-release.apk", "https://example.test/a.apk", 10))
+        val offer = AppReleases.parse(onlySigned, debuggable = true)!!
+        assertEquals("DEELA-0.9.8-release.apk", offer.installed.name)
+        assertFalse(offer.installed.debug)
+        assertNull(offer.build(UpdateBuild.DEBUG))
+        val onlyDebug = release(assets = asset("DEELA-0.9.8-debug.apk", "https://example.test/a.apk", 10))
         assertNull(AppReleases.parse(onlyDebug, debuggable = false))
     }
 
