@@ -54,4 +54,5 @@
     <string name="home_self_update_downloading">Downloading the update…</string>
     <string name="home_self_update_installing">Installing. MultiStore will close.</string>
     <string name="home_self_update_dismiss">Dismiss</string>
+    <string name="home_welcome_marquee">Welcome to DEELA APPS ❤️</string>
 </resources>

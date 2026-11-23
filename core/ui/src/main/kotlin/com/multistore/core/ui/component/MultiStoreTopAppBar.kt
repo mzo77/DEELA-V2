@@ -1,5 +1,7 @@
 package com.multistore.core.ui.component
 
+import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -10,6 +12,8 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 
 /**
  * The top bar common to every screen.
@@ -23,15 +27,33 @@ fun MultiStoreTopAppBar(
     title: String,
     modifier: Modifier = Modifier,
     scrollBehavior: TopAppBarScrollBehavior? = null,
+    marquee: Boolean = false,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     CenterAlignedTopAppBar(
         title = {
             Text(
-                text = title,
+                // Only the Home greeting scrolls. Repeating it guarantees movement on
+                // larger screens; accessibility still announces the greeting once.
+                text = if (marquee) "$title     •     $title" else title,
+                modifier = if (marquee) {
+                    Modifier
+                        .fillMaxWidth()
+                        .basicMarquee(
+                            iterations = Int.MAX_VALUE,
+                            repeatDelayMillis = 1000,
+                            initialDelayMillis = 650,
+                        )
+                        .semantics { contentDescription = title }
+                } else {
+                    Modifier
+                },
                 style = MaterialTheme.typography.titleLarge,
+                color = if (marquee) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                softWrap = false,
+                overflow = if (marquee) TextOverflow.Clip else TextOverflow.Ellipsis,
             )
         },
         actions = actions,

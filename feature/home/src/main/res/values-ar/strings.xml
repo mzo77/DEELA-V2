@@ -53,4 +53,5 @@
     <string name="home_self_update_downloading">جارٍ تنزيل التحديث…</string>
     <string name="home_self_update_installing">جارٍ التثبيت. سيُغلق تطبيق ديلا.</string>
     <string name="home_self_update_dismiss">إغلاق</string>
+    <string name="home_welcome_marquee">مرحبًا بكم في متجر ديلا ❤️</string>
 </resources>

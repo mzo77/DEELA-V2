@@ -135,7 +135,8 @@ internal fun HomeScreen(
         modifier = modifier,
         topBar = {
             MultiStoreTopAppBar(
-                title = stringResource(R.string.home_title),
+                title = stringResource(R.string.home_welcome_marquee),
+                marquee = true,
                 actions = {
                     val ready = uiState as? HomeUiState.Ready
                     if (ready != null && ready.index !is IndexStatus.Syncing) {
