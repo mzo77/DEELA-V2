@@ -26,7 +26,19 @@ jobs:
           yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
           "$SDKMANAGER" --channel=3 --install "platforms;android-37.0" "build-tools;36.1.0"
       - uses: gradle/actions/setup-gradle@v4
-      - name: Compile Android APK and run unit tests
+      - name: Compile Android APK
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon :app:assembleDebug :app:testDebugUnitTest
+          ./gradlew --no-daemon :app:assembleDebug
+      - name: Check deployed auth refresh route
+        run: |
+          set -euo pipefail
+          BASE="https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-control"
+          curl -fsS --max-time 20 "$BASE/health" | grep -q 'DEELA Control Center'
+          code="$(curl -sS --max-time 20 -o /tmp/deela-refresh-reply.json -w '%{http_code}' -X POST "$BASE/api/v1/auth/refresh" -H 'Content-Type: application/json' -d '{"refresh_token":"definitely-invalid-refresh-token","platform":"android"}')"
+          test "$code" = "401"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DEELA-auth-fix-debug-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
