@@ -1,6 +1,8 @@
 package dev.aurastore.store.update
 
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.content.pm.ApplicationInfo
 import android.util.Log
 import dev.aurastore.store.data.AppBuild
@@ -212,7 +214,7 @@ object AppUpdater {
             _state.value = AppUpdateState.Failed(release, AppUpdateFailure.NO_CHECKSUM, build)
             return
         }
-        val saveOnly = !canReplace(app, build)
+        val buildClassMatches = canReplace(app, build)
         _state.value = AppUpdateState.Downloading(release, build, 0L, build.size)
         scope.launch {
             val target = File(File(app.cacheDir, "apk").apply { mkdirs() }, build.name)
@@ -233,7 +235,13 @@ object AppUpdater {
                 _state.value = AppUpdateState.Failed(release, failure, build)
                 return@launch
             }
-            if (saveOnly) {
+            // The name "release" or "debug" cannot prove that two APKs share a
+            // certificate. GitHub-hosted CI debug keys commonly change between runs.
+            // Compare the real APK signing certificate before invoking the installer.
+            val signatureMatches = withContext(Dispatchers.IO) {
+                buildClassMatches && matchesInstalledSigner(app, target)
+            }
+            if (!signatureMatches) {
                 val location = withContext(Dispatchers.IO) { ApkExport.save(app, target, build.name) }
                 target.delete()
                 _state.value = if (location == null) {
@@ -277,6 +285,28 @@ object AppUpdater {
             if (!actual.equals(expected, ignoreCase = true)) throw ChecksumMismatch()
         }
     }
+
+    @Suppress("DEPRECATION")
+    private fun matchesInstalledSigner(context: Context, apk: File): Boolean = runCatching {
+        val pm = context.packageManager
+        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            PackageManager.GET_SIGNING_CERTIFICATES
+        } else PackageManager.GET_SIGNATURES
+        val current = pm.getPackageInfo(context.packageName, flags)
+        val incoming = pm.getPackageArchiveInfo(apk.absolutePath, flags) ?: return@runCatching false
+        if (incoming.packageName != context.packageName) return@runCatching false
+        fun certificates(info: android.content.pm.PackageInfo): Set<String> {
+            val signatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                info.signingInfo?.apkContentsSigners?.toList().orEmpty()
+            } else info.signatures?.toList().orEmpty()
+            return signatures.map { signer ->
+                MessageDigest.getInstance("SHA-256").digest(signer.toByteArray())
+                    .joinToString("") { "%02x".format(it) }
+            }.toSet()
+        }
+        val installed = certificates(current)
+        installed.isNotEmpty() && installed == certificates(incoming)
+    }.getOrDefault(false)
 
     private fun isDebuggable(context: Context): Boolean =
         (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
