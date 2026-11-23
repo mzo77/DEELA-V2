@@ -29,6 +29,10 @@ fun subscriberLabel(label: String): String {
         "top charts", "top rated" -> "الأعلى ترتيبًا"
         "trending", "trending searches" -> "الرائجة"
         "action" -> "أكشن"
+        "editor\u0027s choice", "editors choice", "editor’s choice" -> "اختيار المحررين"
+        "mod" -> "معدّل"
+        "offline" -> "بدون إنترنت"
+        "online" -> "عبر الإنترنت"
         "board" -> "ألعاب الطاولة"
         "card" -> "ألعاب الورق"
         "casino" -> "كازينو"
@@ -105,6 +109,10 @@ fun modDescriptionArabic(source: String): String {
         "mod info" to "معلومات التعديل",
         "mod information" to "معلومات التعديل",
         "mod menu" to "قائمة التعديل",
+        "menu mod" to "قائمة التعديل",
+        "zoom multiplier" to "مضاعفة التقريب",
+        "editor\u0027s choice" to "اختيار المحررين",
+        "editor’s choice" to "اختيار المحررين",
         "mod apk" to "نسخة معدّلة",
         "premium unlocked" to "فتح المميزات المدفوعة",
         "pro unlocked" to "فتح مميزات برو",
