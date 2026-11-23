@@ -19,13 +19,8 @@
     <h2 id="ownerDialogTitle">تأكيد الإجراء</h2>
     <p id="ownerDialogBody"></p>
     <label id="ownerDialogMonthsField" class="owner-dialog-field" hidden>مدة التجديد
-      <select id="ownerDialogMonths">
-        <option value="1">شهر واحد</option>
-        <option value="2">شهران</option>
-        <option value="3">3 أشهر</option>
-        <option value="6">6 أشهر</option>
-        <option value="12">12 شهرًا</option>
-      </select>
+      <input id="ownerDialogMonths" type="number" inputmode="numeric" min="1" max="36" step="1" value="1" aria-label="عدد أشهر التجديد" required>
+      <small>يمكن إدخال أي عدد صحيح من 1 إلى 36 شهرًا.</small>
     </label>
     <div class="owner-dialog-actions">
       <button id="ownerDialogCancel" type="button" class="secondary">تراجع</button>
