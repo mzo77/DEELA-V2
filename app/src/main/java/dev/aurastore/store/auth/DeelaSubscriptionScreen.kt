@@ -8,7 +8,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
 @Composable
-fun DeelaSubscriptionScreen(session:DeelaSession,onActivated:()->Unit,onLogout:()->Unit) {
+fun DeelaSubscriptionScreen(session:DeelaSession,onActivated:(DeelaSession)->Unit,onLogout:()->Unit) {
     val scope=rememberCoroutineScope()
     var months by remember {mutableIntStateOf(1)}
     var busy by remember {mutableStateOf(false)}
@@ -37,8 +37,13 @@ fun DeelaSubscriptionScreen(session:DeelaSession,onActivated:()->Unit,onLogout:(
             OutlinedButton(enabled=!busy,onClick={
                 busy=true
                 scope.launch {
-                    if(DeelaAuthApi.check(session.token)) onActivated()
-                    else status="لم يُفعّل اشتراكك بعد. يمكنك المحاولة بعد موافقة المالك."
+                    when (val result = DeelaAuthApi.checkSession(session)) {
+                        is DeelaSessionCheck.Verified ->
+                            if (result.session.subscriptionActive) onActivated(result.session)
+                            else status = "لم يُفعّل اشتراكك بعد. يمكنك المحاولة بعد موافقة المالك."
+                        DeelaSessionCheck.Invalid -> status = "انتهت جلسة الدخول. سجّل الدخول مجددًا."
+                        DeelaSessionCheck.Unavailable -> status = "تعذر الاتصال. حاول بعد قليل، حسابك محفوظ."
+                    }
                     busy=false
                 }
             },modifier=Modifier.fillMaxWidth()) {Text("التحقق من التفعيل")}
