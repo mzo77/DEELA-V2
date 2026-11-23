@@ -44,8 +44,20 @@ jobs:
           test "$code" = "403"
           code="$(curl -sS --max-time 20 -o /tmp/deela-test-unauth.json -w '%{http_code}' -X POST "$BASE/api/owner/subscription-email/test" -H "Content-Type: application/json" -d '{}')"
           test "$code" = "403"
+      - name: Smoke-test password recovery without contacting real email recipients
+        run: |
+          set -euo pipefail
+          BASE="https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-control"
+          curl -fsSL --max-time 25 -H 'Cache-Control: no-cache' "$BASE/recover" -o /tmp/deela-recover.html
+          grep -Fq 'لن تختفي هذه الصفحة تلقائيًا' /tmp/deela-recover.html
+          grep -Fq 'token_hash' /tmp/deela-recover.html
+          grep -Fq 'history.replaceState' /tmp/deela-recover.html
+          code="$(curl -sS --max-time 20 -o /tmp/deela-bad-token.json -w '%{http_code}' -X POST "$BASE/api/v1/auth/reset" -H 'Content-Type: application/json' -d '{"token_hash":"","password":"twelvecharspwd"}')"
+          test "$code" = "400"
+          code="$(curl -sS --max-time 20 -o /tmp/deela-bad-email.json -w '%{http_code}' -X POST "$BASE/api/v1/auth/recover" -H 'Content-Type: application/json' -d '{"email":"not-an-address"}')"
+          test "$code" = "400"
       - uses: actions/upload-artifact@v4
         with:
-          name: DEELA-0.9.5-email-test-debug-APK
+          name: DEELA-0.9.6-recovery-fix-debug-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 14
