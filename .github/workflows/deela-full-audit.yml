@@ -1,0 +1,50 @@
+name: DEELA V2 Full Source Audit
+on:
+  push:
+    paths:
+      - '.github/workflows/deela-full-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Identify actual fork parent and compare complete tracked source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, urllib.request
+          repo=os.environ['GITHUB_REPOSITORY']
+          req=urllib.request.Request('https://api.github.com/repos/'+repo,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json'})
+          with urllib.request.urlopen(req) as r: data=json.load(r)
+          parent=data.get('parent')
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+            f.write('## DEELA V2 full-source audit\n')
+            f.write('Fork parent: '+(parent['full_name'] if parent else 'Not reported by GitHub')+'\n\n')
+          if not parent:
+            raise SystemExit('No upstream parent in GitHub metadata; cannot assert complete import.')
+          with open('/tmp/deela-upstream','w') as f: f.write(parent['clone_url'])
+          with open('/tmp/deela-upstream-branch','w') as f: f.write(parent['default_branch'])
+          PY
+          git remote add upstream "$(cat /tmp/deela-upstream)"
+          git fetch --no-tags upstream "$(cat /tmp/deela-upstream-branch)" --depth=1
+          git diff --name-status FETCH_HEAD HEAD > /tmp/deela-source-differences.txt
+          {
+            echo '### Source differences against upstream default branch'
+            echo 'Files changed: '$(wc -l < /tmp/deela-source-differences.txt)
+            echo 'Full diff list is available in the uploaded artifact.'
+            echo 'This audits tracked Git files, not external APK catalogs, server databases, secrets or LFS object availability.'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload full difference report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deela-upstream-diff
+          path: /tmp/deela-source-differences.txt
+          if-no-files-found: ignore
