@@ -1,5 +1,7 @@
 package dev.aurastore.store.ui.source
 
+import dev.aurastore.store.ui.subscriberLabel
+import dev.aurastore.store.ui.modDescriptionArabic
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
@@ -282,7 +284,7 @@ fun SourcePickerSheet(onDismiss: () -> Unit) {
                     items(sources, key = { it.id }) { source ->
                         val app = appFor(source.id)
                         SourceChip(
-                            label = source.id.label,
+                            label = subscriberLabel(source.id.label),
                             status = when {
                                 searching -> stringResource(R.string.src_picker_searching)
                                 app != null -> listOfNotNull(
@@ -318,7 +320,7 @@ fun SourcePickerSheet(onDismiss: () -> Unit) {
                     )
                     if (selectedApp != null && !searching) {
                         Text(
-                            selectedApp.version ?: selectedApp.size.orEmpty(),
+                            modDescriptionArabic(selectedApp.version ?: selectedApp.size.orEmpty()),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
@@ -455,9 +457,10 @@ private fun SourceFileCard(file: SourceFile, onDownload: () -> Unit) {
     // printed size, not its digits: `20` is inside `2023`, and a year is not a byte count.
     val sizeInLabel = file.size?.trim()?.takeIf { it.isNotEmpty() }
         ?.let { file.label.contains(it, ignoreCase = true) } == true
+    val translatedNote = modDescriptionArabic(file.note.orEmpty())
     val facts = buildList {
         if (size != null && !sizeInLabel) add(size)
-        file.note?.takeIf { it.isNotBlank() && !file.label.contains(it, true) }?.let(::add)
+        file.note?.takeIf { it.isNotBlank() && !file.label.contains(it, true) }?.let { add(translatedNote) }
         file.sha256?.let { add("sha-256 ${it.take(16)}…") }
     }.joinToString(" · ")
     SurfaceCard {
@@ -476,7 +479,7 @@ private fun SourceFileCard(file: SourceFile, onDownload: () -> Unit) {
                 }
                 Spacer(Modifier.width(12.dp))
                 Text(
-                    file.label,
+                    modDescriptionArabic(file.label),
                     style = MaterialTheme.typography.titleSmall,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
