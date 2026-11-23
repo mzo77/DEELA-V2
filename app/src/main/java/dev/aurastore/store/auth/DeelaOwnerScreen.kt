@@ -75,7 +75,7 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
     var reload by remember { mutableIntStateOf(0) }
     var selectedMonths by remember { mutableIntStateOf(1) }
     var requestReview by remember { mutableStateOf<Pair<OwnerRequest,String>?>(null) }
-    LaunchedEffect(session.token,reload) {
+    LaunchedEffect(session.token,reload,page) {
         busy=true
         try { data=OwnerApi.dashboard(session.token);error=null }
         catch(e:Exception) { error=e.message?:"تعذر الاتصال" }
@@ -148,6 +148,11 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                         Text("الأدوات المتقدمة لم تُنقل بعد.")
                     }
                     "الطلبات" -> {
+                        Text("طلبات الاشتراك بانتظار موافقتك: ${current.requests.size}", style=MaterialTheme.typography.titleMedium)
+                        OutlinedButton(onClick={reload++},enabled=!busy) { Text("تحديث الطلبات الآن") }
+                        if (current.requests.isEmpty() && !busy) {
+                            Text("لا توجد طلبات اشتراك معلّقة حاليًا.", style=MaterialTheme.typography.bodyMedium)
+                        }
                         LazyColumn(modifier=Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(10.dp)) {
                             items(current.requests,key={it.id}) { request ->
                                 ElevatedCard(Modifier.fillMaxWidth()) {
