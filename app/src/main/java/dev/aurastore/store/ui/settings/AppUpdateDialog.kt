@@ -121,7 +121,9 @@ fun AppUpdateDialog(
                 }
                 if (!installable && !busy && saved == null) {
                     Text(
-                        stringResource(R.string.app_update_other_signature),
+                        "هذا إصدار ديلا الرسمي موقّع بشهادة مختلفة عن النسخة التجريبية المثبتة. " +
+                            "يمكنك حفظ ملف APK، لكن لا يمكن تثبيته فوق هذه النسخة مباشرة. " +
+                            "تأكد من معرفة بريد حسابك وكلمة مروره قبل الانتقال إلى النسخة الرسمية.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                     )
@@ -150,11 +152,20 @@ fun AppUpdateDialog(
                         stringResource(R.string.app_update_installing),
                         style = MaterialTheme.typography.bodyMedium,
                     )
-                    is AppUpdateState.Saved -> Text(
-                        stringResource(R.string.app_update_saved, state.location),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
+                    is AppUpdateState.Saved -> {
+                        Text(
+                            stringResource(R.string.app_update_saved, state.location),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Text(
+                            "حُفظ الملف بدل تشغيل التثبيت لأن شهادة توقيعه تختلف عن " +
+                                "شهادة التطبيق الحالي. سيطلب أندرويد إزالة النسخة القديمة " +
+                                "قبل تثبيت هذه النسخة؛ احتفظ ببيانات دخولك أولًا.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
                     is AppUpdateState.Failed -> Text(
                         stringResource(failureText(state.failure)),
                         style = MaterialTheme.typography.bodyMedium,
