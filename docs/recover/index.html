@@ -1,4 +1,140 @@
 <!doctype html>
-<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>ديلا | تغيير كلمة المرور</title><style>body{background:#0c090e;color:#fff;font:16px system-ui;margin:0;min-height:100vh;display:grid;place-items:center}.card{width:min(90vw,440px);padding:25px;border:1px solid #713348;border-radius:22px;background:#1c111a}h1{color:#ff2856}input,button{box-sizing:border-box;width:100%;padding:15px;margin:10px 0;border-radius:12px;font:inherit}input{background:#120c11;border:1px solid #794354;color:white}button{border:0;background:#ff2856;color:white;font-weight:bold}#msg{line-height:1.8}</style></head><body><main class="card"><h1>تطبيقات ديلا ❤️</h1><h2>تعيين كلمة مرور جديدة</h2><form id="form"><input id="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" placeholder="كلمة المرور الجديدة (12 حرفًا على الأقل)" required><input id="confirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" placeholder="تأكيد كلمة المرور" required><button id="submit">حفظ كلمة المرور</button></form><p id="msg" role="status"></p></main><script>
-(()=>{'use strict';const api='https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-control/api/v1/auth/reset',q=new URLSearchParams(location.search),h=new URLSearchParams(location.hash.slice(1)),token=q.get('token_hash')||'',access=h.get('access_token')||'',type=q.get('type')||h.get('type')||'recovery',form=document.getElementById('form'),msg=document.getElementById('msg');history.replaceState(null,'',location.pathname);if((!token&&!access)||type!=='recovery'){form.hidden=true;msg.textContent='رابط الاستعادة غير صالح أو انتهت صلاحيته. اطلب رسالة جديدة من تطبيق ديلا.';return}form.onsubmit=async e=>{e.preventDefault();const p=document.getElementById('password').value,c=document.getElementById('confirm').value,btn=document.getElementById('submit');if(p!==c){msg.textContent='كلمتا المرور غير متطابقتين';return}btn.disabled=true;msg.textContent='جارٍ تحديث كلمة المرور...';try{const r=await fetch(api,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token_hash:token,recovery_access_token:access,password:p})});const d=await r.json();if(!r.ok)throw Error(d.error||'تعذر تغيير كلمة المرور');form.hidden=true;msg.textContent='تم تغيير كلمة المرور بنجاح. افتح تطبيق ديلا وسجّل دخولك بكلمة المرور الجديدة.'}catch(err){msg.textContent=err.message||'حدث خطأ. اطلب رابط استعادة جديدًا.'}finally{btn.disabled=false}}})();
-</script></body></html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>ديلا | استعادة كلمة المرور</title>
+  <style>
+    :root{color-scheme:dark}
+    *{box-sizing:border-box}
+    body{background:#0b080d;color:#fff;font:16px/1.7 system-ui,Tahoma,Arial,sans-serif;margin:0;min-height:100vh;display:grid;place-items:center;padding:24px}
+    main{width:min(100%,470px);padding:28px;background:#201018;border:1px solid #763046;border-radius:20px;box-shadow:0 10px 36px #0008}
+    h1{color:#ff315e;margin:0 0 8px;text-align:center;font-size:30px}
+    h2{font-size:21px;margin:0 0 12px}
+    p{margin:8px 0 16px;color:#e8cad4}
+    input,button{box-sizing:border-box;width:100%;font:inherit;border-radius:11px;padding:13px;margin:8px 0}
+    input{background:#110b10;color:white;border:1px solid #945469}
+    button{background:#ff2857;color:white;border:0;font-weight:bold;cursor:pointer}
+    button:disabled{opacity:.65;cursor:wait}
+    #msg{min-height:28px;white-space:pre-wrap}
+    .muted{color:#cbaeb9;font-size:13px}
+    [hidden]{display:none!important}
+  </style>
+</head>
+<body>
+<main>
+  <h1>تطبيقات ديلا ❤️</h1>
+  <section id="reset-panel">
+    <h2>تعيين كلمة مرور جديدة</h2>
+    <p>أدخل كلمة المرور الجديدة ثم اضغط «حفظ». لن تختفي هذه الصفحة تلقائيًا أثناء الكتابة.</p>
+    <form id="reset-form">
+      <label for="password">كلمة المرور الجديدة</label>
+      <input id="password" name="new-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required placeholder="12 حرفًا على الأقل">
+      <label for="confirm">تأكيد كلمة المرور</label>
+      <input id="confirm" name="confirm-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+      <button id="save" type="submit">حفظ كلمة المرور</button>
+    </form>
+    <p class="muted">الرابط آمن ويُستخدم لمرة واحدة. لا تشاركه مع أي شخص.</p>
+  </section>
+  <section id="new-link-panel" hidden>
+    <h2>طلب رابط استعادة جديد</h2>
+    <p>إذا انتهت صلاحية الرابط، اطلب رابطًا جديدًا وافتح أحدث رسالة وصلتك.</p>
+    <form id="new-link-form">
+      <label for="email">البريد الإلكتروني المسجّل في ديلا</label>
+      <input id="email" name="email" type="email" autocomplete="email" maxlength="254" required>
+      <button id="send-link" type="submit">إرسال رابط جديد</button>
+    </form>
+  </section>
+  <p id="msg" role="status" aria-live="polite"></p>
+</main>
+<script>
+(() => {
+  'use strict';
+  const base = 'https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-control';
+  const qs = new URLSearchParams(location.search);
+  const hs = new URLSearchParams(location.hash.slice(1));
+  const tokenHash = qs.get('token_hash') || '';
+  const accessToken = hs.get('access_token') || '';
+  const type = qs.get('type') || hs.get('type') || 'recovery';
+  const callbackError = qs.get('error_description') || hs.get('error_description') || '';
+  const hasProof = (!!tokenHash && tokenHash.length >= 10) || (!!accessToken && accessToken.length >= 10);
+  const form = document.getElementById('reset-form');
+  const resetPanel = document.getElementById('reset-panel');
+  const newLinkPanel = document.getElementById('new-link-panel');
+  const msg = document.getElementById('msg');
+  const save = document.getElementById('save');
+  const show = (s) => { msg.textContent = s; };
+  const requestLink = () => { resetPanel.hidden = true; newLinkPanel.hidden = false; };
+  // Do NOT remove the fragment or query token on page load.
+  // In-app browsers can reload or reopen pages when switching apps.
+  // Keep the proof available until an actual successful password change.
+  if (!hasProof || type !== 'recovery' || callbackError) {
+    requestLink();
+    show(callbackError ? 'تعذر استخدام رابط الاستعادة. اطلب رسالة جديدة وافتح أحدث رابط.' :
+      'الرابط غير مكتمل أو انتهت صلاحيته. يمكنك طلب رسالة جديدة.');
+  }
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    const password = document.getElementById('password').value;
+    const confirmation = document.getElementById('confirm').value;
+    if (password !== confirmation) { show('كلمتا المرور غير متطابقتين.'); return; }
+    if (password.length < 12 || password.length > 128) { show('كلمة المرور يجب أن تتكون من 12 إلى 128 حرفًا.'); return; }
+    save.disabled = true;
+    show('جارٍ تغيير كلمة المرور...');
+    try {
+      const response = await fetch(base + '/api/v1/auth/reset', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        cache: 'no-store',
+        body: JSON.stringify({token_hash: tokenHash, recovery_access_token: accessToken, password})
+      });
+      const body = await response.json();
+      if (!response.ok) {
+        if (response.status === 401) {
+          requestLink();
+          show('انتهت صلاحية رمز الاستعادة أو استُخدم من قبل. اطلب أحدث رسالة وأعد المحاولة.');
+          return;
+        }
+        show(body.error || 'تعذر حفظ كلمة المرور. حاول مرة أخرى دون إغلاق الصفحة.');
+        return;
+      }
+      resetPanel.hidden = true;
+      newLinkPanel.hidden = true;
+      // Erase the one-time proof only after the server confirms success.
+      history.replaceState(null, '', location.pathname);
+      show('تم تغيير كلمة المرور بنجاح ✅ افتح تطبيق ديلا وسجّل دخولك بكلمة المرور الجديدة.');
+    } catch (_) {
+      show('تعذر الاتصال الآن. كلمة المرور لم تتغير. حاول مجددًا والصفحة ما زالت مفتوحة.');
+    } finally {
+      save.disabled = false;
+    }
+  });
+  document.getElementById('new-link-form').addEventListener('submit', async event => {
+    event.preventDefault();
+    const address = document.getElementById('email').value.trim();
+    const btn = document.getElementById('send-link');
+    btn.disabled = true;
+    show('جارٍ طلب رسالة جديدة...');
+    try {
+      const response = await fetch(base + '/api/v1/auth/recover', {
+        method: 'POST',headers: {'Content-Type':'application/json'},cache:'no-store',
+        body: JSON.stringify({email: address})
+      });
+      const body = await response.json();
+      if (response.status === 429) {
+        show('طلبات الاستعادة كثيرة حاليًا. انتظر قليلًا قبل المحاولة مجددًا.');
+      } else if (!response.ok) {
+        show(body.error || 'تعذر إرسال رابط الاستعادة حاليًا.');
+      } else {
+        show('إذا كان البريد مسجّلًا، ستصلك رسالة الاستعادة. افتح أحدث رسالة، وتحقق من البريد غير المرغوب فيه أيضًا.');
+      }
+    } catch (_) {
+      show('تعذر الاتصال. حاول مرة أخرى لاحقًا.');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+})();
+</script>
+</body></html>
