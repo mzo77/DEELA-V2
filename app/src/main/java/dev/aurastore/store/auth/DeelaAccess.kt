@@ -174,9 +174,10 @@ object DeelaAuthApi {
             val request = Request.Builder().url("$endpoint/api/v1/auth/recover")
                 .post(JSONObject().put("email", email.trim()).toString().toRequestBody(jsonType)).build()
             client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) error("تعذر إرسال طلب الاستعادة. حاول لاحقًا.")
+                if (response.code == 429) error("طلبات استعادة كلمة المرور كثيرة حاليًا. انتظر قليلًا قبل طلب رابط جديد.")
+                if (!response.isSuccessful) error("تعذر إرسال رابط الاستعادة. حاول لاحقًا.")
             }
-            "إذا كان البريد مسجلًا فستصلك رسالة لاستعادة كلمة المرور."
+            "إذا كان البريد مسجلًا فستصلك رسالة الاستعادة. افتح أحدث رسالة، وتحقق من البريد غير المرغوب فيه. لا تطلب روابط متعددة؛ استخدم أحدث رابط فقط."
         }
     }
 
