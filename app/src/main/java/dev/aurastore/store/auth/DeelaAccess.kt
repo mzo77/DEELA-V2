@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalAutofillManager
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.semantics
@@ -61,7 +62,19 @@ import java.util.concurrent.TimeUnit
  *
  * Trial memberships are activated/revoked by the administrator on the backend.
  */
-data class DeelaSession(val token: String, val expiresAtEpochMs: Long, val role: String = "subscriber", val subscriptionActive: Boolean = true)
+data class DeelaSession(
+    val token: String,
+    val expiresAtEpochMs: Long,
+    val role: String = "subscriber",
+    val subscriptionActive: Boolean = true,
+    val refreshToken: String = "",
+)
+
+sealed interface DeelaSessionCheck {
+    data class Verified(val session: DeelaSession) : DeelaSessionCheck
+    data object Invalid : DeelaSessionCheck
+    data object Unavailable : DeelaSessionCheck
+}
 
 object DeelaAuthApi {
     private val endpoint: String get() = BuildConfig.DEELA_API_BASE_URL.trim().trimEnd('/')
@@ -92,13 +105,14 @@ object DeelaAuthApi {
                     JSONObject(body)
                 }
                 val token = loginResult.optString("access_token")
-                require(token.isNotBlank()) { "لم يتم استلام رمز دخول صالح." }
+                val refreshToken = loginResult.optString("refresh_token")
+                require(token.isNotBlank() && refreshToken.isNotBlank()) { "لم يتم استلام جلسة دخول صالحة." }
                 val access = entitlement(token)
                 if (access == null && !loginResult.optBoolean("subscription_active", true)) {
-                    DeelaSession(token, System.currentTimeMillis() + 3600_000L, loginResult.optString("role", "subscriber"), false)
+                    DeelaSession(token, 0L, loginResult.optString("role", "subscriber"), false, refreshToken)
                 } else {
                     require(access != null) { "تعذر التحقق من صلاحية الاشتراك." }
-                    access.copy(role = loginResult.optString("role", "subscriber"), subscriptionActive = true)
+                    access.copy(role = loginResult.optString("role", "subscriber"), subscriptionActive = true, refreshToken = refreshToken)
                 }
             }
         }
@@ -170,6 +184,59 @@ object DeelaAuthApi {
         runCatching { entitlement(token) != null }.getOrDefault(false)
     }
 
+    /** A failed network call must never be mistaken for a revoked subscription. */
+    suspend fun checkSession(session: DeelaSession): DeelaSessionCheck = withContext(Dispatchers.IO) {
+        try {
+            val base = endpoint
+            if (!base.startsWith("https://")) return@withContext DeelaSessionCheck.Unavailable
+            val request = Request.Builder().url("$base/api/v1/entitlements/me")
+                .header("Authorization", "Bearer ${session.token}").get().build()
+            client.newCall(request).execute().use { response ->
+                if (response.code == 401 || response.code == 403) {
+                    return@withContext refreshSession(session.refreshToken)
+                }
+                if (!response.isSuccessful) return@withContext DeelaSessionCheck.Unavailable
+                val body = JSONObject(response.body.string())
+                val expiry = if (body.optBoolean("active", false)) {
+                    body.optLong("expires_at_epoch", 0L) * 1000L
+                } else 0L
+                val active = body.optBoolean("active", false) && expiry > System.currentTimeMillis()
+                DeelaSessionCheck.Verified(session.copy(expiresAtEpochMs = expiry, subscriptionActive = active))
+            }
+        } catch (_: Exception) {
+            DeelaSessionCheck.Unavailable
+        }
+    }
+
+    /** Refreshes an expiring Supabase JWT without ever keeping the user's password. */
+    suspend fun restore(refreshToken: String): DeelaSessionCheck = withContext(Dispatchers.IO) {
+        try { refreshSession(refreshToken) } catch (_: Exception) { DeelaSessionCheck.Unavailable }
+    }
+
+    private fun refreshSession(refreshToken: String): DeelaSessionCheck {
+        if (refreshToken.isBlank()) return DeelaSessionCheck.Invalid
+        val base = endpoint
+        if (!base.startsWith("https://")) return DeelaSessionCheck.Unavailable
+        val payload = JSONObject().put("refresh_token", refreshToken).put("platform", "android")
+        val request = Request.Builder().url("$base/api/v1/auth/refresh")
+            .post(payload.toString().toRequestBody(jsonType)).build()
+        return client.newCall(request).execute().use { response ->
+            if (response.code == 400 || response.code == 401 || response.code == 403) {
+                return@use DeelaSessionCheck.Invalid
+            }
+            if (!response.isSuccessful) return@use DeelaSessionCheck.Unavailable
+            val result = JSONObject(response.body.string())
+            val newToken = result.optString("access_token")
+            val newRefreshToken = result.optString("refresh_token")
+            if (newToken.isBlank() || newRefreshToken.isBlank()) return@use DeelaSessionCheck.Unavailable
+            val expiry = result.optLong("expires_at_epoch", 0L) * 1000L
+            val active = result.optBoolean("subscription_active", false) && expiry > System.currentTimeMillis()
+            DeelaSessionCheck.Verified(
+                DeelaSession(newToken, expiry, result.optString("role", "subscriber"), active, newRefreshToken)
+            )
+        }
+    }
+
     private fun entitlement(token: String): DeelaSession? {
         val base = endpoint
         if (!base.startsWith("https://")) return null
@@ -195,6 +262,7 @@ object DeelaAuthApi {
 @Composable
 fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
     val scope = rememberCoroutineScope()
+    val autofillManager = LocalAutofillManager.current
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
@@ -234,7 +302,7 @@ fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
                 label = { Text("اسم المستخدم أو البريد الإلكتروني") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Username },
+                modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Username + ContentType.EmailAddress },
                 shape = RoundedCornerShape(16.dp),
             )
             if (registerMode) {
@@ -296,7 +364,10 @@ fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
                         } else {
                             val result = DeelaAuthApi.login(email, password)
                             busy = false
-                            result.fold(onSuccess = onAuthenticated, onFailure = {
+                            result.fold(onSuccess = { session ->
+                                autofillManager?.commit()
+                                onAuthenticated(session)
+                            }, onFailure = {
                                 error = it.message ?: "تعذر التحقق من الاشتراك."
                             })
                         }
