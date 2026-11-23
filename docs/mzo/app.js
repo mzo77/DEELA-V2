@@ -30,6 +30,7 @@ const fallback=[
 data=fallback;
 $("search").addEventListener("input",()=>render($("search").value));
 $("year").textContent=new Date().getFullYear();
+if("serviceWorker" in navigator){navigator.serviceWorker.register("./sw.js",{scope:"./"}).catch(()=>{});}
 (async()=>{
  try{
   const response=await fetch(ENDPOINT+"/public",{cache:"no-store",credentials:"omit"});
