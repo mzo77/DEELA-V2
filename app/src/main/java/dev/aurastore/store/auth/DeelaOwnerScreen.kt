@@ -11,6 +11,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.graphics.Color
 import dev.aurastore.store.BuildConfig
 import kotlinx.coroutines.Dispatchers
@@ -116,6 +118,7 @@ private fun DeelaOwnerScreenBody(session:DeelaSession,onLogout:()->Unit,onOpenSt
     var pending by remember { mutableStateOf<Pair<OwnerMember,String>?>(null) }
     var reload by remember { mutableIntStateOf(0) }
     var selectedMonths by remember { mutableIntStateOf(1) }
+    var customMonths by remember { mutableStateOf("1") }
     var requestReview by remember { mutableStateOf<Pair<OwnerRequest,String>?>(null) }
     var mailNotice by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(session.token,reload,page) {
@@ -151,15 +154,36 @@ private fun DeelaOwnerScreenBody(session:DeelaSession,onLogout:()->Unit,onOpenSt
         AlertDialog(
             onDismissRequest={ pending=null },
             title={ Text("تأكيد تعديل الاشتراك") },
-            text={ Text("الحساب: "+member.email+"\nالإجراء: "+actionLabel(action)) },
-            confirmButton={ TextButton(onClick={
-                pending=null;busy=true
-                scope.launch {
-                    try { OwnerApi.subscription(session.token,member.id,action,selectedMonths);reload++ }
-                    catch(e:Exception) { error=e.message?:"فشل التعديل" }
-                    finally { busy=false }
+            text={
+                Column(verticalArrangement=Arrangement.spacedBy(10.dp)) {
+                    Text("الحساب: "+member.email+"\nالإجراء: "+actionLabel(action))
+                    if(action=="renew") {
+                        OutlinedTextField(
+                            value=customMonths,
+                            onValueChange={ value ->
+                                customMonths=value.filter { it.isDigit() }.take(2)
+                            },
+                            label={Text("عدد أشهر التجديد (1 إلى 36)")},
+                            keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Number),
+                            supportingText={Text("تُضاف المدة إلى نهاية الاشتراك الحالي إن كان ساريًا.")},
+                            singleLine=true
+                        )
+                    }
                 }
-            }) { Text("تأكيد") } },
+            },
+            confirmButton={ TextButton(
+                enabled=!busy && (action!="renew" || customMonths.toIntOrNull() in 1..36),
+                onClick={
+                    val months=if(action=="renew") customMonths.toIntOrNull() else 1
+                    if(months==null || months !in 1..36) return@TextButton
+                    pending=null;busy=true
+                    scope.launch {
+                        try { OwnerApi.subscription(session.token,member.id,action,months);reload++ }
+                        catch(e:Exception) { error=e.message?:"فشل التعديل" }
+                        finally { busy=false }
+                    }
+                }
+            ) { Text(if(action=="renew") "تأكيد التجديد" else "تأكيد") } },
             dismissButton={ TextButton(onClick={ pending=null }) { Text("إلغاء") } }
         )
     }
@@ -253,7 +277,7 @@ private fun DeelaOwnerScreenBody(session:DeelaSession,onLogout:()->Unit,onOpenSt
                                         if(member.endsAt.isNotBlank()) Text("ينتهي: "+member.endsAt.take(10),style=MaterialTheme.typography.bodySmall)
                                         Row(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
                                             TextButton(enabled=!busy,onClick={pending=member to "trial"}) {Text("تجربة 24 ساعة")}
-                                            TextButton(enabled=!busy,onClick={pending=member to "renew"}) {Text("تجديد "+(if(selectedMonths==12)"سنة" else "$selectedMonths شهر"))}
+                                            TextButton(enabled=!busy,onClick={customMonths=selectedMonths.toString();pending=member to "renew"}) {Text("تجديد")}
                                         }
                                         Row(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
                                             TextButton(enabled=!busy&&member.active,onClick={pending=member to "suspend"}) {Text("إيقاف")}
@@ -289,7 +313,7 @@ private fun DeelaOwnerScreenBody(session:DeelaSession,onLogout:()->Unit,onOpenSt
 }
 private fun actionLabel(action:String)=when(action) {
     "trial"->"تجربة 24 ساعة"
-    "renew"->"تجديد 30 يومًا"
+    "renew"->"تجديد بمدة مخصصة"
     "suspend"->"إيقاف الاشتراك"
     "resume"->"استئناف الاشتراك"
     "revoke"->"إلغاء الاشتراك"
