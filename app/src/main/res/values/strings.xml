@@ -719,7 +719,7 @@
     <string name="theme_dark">Dark</string>
     <string name="theme_dark_note">Always the dark scheme</string>
     <string name="palette_house">DEELA signature pink</string>
-    <string name="palette_house_note">DEELA's original house palette for dark and light themes</string>
+    <string name="palette_house_note">Original DEELA palette for dark and light themes</string>
     <string name="palette_wallpaper">Match my wallpaper</string>
     <string name="palette_wallpaper_note">Take accent colours from the wallpaper, like the Play Store does</string>
     <string name="palette_wallpaper_unsupported">Needs Android 12 or newer — showing the house palette</string>
