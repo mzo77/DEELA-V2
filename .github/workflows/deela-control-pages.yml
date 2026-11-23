@@ -8,6 +8,7 @@ on:
       - 'docs/mzo/**'
       - 'docs/recover/**'
       - 'docs/recover.html'
+      - 'docs/download/**'
       - '.github/workflows/deela-control-pages.yml'
   workflow_dispatch:
 permissions:
