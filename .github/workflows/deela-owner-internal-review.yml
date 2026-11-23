@@ -1,0 +1,117 @@
+name: DEELA Owner-Only Signed Preview
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/deela-release-request/owner-review-0.9.9.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deela-owner-review
+  cancel-in-progress: false
+
+jobs:
+  signed-owner-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    steps:
+      - name: Check out unreleased owner changes
+        uses: actions/checkout@v4
+        with:
+          ref: feature/admin-source-updates-and-signup-requests
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android build and signing tools
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --channel=3 --install "platforms;android-37.0" "build-tools;36.1.0"
+          test -x "$ANDROID_HOME/build-tools/36.1.0/apksigner"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Compile owner build, run release shrinker and unit tests
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon :app:assembleRelease :app:testDebugUnitTest --tests 'dev.aurastore.store.data.AppReleasesTest'
+          test -s app/build/outputs/apk/release/app-release-unsigned.apk
+          grep -Fq 'val appVersionName = "0.9.9"' app/build.gradle.kts
+
+      - name: Validate permanent DEELA keystore and password without exposing secrets
+        env:
+          DEELA_RELEASE_KEYSTORE_BASE64: ${{ secrets.DEELA_RELEASE_KEYSTORE_BASE64 }}
+          DEELA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.DEELA_RELEASE_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, re, base64, hashlib, pathlib, sys
+          raw = os.environ.get("DEELA_RELEASE_KEYSTORE_BASE64", "")
+          pwd = os.environ.get("DEELA_RELEASE_KEYSTORE_PASSWORD", "")
+          if not raw or not pwd:
+              print("::error::Missing permanent release signing secrets")
+              sys.exit(1)
+          clean = "".join(c for c in raw if not c.isspace() and ord(c) not in (0x200b,0x200c,0x200d,0xfeff))
+          candidates = [clean]+sorted(re.findall(r"[A-Za-z0-9+/]{500,}={0,2}",clean),key=len,reverse=True)
+          original_digest="7b6394ba38accc66ba9d62ffb95f009587ce24a9fbc1a70f47ad66b5b13c4d48"
+          for text in candidates:
+              try:
+                  value=base64.b64decode(text,validate=True)
+                  if hashlib.sha256(value).hexdigest()==original_digest:
+                      path=pathlib.Path(os.environ["RUNNER_TEMP"])/"deela-release.p12"
+                      path.write_bytes(value)
+                      path.chmod(0o600)
+                      print("Original DEELA signing file validated.")
+                      sys.exit(0)
+              except (ValueError,base64.binascii.Error):
+                  pass
+          print("::error::Signing secret is not the original verified DEELA keystore")
+          sys.exit(1)
+          PY
+          openssl pkcs12 -info -noout -in "$RUNNER_TEMP/deela-release.p12" -passin env:DEELA_RELEASE_KEYSTORE_PASSWORD >/dev/null
+
+      - name: Align and sign with the same certificate as 0.9.8
+        env:
+          DEELA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.DEELA_RELEASE_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          "$ANDROID_HOME/build-tools/36.1.0/zipalign" -f 4 \
+            app/build/outputs/apk/release/app-release-unsigned.apk "$RUNNER_TEMP/deela-owner-aligned.apk"
+          "$ANDROID_HOME/build-tools/36.1.0/apksigner" sign \
+            --ks "$RUNNER_TEMP/deela-release.p12" --ks-type PKCS12 \
+            --ks-key-alias deela_release \
+            --ks-pass env:DEELA_RELEASE_KEYSTORE_PASSWORD \
+            --key-pass env:DEELA_RELEASE_KEYSTORE_PASSWORD \
+            --out dist/DEELA-0.9.9-owner-review-signed.apk "$RUNNER_TEMP/deela-owner-aligned.apk"
+          "$ANDROID_HOME/build-tools/36.1.0/apksigner" verify --verbose --print-certs dist/DEELA-0.9.9-owner-review-signed.apk > "$RUNNER_TEMP/signer.txt"
+          SIGNER="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$RUNNER_TEMP/signer.txt" | tr -d ':' | tr '[:upper:]' '[:lower:]' | head -n 1)"
+          test "$SIGNER" = "83698bc6e21ddabb83eaf45d3386170d676dcf96270081c163f8b2e107fdef3c"
+          BADGING="$("$ANDROID_HOME/build-tools/36.1.0/aapt" dump badging dist/DEELA-0.9.9-owner-review-signed.apk | head -n 1)"
+          echo "$BADGING" | grep -Fq "name='com.deela.apps'"
+          echo "$BADGING" | grep -Fq "versionName='0.9.9'"
+          (cd dist && sha256sum DEELA-0.9.9-owner-review-signed.apk > DEELA-0.9.9-owner-review-signed.apk.sha256)
+          echo "DEELA 0.9.9 signed for owner review. No public GitHub Release will be created."
+
+      - name: Verify and upload owner-only review build (NOT published as an app update)
+        uses: actions/upload-artifact@v4
+        with:
+          name: DEELA-0.9.9-OWNER-REVIEW-SIGNED-APK-NOT-PUBLISHED
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Remove signing key from runner
+        if: always()
+        run: rm -f "$RUNNER_TEMP/deela-release.p12" "$RUNNER_TEMP/deela-owner-aligned.apk"
