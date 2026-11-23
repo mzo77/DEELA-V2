@@ -61,9 +61,9 @@ object DeelaSessionStore {
     /** The returned role or entitlement is NOT trusted until /auth/refresh verifies it. */
     fun load(context: Context): DeelaSession? = runCatching {
         val encoded = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getString(SESSION, null) ?: return null
+            .getString(SESSION, null) ?: return@runCatching null
         val parts = encoded.split(':', limit = 2)
-        if (parts.size != 2) return null
+        if (parts.size != 2) return@runCatching null
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(
             Cipher.DECRYPT_MODE,
@@ -73,7 +73,7 @@ object DeelaSessionStore {
         val payload = JSONObject(String(cipher.doFinal(Base64.decode(parts[1], Base64.NO_WRAP)), Charsets.UTF_8))
         val token = payload.optString("token")
         val refresh = payload.optString("refresh_token")
-        if (token.isBlank() || refresh.isBlank()) return null
+        if (token.isBlank() || refresh.isBlank()) return@runCatching null
         DeelaSession(
             token,
             payload.optLong("expires_at_ms"),
