@@ -1,5 +1,6 @@
 package dev.aurastore.store.ui.feed
 
+import dev.aurastore.store.ui.subscriberLabel
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -209,7 +210,7 @@ fun ListingScreen(
                 }
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    title,
+                    subscriberLabel(title),
                     style = MaterialTheme.typography.titleLarge,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
