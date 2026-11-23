@@ -47,7 +47,7 @@ async function sendDeelaActivationEmail(requestId:string):Promise<DeelaMailStatu
  }
  const user=await admin.auth.admin.getUserById(entry.user_id);
  const email=user.data.user?.email||"";
- if(user.error||!email||!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){
+ if(user.error||!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
   await admin.from("deela_subscription_email_outbox").update({delivery_status:"failed",
    last_error_code:"no_valid_recipient",updated_at:new Date().toISOString()}).eq("request_id",requestId);
   return "failed";
@@ -252,7 +252,7 @@ if(req.method==="POST"&&path==="/api/owner/requests/review"){
 }
 if(req.method==="GET"&&path==="/api/owner/subscription-email/status"){
  const {data:messages,error}=await admin.from("deela_subscription_email_outbox")
-  .select("request_id,delivery_status,last_error_code,sent_at,updated_at")
+  .select("request_id,user_id,delivery_status,last_error_code,sent_at,updated_at")
   .order("created_at",{ascending:false}).limit(100);
  if(error)throw error;
  return j({ready:!!(Deno.env.get("RESEND_API_KEY")&&Deno.env.get("DEELA_EMAIL_FROM")),messages:messages||[]});
