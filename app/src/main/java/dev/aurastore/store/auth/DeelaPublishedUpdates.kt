@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import dev.aurastore.store.BuildConfig
+import dev.aurastore.store.data.sources.SourceId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -120,7 +121,7 @@ fun DeelaPublishedUpdates(token: String) {
                     items(updates, key = { it.source + ":" + it.key }) { item ->
                         Column {
                             Text(item.title, style = MaterialTheme.typography.titleSmall)
-                            Text("${item.source} · الإصدار ${item.version}",
+                            Text("${SourceId.entries.firstOrNull { it.name == item.source }?.label ?: item.source} · الإصدار ${item.version}",
                                 style = MaterialTheme.typography.bodySmall)
                             if (item.pageUrl.startsWith("https://")) {
                                 OutlinedButton(onClick = {
