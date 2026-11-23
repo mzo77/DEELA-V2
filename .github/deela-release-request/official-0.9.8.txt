@@ -1,0 +1,5 @@
+DEELA 0.9.8 official signed APK request
+Source: feature/admin-source-updates-and-signup-requests
+Requested by repository owner via ChatGPT on 2026-11-23.
+Publish only after verifying the permanent certificate, app package, and SHA-256.
+Do not publish an unsigned or debug-signed APK.
