@@ -28,6 +28,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 85
     steps:
+      - name: Verify both private signing secrets are configured
+        env:
+          DEELA_HAS_KEYSTORE: ${{ secrets.DEELA_RELEASE_KEYSTORE_BASE64 != '' }}
+          DEELA_HAS_PASSWORD: ${{ secrets.DEELA_RELEASE_KEYSTORE_PASSWORD != '' }}
+        run: |
+          set -euo pipefail
+          if [ "$DEELA_HAS_KEYSTORE" != "true" ]; then
+            echo "::error::Missing DEELA_RELEASE_KEYSTORE_BASE64 in Repository secrets. Save the whole Base64 value and do not save the HTML file name or password here."
+            exit 1
+          fi
+          if [ "$DEELA_HAS_PASSWORD" != "true" ]; then
+            echo "::error::Missing DEELA_RELEASE_KEYSTORE_PASSWORD in Repository secrets."
+            exit 1
+          fi
+          echo "Both signing secret names are configured. Secrets are not printed or passed to Gradle."
       - name: Check out the reviewed Android source
         uses: actions/checkout@v4
         with:
