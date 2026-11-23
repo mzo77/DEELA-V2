@@ -71,6 +71,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
+import dev.aurastore.store.ui.subscriberLabel
+import dev.aurastore.store.ui.modDescriptionArabic
 import dev.aurastore.store.R
 import dev.aurastore.store.data.Api
 import dev.aurastore.store.data.AppState
@@ -605,7 +607,7 @@ fun DetailScreen(
                     item(key = "editorial") {
                         EditorialCard(
                             emblem = "🧩",
-                            title = post.modInfo,
+                            title = modDescriptionArabic(post.modInfo),
                             body = stringResource(
                                 R.string.detail_mod_notice,
                                 post.publisher ?: stringResource(R.string.detail_the_developer),
@@ -656,11 +658,11 @@ fun DetailScreen(
                 // offered here as the switchable panels the official client renders.
                 val panels = detail.tabs
                 val panel = panels.getOrNull(tabIndex) ?: panels.firstOrNull()
-                val about = stripHtml(panel?.content?.takeIf { it.isNotBlank() } ?: detail.description)
+                val about = modDescriptionArabic(stripHtml(panel?.content?.takeIf { it.isNotBlank() } ?: detail.description))
                 if (about.isNotBlank()) {
                     item(key = "about") {
                         StoreCard(Modifier.padding(horizontal = 20.dp, vertical = 6.dp)) {
-                            val headerTitle = panel?.title?.takeUnless { it.equals("About", true) }
+                            val headerTitle = panel?.title?.let { subscriberLabel(it) }?.takeUnless { it.equals("About", true) }
                                 ?: stringResource(R.string.detail_about_title)
                             AnimatedContent(
                                 targetState = headerTitle to about,
@@ -684,7 +686,7 @@ fun DetailScreen(
                                         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                             itemsIndexed(panels) { index, tab ->
                                                 PlayChip(
-                                                    label = tab.title.ifBlank {
+                                                    label = subscriberLabel(tab.title).ifBlank {
                                                         stringResource(R.string.detail_section_fallback, index + 1)
                                                     },
                                                     selected = index == (tabIndex.coerceAtMost(panels.lastIndex)),
@@ -751,9 +753,9 @@ fun DetailScreen(
                             )
                         }
                         Text(
-                            detail.versions.firstOrNull()?.note?.takeIf { it.isNotBlank() }
+                            modDescriptionArabic(detail.versions.firstOrNull()?.note?.takeIf { it.isNotBlank() }
                                 ?: post.modInfo?.takeIf { it.isNotBlank() }
-                                ?: stringResource(R.string.detail_notes_none),
+                                ?: stringResource(R.string.detail_notes_none)),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -923,9 +925,9 @@ fun DetailScreen(
             title = { Text(stringResource(R.string.mod_info_title)) },
             text = {
                 Text(
-                    body?.takeIf { it.isNotBlank() }?.let { stripHtml(it) }
+                    modDescriptionArabic(body?.takeIf { it.isNotBlank() }?.let { stripHtml(it) }
                         ?: detail?.summary?.modInfo
-                        ?: stringResource(R.string.mod_dialog_notes_none),
+                        ?: stringResource(R.string.mod_dialog_notes_none)),
                     // A mod note is free text of any length; at a 2.0× text size it overruns the
                     // dialog and the end of it used to be unreachable.
                     modifier = Modifier.verticalScroll(rememberScrollState()),
