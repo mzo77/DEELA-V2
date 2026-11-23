@@ -205,12 +205,12 @@ private object ArabicOnDeviceTranslation {
         }
         // Keep long descriptions intact; ML Kit performs best with reasonably sized chunks.
         val segments = if (text.length <= 2800) listOf(text) else text.chunked(2500)
-        val result = buildString {
-            for (segment in segments) {
-                val known = ArabicCataloguePhrases.exact(segment)
-                append(known ?: translator.translate(segment).awaitTask())
-            }
-        }.trim()
+        val pieces = mutableListOf<String>()
+        for (segment in segments) {
+            val known = ArabicCataloguePhrases.exact(segment)
+            pieces += known ?: translator.translate(segment).awaitTask()
+        }
+        val result = pieces.joinToString("").trim()
         if (result.isBlank()) throw IllegalStateException("Translation returned empty text")
         synchronized(cache) { cache[text] = result }
         return result
