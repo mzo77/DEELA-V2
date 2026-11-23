@@ -73,14 +73,14 @@ jobs:
           python3 - <<'PY'
           import base64, os, pathlib, re, sys
           raw = os.environ["DEELA_RELEASE_KEYSTORE_BASE64"]
-          cleaned = "".join(c for c in raw if not c.isspace() and c not in "\\u200b\\u200c\\u200d\\ufeff")
+          cleaned = "".join(c for c in raw if not c.isspace() and ord(c) not in (0x200b, 0x200c, 0x200d, 0xfeff))
           candidates = [cleaned]
           candidates.extend(sorted(re.findall(r"[A-Za-z0-9+/]{500,}={0,2}", cleaned), key=len, reverse=True))
           recovered = None
           for candidate in candidates:
               try:
                   value = base64.b64decode(candidate, validate=True)
-                  if 1024 <= len(value) <= 65536 and value[:1] == b"\\x30":
+                  if 1024 <= len(value) <= 65536 and value[0] == 0x30:
                       recovered = value
                       break
               except (ValueError, base64.binascii.Error):
