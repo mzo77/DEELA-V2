@@ -13,6 +13,26 @@
 </head>
 <body>
 <div id="feedback" role="status" aria-live="polite" hidden></div>
+<div id="ownerDialog" class="owner-dialog-overlay" hidden>
+  <section class="owner-dialog-card" role="dialog" aria-modal="true" aria-labelledby="ownerDialogTitle" aria-describedby="ownerDialogBody">
+    <span class="owner-dialog-icon" aria-hidden="true">⚙</span>
+    <h2 id="ownerDialogTitle">تأكيد الإجراء</h2>
+    <p id="ownerDialogBody"></p>
+    <label id="ownerDialogMonthsField" class="owner-dialog-field" hidden>مدة التجديد
+      <select id="ownerDialogMonths">
+        <option value="1">شهر واحد</option>
+        <option value="2">شهران</option>
+        <option value="3">3 أشهر</option>
+        <option value="6">6 أشهر</option>
+        <option value="12">12 شهرًا</option>
+      </select>
+    </label>
+    <div class="owner-dialog-actions">
+      <button id="ownerDialogCancel" type="button" class="secondary">تراجع</button>
+      <button id="ownerDialogConfirm" type="button" class="primary">تأكيد</button>
+    </div>
+  </section>
+</div>
 <section id="login" class="auth-scene">
   <div class="auth-card">
     <div class="identity"><span class="logo">D</span><div><strong>DEELA</strong><small>OWNER CONTROL</small></div></div>
