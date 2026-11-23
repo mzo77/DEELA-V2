@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#110b12">
+  <meta name="description" content="تحميل الإصدار الرسمي الموقّع من تطبيقات ديلا للأندرويد">
+  <title>تطبيقات ديلا ❤️ | التحميل الرسمي</title>
+  <style>
+    :root{color-scheme:dark;font-family:Tahoma,Arial,system-ui,sans-serif}
+    *{box-sizing:border-box} body{margin:0;min-height:100vh;background:#0b080d;color:#fbeff4;display:grid;place-items:center;padding:24px}
+    .card{width:min(100%,560px);border:1px solid #623049;border-radius:26px;background:#1d101b;padding:28px;box-shadow:0 18px 60px #0007}
+    h1{font-size:clamp(30px,6vw,42px);color:#ff315f;margin:0 0 7px}h2{margin:7px 0 20px;font-size:21px}
+    p{line-height:1.9;color:#d8c0cd;margin:10px 0}.status{border:1px solid #703b55;padding:14px;border-radius:14px;margin:20px 0;background:#291421}
+    .download{display:block;text-decoration:none;text-align:center;background:#ff2858;color:#fff;padding:17px 24px;font-size:19px;font-weight:bold;border-radius:18px;margin-top:19px}
+    .download[aria-disabled="true"]{background:#56424d;pointer-events:none;color:#dac2cc}
+    dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0}dt{color:#ba99a7}dd{margin:0;font-weight:bold;overflow-wrap:anywhere}
+    code{direction:ltr;unicode-bidi:isolate;font-size:12px;display:block;overflow-wrap:anywhere;padding:8px;background:#100b10;border-radius:8px}
+    a:not(.download){color:#ff8dac}.muted{font-size:13px}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>تطبيقات ديلا ❤️</h1>
+    <h2>التحميل الرسمي للأندرويد</h2>
+    <p>هذا الرابط يعرض أحدث نسخة رسمية موقّعة من ديلا. لن تظهر هنا النسخ التجريبية أو الملفات غير الموقّعة.</p>
+    <div class="status" id="status" role="status" aria-live="polite">جارٍ التحقق من أحدث إصدار رسمي...</div>
+    <dl>
+      <dt>الإصدار</dt><dd id="version">—</dd>
+      <dt>حجم التحميل</dt><dd id="size">—</dd>
+    </dl>
+    <a class="download" id="download" href="#" aria-disabled="true">تحميل APK الرسمي</a>
+    <p id="checksum-label" class="muted" hidden>بصمة الملف SHA-256:</p>
+    <code id="checksum" hidden></code>
+    <p class="muted">إذا كانت نسختك الحالية تجريبية (Debug)، فقد يطلب أندرويد إزالة النسخة القديمة قبل تثبيت النسخة الرسمية بسبب اختلاف التوقيع. احفظ بيانات الدخول أولًا.</p>
+    <p class="muted">التحديثات الرسمية التالية يمكن تثبيتها فوق هذه النسخة عند استخدام شهادة التوقيع نفسها. أندرويد سيطلب تأكيد التثبيت.</p>
+    <p><a href="https://github.com/mzo77/DEELA-V2/releases">عرض الإصدارات الرسمية وبياناتها على GitHub</a></p>
+  </main>
+  <script>
+  (async()=>{
+    const status=document.getElementById("status");
+    const download=document.getElementById("download");
+    try{
+      const response=await fetch("https://api.github.com/repos/mzo77/DEELA-V2/releases/latest",{headers:{"Accept":"application/vnd.github+json"}});
+      if(!response.ok)throw Error("لا يوجد إصدار رسمي منشور حاليًا.");
+      const release=await response.json();
+      const apk=(release.assets||[]).find(a=>/^DEELA-[0-9]+\.[0-9]+\.[0-9]+-release\.apk$/.test(a.name)&&
+        a.browser_download_url?.startsWith("https://github.com/mzo77/DEELA-V2/releases/download/"));
+      if(release.draft||release.prerelease||!apk)throw Error("لم تُنشر نسخة ديلا الرسمية الموقعة بعد.");
+      document.getElementById("version").textContent=release.tag_name||"—";
+      document.getElementById("size").textContent=apk.size? (apk.size/1048576).toFixed(1)+" MB":"—";
+      download.href=apk.browser_download_url;
+      download.removeAttribute("aria-disabled");
+      status.textContent="نسخة ديلا الرسمية متوفرة ✅";
+      const sha=(apk.digest||"").match(/^sha256:([a-f0-9]{64})$/i);
+      if(sha){
+        document.getElementById("checksum").textContent=sha[1];
+        document.getElementById("checksum").hidden=false;
+        document.getElementById("checksum-label").hidden=false;
+      }
+    }catch(e){
+      status.textContent=e.message||"تعذر التحقق من أحدث إصدار. جرّب لاحقًا.";
+    }
+  })();
+  </script>
+</body>
+</html>
