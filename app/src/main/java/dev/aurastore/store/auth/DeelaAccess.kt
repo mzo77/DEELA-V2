@@ -55,7 +55,7 @@ import java.util.concurrent.TimeUnit
  *
  * Trial memberships are activated/revoked by the administrator on the backend.
  */
-data class DeelaSession(val token: String, val expiresAtEpochMs: Long, val role: String = "subscriber")
+data class DeelaSession(val token: String, val expiresAtEpochMs: Long, val role: String = "subscriber", val subscriptionActive: Boolean = true)
 
 object DeelaAuthApi {
     private val endpoint: String get() = BuildConfig.DEELA_API_BASE_URL.trim().trimEnd('/')
@@ -88,8 +88,12 @@ object DeelaAuthApi {
                 val token = loginResult.optString("access_token")
                 require(token.isNotBlank()) { "لم يتم استلام رمز دخول صالح." }
                 val access = entitlement(token)
-                require(access != null) { "الاشتراك غير مفعل أو انتهت مدته." }
-                access.copy(role = loginResult.optString("role", "subscriber"))
+                if (access == null && !loginResult.optBoolean("subscription_active", true)) {
+                    DeelaSession(token, System.currentTimeMillis() + 3600_000L, loginResult.optString("role", "subscriber"), false)
+                } else {
+                    require(access != null) { "تعذر التحقق من صلاحية الاشتراك." }
+                    access.copy(role = loginResult.optString("role", "subscriber"), subscriptionActive = true)
+                }
             }
         }
 
@@ -103,6 +107,19 @@ object DeelaAuthApi {
                 if (!response.isSuccessful) error("تعذر إنشاء الحساب. تأكد من البريد أو استخدم استعادة كلمة المرور.")
             }
             "تم طلب إنشاء الحساب. افتح بريدك لتأكيده ثم سجل الدخول لطلب الاشتراك."
+        }
+    }
+
+    suspend fun submitSubscription(token: String, months: Int): Result<String> = withContext(Dispatchers.IO) {
+        runCatching {
+            val payload = JSONObject().put("months", months).put("platform", "android")
+            val request = Request.Builder().url("$endpoint/api/v1/requests")
+                .header("Authorization", "Bearer $token")
+                .post(payload.toString().toRequestBody(jsonType)).build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) error("يوجد طلب سابق قيد المراجعة أو تعذر إرسال الطلب.")
+            }
+            "تم إرسال طلبك إلى لوحة المالك. انتظر الموافقة."
         }
     }
 
