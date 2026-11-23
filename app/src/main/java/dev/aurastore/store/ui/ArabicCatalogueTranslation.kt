@@ -162,10 +162,10 @@ private object ArabicCataloguePhrases {
         if (text.isEmpty() || !latin.containsMatchIn(text)) return text
         single(text)?.let { return it }
         // Preserve bullet lines and separators. Do not drop or abbreviate unknown descriptions.
-        val parts = text.split("\\n")
+        val parts = text.lines()
         if (parts.size > 1) {
             val mapped = parts.map { line -> single(line) ?: return null }
-            return mapped.joinToString("\\n")
+            return mapped.joinToString("\n")
         }
         val bits = text.split(separators)
         if (bits.size > 1) {
