@@ -658,14 +658,14 @@ fun DetailScreen(
                 // offered here as the switchable panels the official client renders.
                 val panels = detail.tabs
                 val panel = panels.getOrNull(tabIndex) ?: panels.firstOrNull()
-                val about = modDescriptionArabic(stripHtml(panel?.content?.takeIf { it.isNotBlank() } ?: detail.description))
+                val about = stripHtml(panel?.content?.takeIf { it.isNotBlank() } ?: detail.description)
                 if (about.isNotBlank()) {
                     item(key = "about") {
                         StoreCard(Modifier.padding(horizontal = 20.dp, vertical = 6.dp)) {
-                            val headerTitle = panel?.title?.let { subscriberLabel(it) }?.takeUnless { it.equals("About", true) }
+                            val headerTitle = panel?.title?.takeUnless { it.equals("About", true) }
                                 ?: stringResource(R.string.detail_about_title)
                             AnimatedContent(
-                                targetState = headerTitle to about,
+                                targetState = subscriberLabel(headerTitle) to modDescriptionArabic(about),
                                 transitionSpec = {
                                     ContentTransform(
                                         targetContentEnter = fadeIn(
