@@ -99,6 +99,7 @@ import dev.aurastore.store.data.AppState
 import dev.aurastore.store.data.BackgroundTheme
 import dev.aurastore.store.data.PaletteMode
 import dev.aurastore.store.auth.DeelaSubscriptionScreen
+import dev.aurastore.store.auth.DeelaPublishedUpdates
 import dev.aurastore.store.auth.DeelaOwnerScreen
 import dev.aurastore.store.auth.DeelaAccessScreen
 import dev.aurastore.store.auth.DeelaAuthApi
@@ -355,7 +356,7 @@ class MainActivity : ComponentActivity() {
                                     onLogout = { logout() },
                                 )
                             } else if (splashDone && deelaSession != null) {
-                                StoreApp(deepLink, onLogout = { logout() })
+                                StoreApp(deepLink, onLogout = { logout() }, sessionToken = deelaSession!!.token)
                             } else if (splashDone) {
                                 DeelaAccessScreen(onAuthenticated = { session ->
                                     DeelaSessionStore.save(this@MainActivity, session)
@@ -444,7 +445,7 @@ class MainActivity : ComponentActivity() {
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class, ExperimentalLayoutApi::class)
 @Composable
-fun StoreApp(deepLink: MutableState<String?> = mutableStateOf(null), onLogout: () -> Unit = {}) {
+fun StoreApp(deepLink: MutableState<String?> = mutableStateOf(null), onLogout: () -> Unit = {}, sessionToken: String = "") {
     val context = LocalContext.current
     // The store's own update: one silent check when it opens, and the offer if GitHub has a newer
     // build. The check is throttled in [AppUpdater], so a tab switch does not ask again.
@@ -699,6 +700,9 @@ fun StoreApp(deepLink: MutableState<String?> = mutableStateOf(null), onLogout: (
                             onOpen = { AppUpdater.present(release) },
                             onDismiss = { bannerHiddenVersion = release.version.text },
                         )
+                    }
+                    if (sessionToken.isNotBlank()) {
+                        DeelaPublishedUpdates(sessionToken)
                     }
                 }
             }
