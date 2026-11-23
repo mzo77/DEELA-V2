@@ -14,6 +14,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,8 +24,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.ContentType
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.aurastore.store.BuildConfig
@@ -73,8 +78,12 @@ object DeelaAuthApi {
                 val request = Request.Builder().url("$base/api/v1/auth/login")
                     .post(input.toString().toRequestBody(jsonType)).build()
                 val token = client.newCall(request).execute().use { response ->
-                    if (!response.isSuccessful) error("بيانات الدخول غير صحيحة أو الحساب غير مفعل.")
-                    JSONObject(response.body.string()).optString("access_token")
+                    val body = response.body.string()
+                    if (!response.isSuccessful) {
+                        val reason = runCatching { JSONObject(body).optString("error") }.getOrNull()
+                        error(reason?.takeIf { it.isNotBlank() } ?: "تعذر تسجيل الدخول أو الاشتراك غير فعال.")
+                    }
+                    JSONObject(body).optString("access_token")
                 }
                 require(token.isNotBlank()) { "لم يتم استلام رمز دخول صالح." }
                 val access = entitlement(token)
@@ -114,6 +123,7 @@ fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
     val scope = rememberCoroutineScope()
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var showPassword by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
@@ -142,10 +152,10 @@ fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("البريد الإلكتروني") },
+                label = { Text("اسم المستخدم أو البريد الإلكتروني") },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Username },
                 shape = RoundedCornerShape(16.dp),
             )
             Spacer(Modifier.height(14.dp))
@@ -154,9 +164,14 @@ fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
                 onValueChange = { password = it },
                 label = { Text("كلمة المرور") },
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                modifier = Modifier.fillMaxWidth(),
+                trailingIcon = {
+                    TextButton(onClick = { showPassword = !showPassword }) {
+                        Text(if (showPassword) "إخفاء" else "👁")
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Password },
                 shape = RoundedCornerShape(16.dp),
             )
             Spacer(Modifier.height(22.dp))
@@ -189,7 +204,7 @@ fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
             }
             Spacer(Modifier.height(26.dp))
             Text(
-                "التجربة المجانية يمنحها مالك المتجر. لا يمكن فتح المتجر بدون صلاحية مؤكدة من الخادم.",
+                "يمكنك حفظ كلمة المرور تلقائيًا عبر مدير كلمات المرور في الهاتف. تجربة 24 ساعة يمنحها مالك ديلا.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
