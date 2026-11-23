@@ -728,4 +728,67 @@
     <string name="tour_tabs_body">الألعاب والتطبيقات والبحث والتصفح وحسابي. يمكنك ترتيب التبويبات وتغيير شكل شريط التنقل من الإعدادات.</string>
     <string name="tour_look_body">تتحكم في المظهر الفاتح والداكن والخلفيات وتأثيرات الزجاج والضبابية والزوايا.</string>
     <string name="tour_downloads_body">تعمل التنزيلات في الخلفية وتعرض بطاقة عائمة لتقدم التنزيل، مع مؤثرات حركة متنوعة.</string>
+    <string name="list_end_capped">%1$s يحتوي على أكثر من %2$d عنصر، ولا تتوفر صفحات إضافية.</string>
+    <string name="you_coverage_checked">تم فحص %1$d من أصل %2$d تطبيقًا</string>
+    <string name="you_coverage_missed">لا تتوفر %1$d تطبيقات في الفهرس</string>
+    <plurals name="a11y_downloads_count">
+        <item quantity="one">تنزيلات، %1$d نشط</item>
+        <item quantity="other">تنزيلات، %1$d نشط</item>
+    </plurals>
+    <plurals name="wishlist_count">
+        <item quantity="one">تم حفظ تطبيق واحد</item>
+        <item quantity="other">تم حفظ %1$d تطبيقات</item>
+    </plurals>
+    <plurals name="dl_select_count">
+        <item quantity="one">تم تحديد %1$d</item>
+        <item quantity="other">تم تحديد %1$d</item>
+    </plurals>
+    <plurals name="toast_downloads_deleted">
+        <item quantity="one">تم حذف تنزيل واحد</item>
+        <item quantity="other">تم حذف %1$d تنزيلات</item>
+    </plurals>
+    <plurals name="toast_downloads_cleared">
+        <item quantity="one">تم مسح تنزيل مكتمل واحد</item>
+        <item quantity="other">تم مسح %1$d تنزيلات مكتملة</item>
+    </plurals>
+    <plurals name="dl_row_file_bundle">
+        <item quantity="one">حزمة في القائمة (%1$d ملف مستخرج)</item>
+        <item quantity="other">حزمة في القائمة (%1$d ملفات مستخرجة)</item>
+    </plurals>
+    <plurals name="toast_extra_queued">
+        <item quantity="one">يحتوي %1$s على %2$d ملف بيانات أضيف إلى الانتظار</item>
+        <item quantity="other">يحتوي %1$s على %2$d ملفات بيانات أضيفت إلى الانتظار</item>
+    </plurals>
+    <plurals name="detail_extra_data">
+        <item quantity="one">يتضمن الإصدار %1$d ملف بيانات (%2$s)، سيضاف بعد التثبيت إلى Android/obb.</item>
+        <item quantity="other">يتضمن الإصدار %1$d ملفات بيانات (%2$s)، ستضاف بعد التثبيت إلى Android/obb.</item>
+    </plurals>
+    <plurals name="detail_versions_listed">
+        <item quantity="one">يتوفر %1$d إصدار، افتح الخيارات لتثبيت إصدار أقدم.</item>
+        <item quantity="other">تتوفر %1$d إصدارات، افتح الخيارات لتثبيت إصدار أقدم.</item>
+    </plurals>
+    <plurals name="notify_many">
+        <item quantity="one">جارٍ تنزيل %1$d حزمة</item>
+        <item quantity="other">جارٍ تنزيل %1$d حزم</item>
+    </plurals>
+    <plurals name="you_count_apps">
+        <item quantity="one">%1$d تطبيق</item>
+        <item quantity="other">%1$d تطبيقات</item>
+    </plurals>
+    <plurals name="search_count">
+        <item quantity="one">%1$d نتيجة لـ%2$s</item>
+        <item quantity="other">%1$d نتائج لـ%2$s</item>
+    </plurals>
+    <plurals name="search_count_partial">
+        <item quantity="one">%1$d من %2$d نتيجة لـ%3$s</item>
+        <item quantity="other">%1$d من %2$d نتائج لـ%3$s</item>
+    </plurals>
+    <plurals name="cat_app_count">
+        <item quantity="one">%1$d تطبيق في هذا القسم</item>
+        <item quantity="other">%1$d تطبيقات في هذا القسم</item>
+    </plurals>
+    <plurals name="settings_category_apps_note">
+        <item quantity="one">%1$s · %2$d من %3$d مكتبات مفعلة</item>
+        <item quantity="other">%1$s · %2$d من %3$d مكتبات مفعلة</item>
+    </plurals>
 </resources>
