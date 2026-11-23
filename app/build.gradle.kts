@@ -25,7 +25,7 @@ android {
         minSdk = 27
         targetSdk = 36
         // Public HTTPS endpoint supplied at build time; no credentials are bundled in the APK.
-        buildConfigField("String", "DEELA_API_BASE_URL", "\"\${System.getenv("DEELA_API_BASE_URL") ?: ""}\"")
+        buildConfigField("String", "DEELA_API_BASE_URL", "\"${System.getenv("DEELA_API_BASE_URL") ?: ""}\"")
         // One number, two readings: the name is what a GitHub tag carries, the code is what Android
         // compares. The code is derived here so a release cannot publish a name and a code that
         // disagree — major × 10 000 + minor × 100 + patch, so 1.4.0 is 10 400. The bounds are the
