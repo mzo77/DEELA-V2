@@ -1053,8 +1053,8 @@ private fun DetailHero(
                 Spacer(Modifier.height(4.dp))
                 Text(
                     listOfNotNull(
-                        post?.genre?.takeIf { it.isNotBlank() },
-                        post?.type?.takeIf { it.isNotBlank() },
+                        post?.genre?.takeIf { it.isNotBlank() }?.let { modDescriptionArabic(it).split(" · ").joinToString(" · ") { part -> subscriberLabel(part) } },
+                        post?.type?.takeIf { it.isNotBlank() }?.let { subscriberLabel(it) },
                         formatSize(post?.size),
                     ).joinToString(" · ").ifBlank { " " },
                     style = MaterialTheme.typography.bodySmall,
