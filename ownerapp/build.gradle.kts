@@ -5,11 +5,11 @@ android {
     namespace = "com.deela.owner"
     compileSdk = 37
     defaultConfig {
-        applicationId = "com.deela.owner"
+        applicationId = "com.deela.owner.control"
         minSdk = 27
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
         val publicUrl = System.getenv("DEELA_OWNER_URL")?.trim()
             ?.takeIf { it.startsWith("https://") && !it.contains("\"") }
             ?: "https://appassets.androidplatform.net/assets/www/index.html"
