@@ -1,0 +1,72 @@
+name: Verify MZO public website and owner-only CMS
+on:
+  push:
+    paths:
+      - '.github/workflows/mzo-site-ci.yml'
+      - 'docs/mzo/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate MZO scripts, sitemap and publication assets
+        run: |
+          set -euo pipefail
+          node --check docs/mzo/app.js
+          node --check docs/mzo/admin/admin.js
+          node --check docs/mzo/sw.js
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from xml.etree import ElementTree
+          p=Path("docs/mzo")
+          assert (p/"index.html").read_text().startswith("<!doctype html>")
+          assert 'noindex,nofollow' in (p/"admin/index.html").read_text()
+          manifest=json.loads((p/"manifest.webmanifest").read_text())
+          assert manifest["display"]=="standalone"
+          assert manifest["start_url"]=="/DEELA-V2/mzo/"
+          ElementTree.parse(p/"sitemap.xml")
+          assert (p/"icon.svg").stat().st_size>0
+          PY
+      - name: Verify deployed API data and secure owner checks
+        run: |
+          set -euo pipefail
+          API="https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/mzo-site"
+          curl --fail-with-body --retry 3 --max-time 20 "$API/health" -o /tmp/mzo-health.json
+          curl --fail-with-body --retry 3 --max-time 20 "$API/public" -o /tmp/mzo-public.json
+          python3 - <<'PY'
+          import json
+          h=json.load(open("/tmp/mzo-health.json"))
+          d=json.load(open("/tmp/mzo-public.json"))
+          assert h.get("ok") is True
+          assert d["settings"]["brand_name"]=="MZO"
+          assert len(d["links"])>=3
+          assert all(x["published"] for x in d["links"])
+          assert d["owner_only"] is False
+          PY
+          code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$API/admin")"
+          test "$code" = "403"
+          code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 -X POST -H 'Content-Type: application/json' --data '{"heading":"tamper"}' "$API/settings")"
+          test "$code" = "403"
+          code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 -X POST -H 'Content-Type: application/json' --data '{"email":"bad","password":""}' "$API/auth/login")"
+          test "$code" = "401"
+          curl -sS -D /tmp/mzo-cors -o /dev/null -X OPTIONS \
+            -H 'Origin: https://mzo77.github.io' \
+            -H 'Access-Control-Request-Method: POST' \
+            -H 'Access-Control-Request-Headers: authorization,content-type' "$API/settings"
+          grep -qi 'access-control-allow-origin: https://mzo77.github.io' /tmp/mzo-cors
+      - name: Verify published HTML Pages are served as HTML, not raw text
+        run: |
+          set -euo pipefail
+          BASE="https://mzo77.github.io/DEELA-V2/mzo"
+          curl -L --fail-with-body --retry 3 --retry-all-errors --max-time 20 -D /tmp/mzo-headers "$BASE/" -o /tmp/mzo-index.html
+          grep -qi 'content-type: text/html' /tmp/mzo-headers
+          grep -q 'MZO' /tmp/mzo-index.html
+          curl -L --fail-with-body --retry 3 --retry-all-errors --max-time 20 "$BASE/admin/" -o /tmp/mzo-admin.html
+          grep -q 'noindex,nofollow' /tmp/mzo-admin.html
+          curl -L --fail-with-body --max-time 20 "$BASE/sitemap.xml" -o /tmp/mzo-sitemap.xml
+          echo "MZO public web and protected admin are live."
