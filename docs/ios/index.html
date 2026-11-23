@@ -17,6 +17,9 @@ button,input,select{font:inherit}a{color:#ff98b0;text-decoration:none}button{cur
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:13px}.panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:19px;margin:14px 0}.panel h2{margin:0 0 12px;font-size:21px}.panel h3{margin:0 0 6px;font-size:16px}.muted{color:var(--dim)}.status{display:inline-flex;align-items:center;gap:7px;color:var(--ok);border:1px solid #25644d;background:#13372c;padding:5px 10px;border-radius:999px;font-size:12px}.status.warn{border-color:#7d5a2d;background:#3b2c16;color:#f3ca85}.status.neutral{background:#272c3a;color:#bcc8dc;border-color:#495369}
 .fields{display:grid;gap:11px}.fields label{display:grid;gap:6px;font-weight:650}.fields input,.fields select,.search{min-width:0;width:100%;padding:12px 14px;border-radius:12px;color:#f6f7fb;background:#0d121e;border:1px solid #3a465e;outline:0}.fields input:focus,.search:focus{border-color:var(--accent)}.auth{max-width:480px;margin:0 auto}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:15px 0}.tabs button{border:1px solid var(--line);border-radius:12px;padding:10px 13px;background:#1c2331;color:#c7d0df;font-weight:700}.tabs button.active{background:#702640;color:#fff;border-color:#f34c76}.catalog-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}.catalog-tools .search{flex:1;min-width:200px}.appgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}.app{border:1px solid var(--line);border-radius:17px;background:#181f2e;padding:15px;min-height:190px;display:flex;flex-direction:column;gap:9px}.apphead{display:flex;gap:10px;align-items:center}.appicon{width:58px;height:58px;object-fit:cover;background:#2b3141;border:1px solid #3a465c;border-radius:14px;flex:none}.fallback{width:58px;height:58px;border-radius:14px;background:#402638;display:grid;place-items:center;font-size:24px;flex:none}.app strong{display:block;line-height:1.4}.app p{font-size:13px;line-height:1.7;color:var(--dim);margin:0;min-height:38px;overflow-wrap:anywhere}.app .button{margin-top:auto}.app .meta{color:#b5bfcd;font-size:12px}.source{width:100%;display:flex;gap:8px;align-items:center;justify-content:space-between;color:#eef2fb;background:#1f2737;border:1px solid #343e53;border-radius:12px;padding:13px;cursor:pointer;text-align:right}.source:hover{border-color:#c34267}.sources{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px}.notice{border-right:3px solid #fb6f91;background:#301c2a;padding:12px;border-radius:9px;color:#f7c5d1;margin:12px 0;font-size:13px}.empty{border:1px dashed #556177;padding:21px;border-radius:15px;color:#bec7d6;text-align:center}.link{border:0;background:none;color:#ff98b0;text-decoration:underline;padding:7px;cursor:pointer}.footer{text-align:center;color:#8190a5;margin-top:32px;font-size:12px}.hidden{display:none!important}#flash{position:sticky;top:8px;z-index:10;margin:auto;max-width:650px;display:none;background:#3b2030;border:1px solid #a34662;border-radius:12px;padding:12px;color:white;box-shadow:0 10px 35px #0007}#flash.visible{display:block}
 @media(min-width:700px){.hero{padding:42px}.main{padding:26px 18px 80px}}@media(max-width:400px){.top{padding:12px}.brand-copy strong{font-size:16px}}
+
+/* iPhone subscriber display-only catalogue */
+#catalogSummary{font-size:13px}.app{min-height:205px;box-shadow:0 8px 20px #0002}.app:hover{border-color:#a43a60}.app .meta{font-size:12px;color:#bdc6d6}.app .view-badge{font-size:11px;color:#f3bcce;background:#3a2232;border:1px solid #754258;border-radius:9px;padding:5px 8px;display:inline-block;align-self:start}.app .button{width:100%}.app p{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;min-height:52px}.catalog-tools{justify-content:space-between}.catalog-tools h2{font-size:21px}.app-dialog{color:var(--ink);border:1px solid #6a4e65;border-radius:20px;padding:20px;background:#171c2c;width:min(93vw,570px);max-height:86vh;overflow:auto;box-shadow:0 25px 80px #0009}.app-dialog::backdrop{background:#050712bb;backdrop-filter:blur(5px)}.modal-head{display:flex;gap:12px;align-items:start;justify-content:space-between}.modal-head h2{margin:2px 0;font-size:24px}.detail-description{color:#cbd2df;white-space:pre-line;line-height:1.9;overflow-wrap:anywhere}.detail-screenshots{display:flex;gap:10px;overflow-x:auto;padding:6px 0 12px}.detail-screenshots img{max-height:285px;max-width:190px;width:auto;object-fit:contain;border-radius:12px;background:#0e1320;flex:none;border:1px solid var(--line)}#sourceProgress{min-height:20px;margin:8px 0 14px;font-size:12px}#categoryFilter{flex:none}.source:focus-visible{outline:2px solid #ff9fbe}.app-detail-note{font-size:12px;color:var(--dim)}@media(max-width:600px){.catalog-tools{align-items:stretch}.catalog-tools h2{font-size:19px}.catalog-tools:has(#mySearch){display:grid;grid-template-columns:1fr 125px}.catalog-tools #categoryFilter{width:100%!important}.appgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.app{padding:12px;min-height:230px}.apphead{align-items:start}.appicon,.fallback{width:45px;height:45px;border-radius:11px}.app strong{font-size:13px}.app p{font-size:12px}.app .button{font-size:12px;padding:9px 6px}.app .view-badge{font-size:10px}}@media(max-width:360px){.appgrid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -29,10 +32,10 @@ button,input,select{font:inherit}a{color:#ff98b0;text-decoration:none}button{cur
  <section class="hero">
    <div class="eyebrow">DEELA APPS • FOR IPHONE</div>
    <h1>تطبيقاتك في مكان واحد.</h1>
-   <p>استعرض برامج الآيفون من داخل متجر ديلا. حسابات واشتراكات ديلا موحّدة، مع المحافظة على مصادر Feather الأصلية.</p>
+   <p>واجهة المشتركين على الآيفون: صور التطبيقات وأسماؤها وإصداراتها ومميزاتها والبحث فيها، مرتبطة بموافقتك على الاشتراك.</p>
    <div class="hero-actions">
       <span class="status neutral" id="heroStatus">جاري التحقق من حسابك...</span>
-      <a class="button ghost" href="./install/" target="_blank" rel="noopener">رابط تثبيت تطبيق الآيفون</a>
+      <span class="status warn" id="previewBadge">وضع العرض فقط • التحميل مقفل مؤقتًا</span>
    </div>
  </section>
  <section id="authArea" class="panel auth">
@@ -72,30 +75,39 @@ button,input,select{font:inherit}a{color:#ff98b0;text-decoration:none}button{cur
   </section>
   <section id="activeArea" class="hidden">
    <div class="tabs" id="storeTabs">
-    <button class="active" type="button" data-panel="myApps">تطبيقات ديلا</button>
-    <button type="button" data-panel="featuredSources">مصادر Feather</button>
-    <button type="button" data-panel="helpPanel">مساعدة التثبيت</button>
+    <button class="active" type="button" data-panel="myApps">الرئيسية • البرامج</button>
+    <button type="button" data-panel="featuredSources">المصادر</button>
+    <button type="button" data-panel="helpPanel">حول المتجر</button>
     <button type="button" data-panel="ownerPanel" id="ownerTab" class="hidden">طلبات iOS للمالك</button>
    </div>
    <section id="myApps">
-    <div class="catalog-tools"><h2>برامج الآيفون</h2><input class="search" id="mySearch" placeholder="ابحث باسم التطبيق" aria-label="بحث في تطبيقات ديلا"></div>
+    <div class="catalog-tools" style="margin-bottom:4px">
+      <div><h2 style="margin:0">مكتبة تطبيقات الآيفون</h2><p class="muted" id="catalogSummary" style="margin:4px 0">جارٍ جلب بيانات التطبيقات من المصادر المتاحة...</p></div>
+      <button type="button" id="refreshCatalog" class="button secondary small">تحديث البرامج</button>
+    </div>
+    <div class="notice" role="note">هذه النسخة للتصفح والاستعراض فقط. يمكنك رؤية البرامج وتفاصيلها، لكن لا يمكن تحميل أو تثبيت IPA منها حاليًا.</div>
+    <div class="catalog-tools">
+      <input class="search" id="mySearch" placeholder="ابحث عن تطبيق أو مطوّر أو وصف..." aria-label="بحث في تطبيقات الآيفون">
+      <select class="search" id="categoryFilter" aria-label="تصفية تصنيفات التطبيقات" style="width:auto;max-width:185px"><option value="">جميع التصنيفات</option></select>
+    </div>
+    <p class="muted" id="sourceProgress" aria-live="polite"></p>
     <div id="myAppsGrid" class="appgrid"></div>
+    <button type="button" class="button secondary block hidden" id="moreApps" style="margin-top:15px">عرض المزيد من التطبيقات</button>
    </section>
    <section id="featuredSources" class="hidden">
     <h2>المصادر الأصلية</h2>
-    <p class="muted">هذه نفس المصادر المقترحة في مشروع Feather. اختر مصدرًا لاستعراض تطبيقاته.</p>
+    <p class="muted">المصادر الـ15 الموصى بها في Feather محفوظة كما هي. اختر مصدرًا لعرض أسماء التطبيقات وتفاصيلها؛ لن تظهر أي أزرار تنزيل.</p>
     <div id="sourceList" class="sources"></div>
     <div id="sourceResults" class="hidden">
       <div class="catalog-tools"><h2 id="sourceTitle"></h2><input class="search" id="sourceSearch" placeholder="ابحث في المصدر" aria-label="بحث في المصدر"></div>
-      <div class="notice">روابط المصدر خارجية. تحميل IPA لا يعني تثبيته؛ التثبيت على iPhone يتطلب توقيعًا صالحًا.</div>
+      <div class="notice">وضع العرض فقط — لا تتوفر روابط تنزيل IPA أو التثبيت للمشتركين.</div>
       <div id="sourceApps" class="appgrid"></div>
     </div>
    </section>
    <section id="helpPanel" class="panel hidden">
-    <h2>تثبيت التطبيقات على الآيفون</h2>
-    <p>يمكنك استعراض التطبيقات وتنزيل ملفات IPA من المصادر المتوافقة. ملفات IPA لا تُثبّت تلقائيًا على كل جهاز iPhone.</p>
-    <p>للتثبيت المباشر تحتاج شهادة Apple وملف تفويض مناسبًا لجهازك، أو وسيلة توزيع أخرى تسمح بها Apple. نظام توقيع ديلا التجريبي جاهز برمجيًا، لكنه ينتظر بيانات الشهادة.</p>
-    <a class="button" href="./install/" target="_blank" rel="noopener">صفحة التثبيت المباشر</a>
+    <h2>عن DEELA iOS</h2>
+    <p>متجر ديلا للآيفون نسخة ويب مخصصة للمشتركين المعتمدين. بعد تسجيل الدخول تظهر التطبيقات ببياناتها وصورها وتفاصيلها من مصادر Feather المقترحة والتطبيقات التي تنشرها إدارة ديلا.</p>
+    <p>التحميل والتثبيت <strong>متوقفان مؤقتًا داخل هذه النسخة</strong>. لم تُحذف أي مصادر من المشروع، وسيظل عرض البرامج والبحث عنها متاحين إلى أن تتوفر طريقة توزيع مناسبة.</p>
    </section>
    <section id="ownerPanel" class="panel hidden">
      <h2>إدارة طلبات اشتراك الآيفون</h2>
@@ -105,6 +117,14 @@ button,input,select{font:inherit}a{color:#ff98b0;text-decoration:none}button{cur
    </section>
   </section>
  </section>
+ <dialog id="appDetailDialog" class="app-dialog" aria-labelledby="detailTitle">
+    <div class="modal-head"><div><small class="muted">تفاصيل التطبيق</small><h2 id="detailTitle">تطبيق</h2></div><button type="button" id="closeDetails" class="button secondary small">إغلاق ×</button></div>
+    <div class="apphead" style="margin:15px 0"><div id="detailIcon"></div><div><div id="detailVersion" class="meta"></div><div id="detailCategory" class="meta"></div><div id="detailDeveloper" class="meta"></div></div></div>
+    <p id="detailDescription" class="detail-description"></p>
+    <div id="detailScreenshots" class="detail-screenshots"></div>
+    <div class="notice">التحميل والتثبيت غير متاحين حاليًا. هذه التفاصيل للعرض فقط.</div>
+    <button type="button" disabled class="button block" aria-disabled="true">التحميل غير متاح مؤقتًا</button>
+ </dialog>
  <footer class="footer">DEELA iOS · نسخة ويب مستقلة · مصادر Feather محفوظة · الحقوق والتراخيص لأصحابها.</footer>
 </main>
 <script defer src="./app.js"></script>
