@@ -55,7 +55,7 @@ import java.util.concurrent.TimeUnit
  *
  * Trial memberships are activated/revoked by the administrator on the backend.
  */
-data class DeelaSession(val token: String, val expiresAtEpochMs: Long)
+data class DeelaSession(val token: String, val expiresAtEpochMs: Long, val role: String = "subscriber")
 
 object DeelaAuthApi {
     private val endpoint: String get() = BuildConfig.DEELA_API_BASE_URL.trim().trimEnd('/')
@@ -77,18 +77,19 @@ object DeelaAuthApi {
                     .put("password", password).put("platform", "android")
                 val request = Request.Builder().url("$base/api/v1/auth/login")
                     .post(input.toString().toRequestBody(jsonType)).build()
-                val token = client.newCall(request).execute().use { response ->
+                val loginResult = client.newCall(request).execute().use { response ->
                     val body = response.body.string()
                     if (!response.isSuccessful) {
                         val reason = runCatching { JSONObject(body).optString("error") }.getOrNull()
                         error(reason?.takeIf { it.isNotBlank() } ?: "تعذر تسجيل الدخول أو الاشتراك غير فعال.")
                     }
-                    JSONObject(body).optString("access_token")
+                    JSONObject(body)
                 }
+                val token = loginResult.optString("access_token")
                 require(token.isNotBlank()) { "لم يتم استلام رمز دخول صالح." }
                 val access = entitlement(token)
                 require(access != null) { "الاشتراك غير مفعل أو انتهت مدته." }
-                access
+                access.copy(role = loginResult.optString("role", "subscriber"))
             }
         }
 
