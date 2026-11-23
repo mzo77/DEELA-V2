@@ -1,0 +1,47 @@
+name: DEELA Owner Updates Android Check
+on:
+  push:
+    branches:
+      - feature/admin-source-updates-and-signup-requests
+    paths:
+      - 'app/**'
+      - 'control-center/supabase/deela-control/index.ts'
+      - '.github/workflows/deela-owner-updates.yml'
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android platform
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --channel=3 --install "platforms;android-37.0" "build-tools;36.1.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compile DEELA Android app
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon :app:assembleDebug
+          test -s app/build/outputs/apk/debug/app-debug.apk
+      - name: Check public auth and source access controls
+        run: |
+          set -euo pipefail
+          BASE="https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-control"
+          curl -fsS --max-time 20 "$BASE/health" | grep -q 'DEELA Control Center'
+          code="$(curl -sS --max-time 20 -o /tmp/deela-unauth.json -w '%{http_code}' "$BASE/api/v1/source/updates")"
+          test "$code" = "401"
+          code="$(curl -sS --max-time 20 -o /tmp/deela-owner-unauth.json -w '%{http_code}' "$BASE/api/owner/source/candidates")"
+          test "$code" = "403"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DEELA-0.9.2-owner-updates-debug-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
