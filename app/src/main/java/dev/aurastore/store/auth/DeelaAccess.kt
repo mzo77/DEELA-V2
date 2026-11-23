@@ -93,6 +93,40 @@ object DeelaAuthApi {
             }
         }
 
+    suspend fun register(email: String, password: String): Result<String> = withContext(Dispatchers.IO) {
+        runCatching {
+            require(email.contains("@") && password.length >= 12) { "أدخل بريدًا صحيحًا وكلمة مرور من 12 رمزًا على الأقل." }
+            val payload = JSONObject().put("email", email.trim()).put("password", password)
+            val request = Request.Builder().url("$endpoint/api/v1/auth/register")
+                .post(payload.toString().toRequestBody(jsonType)).build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) error("تعذر إنشاء الحساب. تأكد من البريد أو استخدم استعادة كلمة المرور.")
+            }
+            "تم طلب إنشاء الحساب. افتح بريدك لتأكيده ثم سجل الدخول لطلب الاشتراك."
+        }
+    }
+
+    suspend fun requestSubscription(email: String, password: String, months: Int): Result<String> = withContext(Dispatchers.IO) {
+        runCatching {
+            val loginPayload = JSONObject().put("email", email.trim()).put("password", password).put("platform", "android")
+            val loginRequest = Request.Builder().url("$endpoint/api/v1/auth/login")
+                .post(loginPayload.toString().toRequestBody(jsonType)).build()
+            val token = client.newCall(loginRequest).execute().use { response ->
+                if (response.isSuccessful) JSONObject(response.body.string()).optString("access_token")
+                else ""
+            }
+            require(token.isNotBlank()) { "طلب الاشتراك يحتاج جلسة حساب. سنربط تسجيل الدخول للحساب غير النشط في التحديث القادم." }
+            val payload = JSONObject().put("months", months).put("platform", "android")
+            val request = Request.Builder().url("$endpoint/api/v1/requests")
+                .header("Authorization", "Bearer $token")
+                .post(payload.toString().toRequestBody(jsonType)).build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) error("تعذر إرسال طلب الاشتراك.")
+            }
+            "تم إرسال طلب الاشتراك إلى المالك."
+        }
+    }
+
     suspend fun requestPasswordRecovery(email: String): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
             require(email.trim().contains("@")) { "أدخل البريد الإلكتروني المسجل في ديلا." }
@@ -138,6 +172,7 @@ fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
     var recoveryMode by remember { mutableStateOf(false) }
+    var registerMode by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
@@ -195,7 +230,11 @@ fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
                     busy = true
                     error = null
                     scope.launch {
-                        if (recoveryMode) {
+                        if (registerMode) {
+                            val result = DeelaAuthApi.register(email, password)
+                            busy = false
+                            result.fold(onSuccess = { error = it }, onFailure = { error = it.message })
+                        } else if (recoveryMode) {
                             val result = DeelaAuthApi.requestPasswordRecovery(email)
                             busy = false
                             result.fold(onSuccess = { error = it }, onFailure = {
@@ -213,7 +252,7 @@ fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
                 modifier = Modifier.fillMaxWidth().height(52.dp),
             ) {
                 if (busy) CircularProgressIndicator()
-                else Text(if (recoveryMode) "إرسال رابط استعادة كلمة المرور" else "تسجيل الدخول")
+                else Text(if (registerMode) "إنشاء حساب جديد" else if (recoveryMode) "إرسال رابط استعادة كلمة المرور" else "تسجيل الدخول")
             }
             if (error != null) {
                 Spacer(Modifier.height(14.dp))
@@ -224,8 +263,11 @@ fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
-            TextButton(onClick = { recoveryMode = !recoveryMode; error = null }) {
+            TextButton(onClick = { recoveryMode = !recoveryMode; registerMode = false; error = null }) {
                 Text(if (recoveryMode) "العودة إلى تسجيل الدخول" else "نسيت كلمة المرور؟")
+            }
+            TextButton(onClick = { registerMode = !registerMode; recoveryMode = false; error = null }) {
+                Text(if (registerMode) "العودة لتسجيل الدخول" else "إنشاء حساب جديد")
             }
             Spacer(Modifier.height(26.dp))
             Text(
