@@ -42,8 +42,10 @@ jobs:
           test "$code" = "403"
           code="$(curl -sS --max-time 20 -o /tmp/deela-mail-unauth.json -w '%{http_code}' "$BASE/api/owner/subscription-email/status")"
           test "$code" = "403"
+          code="$(curl -sS --max-time 20 -o /tmp/deela-test-unauth.json -w '%{http_code}' -X POST "$BASE/api/owner/subscription-email/test" -H "Content-Type: application/json" -d '{}')"
+          test "$code" = "403"
       - uses: actions/upload-artifact@v4
         with:
-          name: DEELA-0.9.4-activation-email-debug-APK
+          name: DEELA-0.9.5-email-test-debug-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 14
