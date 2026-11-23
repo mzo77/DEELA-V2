@@ -1,6 +1,8 @@
 package dev.aurastore.store.auth
 
 import androidx.compose.foundation.layout.*
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
@@ -67,7 +69,14 @@ private object OwnerApi {
     }
 }
 @Composable
-fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
+fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit,onOpenStore:()->Unit) {
+    val context=LocalContext.current
+    val openCenter={
+        context.startActivity(
+            Intent(context,DeelaEmbeddedOwnerActivity::class.java)
+                .putExtra(DeelaEmbeddedOwnerActivity.EXTRA_OWNER_TOKEN,session.token)
+        )
+    }
     val scope=rememberCoroutineScope()
     var page by remember { mutableStateOf("الرئيسية") }
     var data by remember { mutableStateOf<OwnerData?>(null) }
@@ -130,7 +139,7 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
             Text("لوحة تحكم المالك 👑",style=MaterialTheme.typography.titleLarge)
             Spacer(Modifier.height(12.dp))
             Row(modifier=Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-                listOf("الرئيسية","الطلبات","المشتركون","السجل","التحديثات","الرسائل").forEach { tab ->
+                listOf("الرئيسية","مركز التحكم","الطلبات","المشتركون","السجل","التحديثات","الرسائل").forEach { tab ->
                     FilterChip(selected=page==tab,onClick={page=tab},label={Text(tab)})
                 }
             }
@@ -143,6 +152,20 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
             val current=data
             if(current!=null) {
                 when(page) {
+                    "مركز التحكم" -> {
+                        Text("جميع أدوات DEELA في قائمة واحدة خاصة بالمالك.")
+                        Spacer(Modifier.height(12.dp))
+                        Button(onClick=openCenter,modifier=Modifier.fillMaxWidth()) {
+                            Text("فتح مركز التحكم المتكامل")
+                        }
+                        Text(
+                            "الطلبات، المشتركين، ملفات APK وIPA، إدارة الحساب، وروابط المشاريع.",
+                            style=MaterialTheme.typography.bodySmall
+                        )
+                        OutlinedButton(onClick=onOpenStore,modifier=Modifier.fillMaxWidth()) {
+                            Text("الانتقال إلى متجر التطبيقات")
+                        }
+                    }
                     "الرئيسية" -> {
                         val subscribers=current.members.filter {it.role!="owner"}
                         val awaitingReview=current.requests.map { it.userId }.toSet()
@@ -151,6 +174,8 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                         Text("إجمالي المشتركين: "+subscribers.size,style=MaterialTheme.typography.titleMedium)
                         Text("الاشتراكات النشطة: "+subscribers.count {it.active})
                         Text("طلبات الاشتراك المعلقة: "+current.requests.size)
+                        Button(onClick={page="مركز التحكم"}) {Text("مركز التحكم الكامل")}
+                        Button(onClick=onOpenStore) {Text("متجر التطبيقات")}
                         Button(onClick={page="الطلبات"}) {Text("مراجعة طلبات الاشتراك") }
                         Text("غير النشطة: "+subscribers.count {!it.active && it.id !in awaitingReview})
                         Spacer(Modifier.height(16.dp))
