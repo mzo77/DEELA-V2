@@ -51,7 +51,15 @@ function ownerDecision({title="تأكيد الإجراء",message="",action="ت�
   }
   function onKey(ev){if(ev.key==="Escape"||ev.key==="Backspace"&&ev.target===document.body){ev.preventDefault();done(null)}}
   no.onclick=()=>done(null);
-  yes.onclick=()=>done(months?Number($("ownerDialogMonths").value):true);
+  yes.onclick=()=>{
+   if(months){
+    const field=$("ownerDialogMonths"),value=Number(field.value);
+    if(!Number.isInteger(value)||value<1||value>36){
+     feedback("أدخل عدد أشهر صحيح من 1 إلى 36",true);field.focus();return;
+    }
+    done(value);
+   }else done(true);
+  };
   document.addEventListener("keydown",onKey);
   yes.focus();
  });
@@ -185,9 +193,9 @@ async function subscription(m,action){
  if(busy)return feedback("جارٍ تنفيذ عملية أخرى",true);
  let months;
  if(action==="renew"){
-  months=await ownerDecision({title:"تجديد الاشتراك",message:"اختر عدد الأشهر قبل التجديد.",action:"تجديد الآن",months:true});
+  months=await ownerDecision({title:"تجديد الاشتراك",message:"اكتب عدد الأشهر التي تريد إضافتها إلى مدة المشترك.",action:"تجديد الآن",months:true});
   if(months===null)return;
-  if(![1,2,3,6,12].includes(months))return feedback("اختر مدة صحيحة",true);
+  if(!Number.isInteger(months)||months<1||months>36)return feedback("أدخل مدة من شهر إلى 36 شهرًا",true);
  }
  if(["suspend","revoke"].includes(action)){
   const confirmed=await ownerDecision({
