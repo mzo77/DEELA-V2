@@ -143,6 +143,8 @@ dependencies {
   implementation(libs.okhttp)
   implementation(libs.coil.compose)
   implementation(libs.coil.network.okhttp)
+  // Translate arbitrary catalogue descriptions inside DEELA, without a separate app.
+  implementation("com.google.mlkit:translate:17.0.3")
 
   // Background update checks — the policy must be honoured when no screen is open.
   implementation(libs.androidx.work.runtime.ktx)
