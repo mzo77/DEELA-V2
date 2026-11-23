@@ -43,13 +43,23 @@ fun formatSize(raw: String?): String? {
     if (text.isEmpty()) return null
     val match = SIZE_PATTERN.find(text) ?: return text
     val (number, unit) = match.destructured
-    return "$number ${unit.uppercase()}B"
+    val suffix = if (Locale.getDefault().language == "ar") {
+        when (unit.uppercase()) {
+            "K" -> "ك.ب"
+            "M" -> "م.ب"
+            else -> "ج.ب"
+        }
+    } else "${unit.uppercase()}B"
+    return "$number $suffix"
 }
 
-fun formatCount(value: Long): String = when {
-    value >= 1_000_000 -> String.format(Locale.US, "%.1fM", value / 1_000_000.0)
-    value >= 1_000 -> String.format(Locale.US, "%.1fk", value / 1_000.0)
-    else -> value.toString()
+fun formatCount(value: Long): String {
+    val arabic = Locale.getDefault().language == "ar"
+    return when {
+        value >= 1_000_000 -> String.format(Locale.US, "%.1f", value / 1_000_000.0) + if (arabic) " مليون" else "M"
+        value >= 1_000 -> String.format(Locale.US, "%.1f", value / 1_000.0) + if (arabic) " ألف" else "k"
+        else -> value.toString()
+    }
 }
 
 fun formatTimestamp(millis: Long): String? {
