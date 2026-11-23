@@ -172,7 +172,7 @@ private fun DeelaOwnerScreenBody(session:DeelaSession,onLogout:()->Unit,onOpenSt
                 }
             },
             confirmButton={ TextButton(
-                enabled=!busy && (action!="renew" || customMonths.toIntOrNull() in 1..36),
+                enabled=!busy && (action!="renew" || (customMonths.toIntOrNull() ?: 0) in 1..36),
                 onClick={
                     val months=if(action=="renew") customMonths.toIntOrNull() else 1
                     if(months==null || months !in 1..36) return@TextButton
