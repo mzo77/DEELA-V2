@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -97,10 +99,10 @@ object DeelaAuthApi {
             }
         }
 
-    suspend fun register(email: String, password: String): Result<String> = withContext(Dispatchers.IO) {
+    suspend fun register(email: String, password: String, displayName: String): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
             require(email.contains("@") && password.length >= 12) { "أدخل بريدًا صحيحًا وكلمة مرور من 12 رمزًا على الأقل." }
-            val payload = JSONObject().put("email", email.trim()).put("password", password)
+            val payload = JSONObject().put("email", email.trim()).put("password", password).put("display_name", displayName.trim())
             val request = Request.Builder().url("$endpoint/api/v1/auth/register")
                 .post(payload.toString().toRequestBody(jsonType)).build()
             client.newCall(request).execute().use { response ->
@@ -190,6 +192,8 @@ fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
     var showPassword by remember { mutableStateOf(false) }
     var recoveryMode by remember { mutableStateOf(false) }
     var registerMode by remember { mutableStateOf(false) }
+    var displayName by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
@@ -198,7 +202,7 @@ fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
         color = MaterialTheme.colorScheme.background,
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 28.dp, vertical = 36.dp),
+            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp, vertical = 36.dp),
             verticalArrangement = Arrangement.Center,
         ) {
             Text(
@@ -224,6 +228,10 @@ fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
                 modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Username },
                 shape = RoundedCornerShape(16.dp),
             )
+            if (registerMode) {
+                Spacer(Modifier.height(14.dp))
+                OutlinedTextField(value = displayName, onValueChange = { displayName = it }, label = { Text("الاسم الظاهر") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            }
             Spacer(Modifier.height(14.dp))
             if (!recoveryMode) OutlinedTextField(
                 value = password,
@@ -240,15 +248,19 @@ fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
                 modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Password },
                 shape = RoundedCornerShape(16.dp),
             )
+            if (registerMode) {
+                Spacer(Modifier.height(14.dp))
+                OutlinedTextField(value = confirmPassword, onValueChange = { confirmPassword = it }, label = { Text("تأكيد كلمة المرور") }, singleLine = true, visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
+            }
             Spacer(Modifier.height(22.dp))
             Button(
-                enabled = !busy && email.isNotBlank() && (recoveryMode || password.isNotBlank()),
+                enabled = !busy && email.isNotBlank() && (recoveryMode || password.isNotBlank()) && (!registerMode || (displayName.isNotBlank() && password.length >= 12 && confirmPassword == password)),
                 onClick = {
                     busy = true
                     error = null
                     scope.launch {
                         if (registerMode) {
-                            val result = DeelaAuthApi.register(email, password)
+                            val result = DeelaAuthApi.register(email, password, displayName)
                             busy = false
                             result.fold(onSuccess = { error = it }, onFailure = { error = it.message })
                         } else if (recoveryMode) {
