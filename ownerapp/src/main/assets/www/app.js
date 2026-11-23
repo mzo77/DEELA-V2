@@ -1,10 +1,19 @@
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.95.0/+esm";
 const ORIGIN = "https://rxlynynjetajtsqlhkrq.supabase.co";
 const CTRL = ORIGIN + "/functions/v1/deela-control";
 const VAULT = ORIGIN + "/functions/v1/deela-owner-vault";
 const PUBLIC_KEY = "sb_publishable_xmUBM4N5ScJgIlxACHIllQ_1r4XkKV_";
 const STORAGE_BUCKET = "deela-owner-vault";
-const storage = createClient(ORIGIN, PUBLIC_KEY, {auth:{persistSession:false,autoRefreshToken:false}});
+let uploadClientPromise=null;
+async function getUploadClient(){
+ // Do not load third-party code on app startup: login and member controls
+ // must work even when a network filters CDNs.
+ if(!uploadClientPromise){
+  uploadClientPromise=import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.95.0/+esm")
+   .then(({createClient})=>createClient(ORIGIN,PUBLIC_KEY,{auth:{persistSession:false,autoRefreshToken:false}}))
+   .catch(err=>{uploadClientPromise=null;throw Error("تعذر تحميل أداة الرفع. تحقق من اتصال الإنترنت أو قيود الشبكة.");});
+ }
+ return uploadClientPromise;
+}
 const $ = id => document.getElementById(id);
 const k = "deela-owner-control-session";
 let token = sessionStorage.getItem(k)||"", members=[], files=[], busy=false;
@@ -53,7 +62,13 @@ async function fetchJson(url,body,authenticated=true){
  const init={method:body===undefined?"GET":"POST",cache:"no-store",credentials:"omit",
  headers:{"Content-Type":"application/json",...(authenticated&&token?{"Authorization":"Bearer "+token}:{})}};
  if(body!==undefined)init.body=JSON.stringify(body);
- const resp=await fetch(url,init);
+ let resp;
+ try{
+  resp=await fetch(url,{...init,signal:AbortSignal.timeout(20000)});
+ }catch(e){
+  if(e?.name==="TimeoutError"||e?.name==="AbortError")throw Error("الخادم لم يستجب خلال 20 ثانية. حاول مجددًا.");
+  throw Error("تعذر الاتصال بخادم DEELA. تحقق من الإنترنت ثم حاول مجددًا.");
+ }
  let data;try{data=await resp.json()}catch{data={}};
  if(!resp.ok){const e=new Error(data.error||"تعذّر الاتصال بالخدمة");e.status=resp.status;throw e}
  return data;
@@ -86,13 +101,15 @@ async function loadOverview(){
  return d;
 }
 async function login(username,password){
+ $("loginStatus").textContent="جارٍ التحقق من بيانات المالك…";
  const r=await fetchJson(CTRL+"/api/v1/auth/login",{email:username,password,platform:"android"},false);
  if(r.role!=="owner"||!r.access_token)throw Error("لا يمكن الدخول إلا بحساب المالك");
  token=r.access_token;
+ $("loginStatus").textContent="تم التحقق من الحساب. جارٍ تحميل بيانات اللوحة…";
  try{await loadOverview()}catch(e){token="";throw e}
  sessionStorage.setItem(k,token);
  $("login").hidden=true;$("shell").hidden=false;
- $("password").value="";page("overview");
+ $("password").value="";$("loginStatus").textContent="تم تسجيل الدخول بنجاح";page("overview");
 }
 async function loadMembers(){
  const d=await api("/api/owner/dashboard");
@@ -217,7 +234,9 @@ function renderFiles(){
 }
 $("loginForm").addEventListener("submit",async ev=>{
  ev.preventDefault();const b=$("signIn");b.disabled=true;
- try{await login($("username").value.trim(),$("password").value)}catch(e){logout();showError(e)}finally{b.disabled=false}
+ try{await login($("username").value.trim(),$("password").value)}
+ catch(e){logout();$("loginStatus").textContent=e?.message||"فشل تسجيل الدخول";showError(e)}
+ finally{b.disabled=false}
 });
 $("logout").onclick=()=>{logout();feedback("تم تسجيل الخروج")};
 $("refresh").onclick=async()=>{try{await loadOverview();feedback("تم تحديث البيانات")}catch(e){showError(e)}};
@@ -240,6 +259,7 @@ $("uploadForm").addEventListener("submit",async ev=>{
  try{
   const ticket=await vault("/files/sign-upload",{filename:chosen.name,size_bytes:chosen.size});
   $("uploadStatus").textContent="جارٍ رفع الملف إلى التخزين الخاص...";
+  const storage=await getUploadClient();
   const {error}=await storage.storage.from(STORAGE_BUCKET).uploadToSignedUrl(ticket.path,ticket.token,chosen,{upsert:false,contentType:chosen.type||"application/octet-stream"});
   if(error)throw Error("فشل رفع الملف: "+error.message);
   $("uploadStatus").textContent="جارٍ حفظ بيانات الإصدار...";
@@ -255,3 +275,4 @@ $("passwordForm").addEventListener("submit",async ev=>{
  catch(e){showError(e)}finally{b.disabled=false}
 });
 if(token){loadOverview().then(()=>{$("login").hidden=true;$("shell").hidden=false;page("overview")}).catch(()=>logout())}
+$("loginStatus").textContent="التطبيق جاهز. أدخل بيانات مالك DEELA.";
