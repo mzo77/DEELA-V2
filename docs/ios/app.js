@@ -85,7 +85,7 @@ function render(target,items,needle,source=false){
  if(!filtered.length){container.append(el("div","empty",source?"لا توجد تطبيقات مطابقة أو أن المصدر فارغ.":"لا توجد تطبيقات iOS منشورة في ديلا بعد. افتح تبويب مصادر Feather."));return}
  const fragment=document.createDocumentFragment();filtered.slice(0,180).forEach(x=>fragment.append(card(x,source)));container.append(fragment)
 }
-async function loadCatalog(){try{const {apps}=await call("/api/catalog");myApps=apps;render("myAppsGrid",myApps,value("mySearch"))}catch(e){flash(e.message)}}
+async function loadCatalog(){try{const {apps}=await call("/api/catalog");myApps=apps;render("myAppsGrid",myApps,value("mySearch"));if(!apps.length){const tab=document.querySelector('#storeTabs [data-panel="featuredSources"]');if(tab)tab.click()}}catch(e){flash(e.message)}}
 async function loadSources(){
  if(sourcesLoaded)return;const {sources}=await call("/api/sources"),target=$("sourceList");target.replaceChildren();
  for(const source of sources){const b=el("button","source");b.type="button";
@@ -139,6 +139,19 @@ async function loadOwnerRequests(){
 function setForm(tab){$("loginTab").classList.toggle("active",tab==="login");$("registerTab").classList.toggle("active",tab==="register");show("loginForm",tab==="login");show("registerForm",tab==="register")}
 $("refreshSubscription").onclick=async()=>{try{await enter();flash(current?.active?"تم تفعيل اشتراك الآيفون!":"الطلب ما زال قيد المراجعة.")}catch(e){flash(e.message)}};
 $("refreshOwner").onclick=loadOwnerRequests;
+$("resendEmailBtn").onclick=async()=>{
+ const email=value("loginEmail");
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+  flash("اكتب بريدك الإلكتروني الصحيح في خانة تسجيل الدخول أولًا.");
+  return;
+ }
+ const button=$("resendEmailBtn");button.disabled=true;
+ try{
+  const result=await call("/api/resend-confirmation",{method:"POST",body:{email},auth:false});
+  flash(result.message||"تم إرسال طلب رسالة التأكيد. افتح بريدك الإلكتروني.");
+ }catch(e){flash(e.message)}
+ finally{button.disabled=false}
+};
 $("recoverBtn").onclick=async()=>{
  const email=value("loginEmail");if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){flash("اكتب بريدك الإلكتروني في خانة تسجيل الدخول أولًا.");return}
  const btn=$("recoverBtn");btn.disabled=true;
