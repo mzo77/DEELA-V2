@@ -31,3 +31,12 @@ jobs:
           path: docs
       - id: deployment
         uses: actions/deploy-pages@v4
+      - name: Verify working recovery URLs on GitHub Pages
+        run: |
+          set -euo pipefail
+          for path in recover.html recover/; do
+            curl --fail-with-body --location --retry 8 --retry-all-errors --retry-delay 4 --max-time 25 \
+              -H 'Cache-Control: no-cache' \
+              "https://mzo77.github.io/DEELA-V2/$path" -o "/tmp/recover-$(echo "$path" | tr '/' '_').html"
+            grep -q 'تعيين كلمة مرور جديدة' "/tmp/recover-$(echo "$path" | tr '/' '_').html"
+          done
