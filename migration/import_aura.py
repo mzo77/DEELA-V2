@@ -142,9 +142,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
-      - name: Install Android SDK 37
-        run: sdkmanager --channel=3 --install "platforms;android-37.0" "build-tools;36.1.0"
+      - name: Install Android SDK 37 using preinstalled SDK tools
+        run: |
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --channel=3 --install "platforms;android-37.0" "build-tools;36.1.0"
       - uses: gradle/actions/setup-gradle@v4
       - name: Assemble DEELA preview
         run: |
