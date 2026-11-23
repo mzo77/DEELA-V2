@@ -43,6 +43,7 @@
       <label>اسم مستخدم المالك أو بريده<input id="username" autocomplete="username" required placeholder="بريدك أو اسم المستخدم"></label>
       <label>كلمة المرور<input id="password" type="password" autocomplete="current-password" required placeholder="••••••••••••"></label>
       <button id="signIn" class="primary" type="submit">دخول مركز المالك <span aria-hidden="true">←</span></button>
+    <p id="loginStatus" class="caption" role="status" aria-live="polite">جارٍ تجهيز لوحة المالك…</p>
     </form>
     <p class="security-hint">🔒 الوصول للمالك فقط · البيانات محفوظة بخادم محمي</p>
   </div>
@@ -132,6 +133,6 @@
   </div>
   <nav id="mobileNav" class="mobile-nav" aria-label="التنقل السريع"><button data-page="overview">الرئيسية</button><button data-page="members">المشتركين</button><button data-page="files">الملفات</button><button data-page="projects">المشاريع</button></nav>
 </div>
-<script type="module" src="./app.js"></script>
+<script defer src="./app.js"></script>
 </body>
 </html>
