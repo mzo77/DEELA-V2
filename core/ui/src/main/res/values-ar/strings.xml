@@ -52,72 +52,72 @@
     <string name="gallery_position">%1$d / %2$d</string>
 
     
-    <string name="update_all_action">Update all</string>
-    <string name="update_all_applying">Updating %1$d of %2$d</string>
-    <string name="update_all_finished">%1$d updated, %2$d not done</string>
+    <string name="update_all_action">تحديث الكل</string>
+    <string name="update_all_applying">جارٍ تحديث %1$d من أصل %2$d</string>
+    <string name="update_all_finished">تم تحديث %1$d، ولم يكتمل %2$d</string>
     <string name="update_all_dismiss">OK</string>
     <plurals name="update_all_title">
-        <item quantity="zero">%1$d updates available</item>
-        <item quantity="one">%1$d updates available</item>
-        <item quantity="two">%1$d updates available</item>
-        <item quantity="few">%1$d updates available</item>
-        <item quantity="many">%1$d updates available</item>
-        <item quantity="other">%1$d updates available</item>
+        <item quantity="zero">يتوفر %1$d تحديث</item>
+        <item quantity="one">يتوفر %1$d تحديث</item>
+        <item quantity="two">يتوفر %1$d تحديث</item>
+        <item quantity="few">يتوفر %1$d تحديث</item>
+        <item quantity="many">يتوفر %1$d تحديث</item>
+        <item quantity="other">يتوفر %1$d تحديث</item>
     </plurals>
 
     
-    <string name="myapps_sort_name">Name</string>
-    <string name="myapps_sort_updatable">Updatable first</string>
-    <string name="myapps_sort_recent">Recently installed</string>
-    <string name="myapps_sort_store">Store it came from</string>
+    <string name="myapps_sort_name">الاسم</string>
+    <string name="myapps_sort_updatable">القابلة للتحديث أولًا</string>
+    <string name="myapps_sort_recent">الأحدث تثبيتًا</string>
+    <string name="myapps_sort_store">مصدر التثبيت</string>
 
     
-    <string name="modified_build_declared_label">Modified build</string>
-    <string name="modified_build_possible_label">May be modified</string>
-    <string name="modified_build_badge_action">What this means</string>
-    <string name="modified_build_dialog_title">About this build</string>
-    <string name="modified_build_dialog_declared">%1$s says this file is a rework: somebody other than the developer changed the app and republished it.</string>
-    <string name="modified_build_dialog_possible">%1$s redistributes reworked apps, and does not say whether this one is. It may be the developer’s build, or somebody else’s.</string>
-    <string name="modified_build_dialog_verified">What the check before installing can prove: that the file is a valid, signed archive, that the package name matches the one this listing declares, and — where the store publishes a hash — that the bytes are the ones it announced.</string>
-    <string name="modified_build_dialog_unverified">What it cannot prove: that the app has not been altered by whoever republished it. A rework has no original developer signature to compare against, so there is nothing to check it against.</string>
-    <string name="modified_build_dialog_dismiss">Got it</string>
+    <string name="modified_build_declared_label">نسخة معدلة</string>
+    <string name="modified_build_possible_label">قد تكون معدلة</string>
+    <string name="modified_build_badge_action">ماذا يعني ذلك؟</string>
+    <string name="modified_build_dialog_title">معلومات عن هذه النسخة</string>
+    <string name="modified_build_dialog_declared">يذكر المصدر %1$s أن شخصًا غير المطور الأصلي عدّل هذا التطبيق وأعاد نشره.</string>
+    <string name="modified_build_dialog_possible">يعرض المصدر %1$s نسخًا معدلة ولا يوضح هل هذه النسخة معدلة؛ قد تكون من المطور الأصلي أو من ناشر آخر.</string>
+    <string name="modified_build_dialog_verified">ما يمكن التحقق منه قبل التثبيت: صلاحية الملف وتوقيعه وتطابق اسم الحزمة، وتطابق البصمة مع المنشورة عندما يوفرها المصدر.</string>
+    <string name="modified_build_dialog_unverified">ما لا يمكن إثباته: أن الناشر لم يغيّر التطبيق. قد تحمل النسخ المعدلة توقيعًا مختلفًا عن المطور الأصلي فلا توجد شهادة أصلية للمقارنة.</string>
+    <string name="modified_build_dialog_dismiss">فهمت</string>
 
     
-    <string name="store_diagnosis_state_ok">This store is answering normally.</string>
-    <string name="store_diagnosis_state_open">This store is paused after repeated failures. It will be tried again by itself.</string>
-    <string name="store_diagnosis_state_half_open">This store is about to be tried again: the next request is a probe.</string>
-    <string name="store_diagnosis_state_degraded">This store answers, but its pages are not being read as expected.</string>
-    <string name="store_diagnosis_failing_for">It has been failing for %1$s.</string>
-    <string name="store_diagnosis_last_success">It last answered %1$s ago.</string>
-    <string name="store_diagnosis_never_answered">It has never answered on this device.</string>
-    <string name="store_diagnosis_fault_transient">Last fault: no connection, a timeout, or an error from the site. These usually clear by themselves.</string>
-    <string name="store_diagnosis_fault_rate_limited">Last fault: the store asked to be queried less often. This clears by itself, and waiting is the only thing that helps.</string>
-    <string name="store_diagnosis_fault_blocked">Last fault: the store refused the request. This does not clear by waiting, and insisting makes it worse.</string>
-    <string name="store_diagnosis_fault_parse">Last fault: the page was not in the expected shape. This is the app’s side, not the store’s — waiting will not fix it.</string>
-    <string name="store_diagnosis_parse_selectors">Parts that could not be read: %1$s</string>
-    <string name="store_diagnosis_dismiss">Close</string>
+    <string name="store_diagnosis_state_ok">هذا المصدر يستجيب بصورة طبيعية.</string>
+    <string name="store_diagnosis_state_open">تم إيقاف المصدر مؤقتًا بعد محاولات فاشلة متكررة، وستتم إعادة المحاولة تلقائيًا.</string>
+    <string name="store_diagnosis_state_half_open">سيُختبر المصدر مرة أخرى في الطلب التالي.</string>
+    <string name="store_diagnosis_state_degraded">المصدر يستجيب لكن تعذّرت قراءة بعض بيانات صفحاته.</string>
+    <string name="store_diagnosis_failing_for">يواجه المصدر مشكلات منذ %1$s.</string>
+    <string name="store_diagnosis_last_success">كانت آخر استجابة ناجحة قبل %1$s.</string>
+    <string name="store_diagnosis_never_answered">لم يستجب هذا المصدر على جهازك من قبل.</string>
+    <string name="store_diagnosis_fault_transient">آخر خطأ: انقطاع اتصال أو انتهاء المهلة أو خطأ في الموقع. غالبًا ما تُحل المشكلة تلقائيًا.</string>
+    <string name="store_diagnosis_fault_rate_limited">آخر خطأ: طلب المصدر تقليل عدد الاستعلامات. الانتظار يساعد على حل المشكلة.</string>
+    <string name="store_diagnosis_fault_blocked">آخر خطأ: رفض المصدر الطلب. الانتظار وحده لا يحل المشكلة، وقد تزيد المحاولات المتكررة الأمر سوءًا.</string>
+    <string name="store_diagnosis_fault_parse">آخر خطأ: تغير تنسيق الصفحة عما يتوقعه التطبيق. يحتاج ذلك إلى تحديث طريقة القراءة.</string>
+    <string name="store_diagnosis_parse_selectors">البيانات التي تعذّرت قراءتها: %1$s</string>
+    <string name="store_diagnosis_dismiss">إغلاق</string>
     <plurals name="store_diagnosis_days">
-        <item quantity="zero">%1$d days</item>
-        <item quantity="one">%1$d days</item>
-        <item quantity="two">%1$d days</item>
-        <item quantity="few">%1$d days</item>
-        <item quantity="many">%1$d days</item>
-        <item quantity="other">%1$d days</item>
+        <item quantity="zero">%1$d يوم</item>
+        <item quantity="one">%1$d يوم</item>
+        <item quantity="two">%1$d يوم</item>
+        <item quantity="few">%1$d يوم</item>
+        <item quantity="many">%1$d يوم</item>
+        <item quantity="other">%1$d يوم</item>
     </plurals>
     <plurals name="store_diagnosis_hours">
-        <item quantity="zero">%1$d hours</item>
-        <item quantity="one">%1$d hours</item>
-        <item quantity="two">%1$d hours</item>
-        <item quantity="few">%1$d hours</item>
-        <item quantity="many">%1$d hours</item>
-        <item quantity="other">%1$d hours</item>
+        <item quantity="zero">%1$d ساعة</item>
+        <item quantity="one">%1$d ساعة</item>
+        <item quantity="two">%1$d ساعة</item>
+        <item quantity="few">%1$d ساعة</item>
+        <item quantity="many">%1$d ساعة</item>
+        <item quantity="other">%1$d ساعة</item>
     </plurals>
     <plurals name="store_diagnosis_minutes">
-        <item quantity="zero">%1$d minutes</item>
-        <item quantity="one">%1$d minutes</item>
-        <item quantity="two">%1$d minutes</item>
-        <item quantity="few">%1$d minutes</item>
-        <item quantity="many">%1$d minutes</item>
-        <item quantity="other">%1$d minutes</item>
+        <item quantity="zero">%1$d دقيقة</item>
+        <item quantity="one">%1$d دقيقة</item>
+        <item quantity="two">%1$d دقيقة</item>
+        <item quantity="few">%1$d دقيقة</item>
+        <item quantity="many">%1$d دقيقة</item>
+        <item quantity="other">%1$d دقيقة</item>
     </plurals>
 </resources>

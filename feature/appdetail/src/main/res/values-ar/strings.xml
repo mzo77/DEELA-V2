@@ -105,12 +105,12 @@
     <string name="appdetail_possible_match_confirm">التطبيق نفسه</string>
     <string name="appdetail_possible_match_reject">تطبيق مختلف</string>
     <plurals name="appdetail_stores_available_count">
-        <item quantity="zero">Available on %1$d stores</item>
-        <item quantity="one">Available on %1$d stores</item>
-        <item quantity="two">Available on %1$d stores</item>
-        <item quantity="few">Available on %1$d stores</item>
-        <item quantity="many">Available on %1$d stores</item>
-        <item quantity="other">Available on %1$d stores</item>
+        <item quantity="zero">متاح في %1$d مصدر</item>
+        <item quantity="one">متاح في %1$d مصدر</item>
+        <item quantity="two">متاح في %1$d مصدر</item>
+        <item quantity="few">متاح في %1$d مصدر</item>
+        <item quantity="many">متاح في %1$d مصدر</item>
+        <item quantity="other">متاح في %1$d مصدر</item>
     </plurals>
 
     <string name="appdetail_state_update_unknown">لا ينشر المصدر رموز الإصدارات، لذلك لا يمكن كشف التحديثات الجديدة.</string>
@@ -120,12 +120,12 @@
     
     <string name="appdetail_state_unpacking">جارٍ فتح الحزمة…</string>
     <plurals name="appdetail_unpacking_detail">
-        <item quantity="zero">%1$d files, %2$s to install</item>
-        <item quantity="one">%1$d files, %2$s to install</item>
-        <item quantity="two">%1$d files, %2$s to install</item>
-        <item quantity="few">%1$d files, %2$s to install</item>
-        <item quantity="many">%1$d files, %2$s to install</item>
-        <item quantity="other">%1$d files, %2$s to install</item>
+        <item quantity="zero">%1$d ملف، وحجم التثبيت %2$s</item>
+        <item quantity="one">%1$d ملف، وحجم التثبيت %2$s</item>
+        <item quantity="two">%1$d ملف، وحجم التثبيت %2$s</item>
+        <item quantity="few">%1$d ملف، وحجم التثبيت %2$s</item>
+        <item quantity="many">%1$d ملف، وحجم التثبيت %2$s</item>
+        <item quantity="other">%1$d ملف، وحجم التثبيت %2$s</item>
     </plurals>
     <string name="appdetail_state_placing_expansions">جارٍ نسخ بيانات اللعبة…</string>
     <string name="appdetail_container_rejected_title">تعذّر فتح الملف</string>

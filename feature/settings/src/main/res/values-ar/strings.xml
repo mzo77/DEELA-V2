@@ -109,12 +109,12 @@
     <string name="settings_config_block_description">ينزّل ديلا ملفًا صغيرًا موقّعًا يحدد طرق قراءة صفحات المتاجر وعناوينها، ليتم إصلاح تغييرات المواقع دون إصدار جديد. عند التفعيل تُستخدم الإعدادات المضمنة في التطبيق فقط.</string>
     <string name="settings_config_active_defaults">استخدام الإعدادات المضمنة في التطبيق.</string>
     <plurals name="settings_config_active_stores">
-        <item quantity="zero">Downloaded configuration in use for %1$d stores.</item>
-        <item quantity="one">Downloaded configuration in use for %1$d stores.</item>
-        <item quantity="two">Downloaded configuration in use for %1$d stores.</item>
-        <item quantity="few">Downloaded configuration in use for %1$d stores.</item>
-        <item quantity="many">Downloaded configuration in use for %1$d stores.</item>
-        <item quantity="other">Downloaded configuration in use for %1$d stores.</item>
+        <item quantity="zero">يُستخدم ملف الإعدادات المنزّل في %1$d مصدر.</item>
+        <item quantity="one">يُستخدم ملف الإعدادات المنزّل في %1$d مصدر.</item>
+        <item quantity="two">يُستخدم ملف الإعدادات المنزّل في %1$d مصدر.</item>
+        <item quantity="few">يُستخدم ملف الإعدادات المنزّل في %1$d مصدر.</item>
+        <item quantity="many">يُستخدم ملف الإعدادات المنزّل في %1$d مصدر.</item>
+        <item quantity="other">يُستخدم ملف الإعدادات المنزّل في %1$d مصدر.</item>
     </plurals>
     <string name="settings_config_attempt_accepted">نُزّلت إعدادات أحدث وستُستخدم عند تشغيل ديلا مرة أخرى.</string>
     <string name="settings_config_attempt_bad_signature">رُفض الملف الأخير لأن توقيعه غير معتمد؛ لم تتغير الإعدادات.</string>
@@ -123,20 +123,20 @@
     <string name="settings_config_attempt_unreachable">تعذّر الوصول إلى الملف أثناء التحقق الأخير؛ لم تتغير الإعدادات.</string>
     <string name="settings_config_attempt_unchanged">لم يجد التحقق الأخير أي إعدادات جديدة.</string>
     <plurals name="settings_config_ignored_keys">
-        <item quantity="zero">%1$d settings in the file were ignored: this version does not know them.</item>
-        <item quantity="one">%1$d settings in the file were ignored: this version does not know them.</item>
-        <item quantity="two">%1$d settings in the file were ignored: this version does not know them.</item>
-        <item quantity="few">%1$d settings in the file were ignored: this version does not know them.</item>
-        <item quantity="many">%1$d settings in the file were ignored: this version does not know them.</item>
-        <item quantity="other">%1$d settings in the file were ignored: this version does not know them.</item>
+        <item quantity="zero">تُجاهل %1$d إعدادات غير معروفة لهذا الإصدار.</item>
+        <item quantity="one">تُجاهل %1$d إعدادات غير معروفة لهذا الإصدار.</item>
+        <item quantity="two">تُجاهل %1$d إعدادات غير معروفة لهذا الإصدار.</item>
+        <item quantity="few">تُجاهل %1$d إعدادات غير معروفة لهذا الإصدار.</item>
+        <item quantity="many">تُجاهل %1$d إعدادات غير معروفة لهذا الإصدار.</item>
+        <item quantity="other">تُجاهل %1$d إعدادات غير معروفة لهذا الإصدار.</item>
     </plurals>
     <plurals name="settings_config_rejected_stores">
-        <item quantity="zero">%1$d stores kept their built-in configuration: a value had the wrong type.</item>
-        <item quantity="one">%1$d stores kept their built-in configuration: a value had the wrong type.</item>
-        <item quantity="two">%1$d stores kept their built-in configuration: a value had the wrong type.</item>
-        <item quantity="few">%1$d stores kept their built-in configuration: a value had the wrong type.</item>
-        <item quantity="many">%1$d stores kept their built-in configuration: a value had the wrong type.</item>
-        <item quantity="other">%1$d stores kept their built-in configuration: a value had the wrong type.</item>
+        <item quantity="zero">يستخدم %1$d مصدر إعداداته المضمنة بسبب خطأ في نوع البيانات.</item>
+        <item quantity="one">يستخدم %1$d مصدر إعداداته المضمنة بسبب خطأ في نوع البيانات.</item>
+        <item quantity="two">يستخدم %1$d مصدر إعداداته المضمنة بسبب خطأ في نوع البيانات.</item>
+        <item quantity="few">يستخدم %1$d مصدر إعداداته المضمنة بسبب خطأ في نوع البيانات.</item>
+        <item quantity="many">يستخدم %1$d مصدر إعداداته المضمنة بسبب خطأ في نوع البيانات.</item>
+        <item quantity="other">يستخدم %1$d مصدر إعداداته المضمنة بسبب خطأ في نوع البيانات.</item>
     </plurals>
     <string name="settings_config_refresh_label">التحقق من إعدادات أحدث</string>
     <string name="settings_config_refresh_description">التحقق الآن بدل انتظار الفحص المجدول، وتطبيق التغييرات عند التشغيل التالي.</string>
@@ -158,12 +158,12 @@
     <string name="settings_search_timeout_description">تختلف سرعة المصادر، فمنها المحلي السريع ومنها من يحتاج عدة ثوانٍ. عند انتهاء المهلة يظهر المصدر ضمن المصادر التي لم تستجب، دون إيقاف بقية النتائج.</string>
     <string name="settings_search_timeout_dialog_title">مدة انتظار المصدر</string>
     <plurals name="settings_search_timeout_seconds">
-        <item quantity="zero">%1$d seconds</item>
-        <item quantity="one">%1$d seconds</item>
-        <item quantity="two">%1$d seconds</item>
-        <item quantity="few">%1$d seconds</item>
-        <item quantity="many">%1$d seconds</item>
-        <item quantity="other">%1$d seconds</item>
+        <item quantity="zero">%1$d ثانية</item>
+        <item quantity="one">%1$d ثانية</item>
+        <item quantity="two">%1$d ثانية</item>
+        <item quantity="few">%1$d ثانية</item>
+        <item quantity="many">%1$d ثانية</item>
+        <item quantity="other">%1$d ثانية</item>
     </plurals>
     <string name="settings_search_field_label">البحث في الإعدادات</string>
     <string name="settings_search_field_clear">مسح البحث</string>
@@ -252,12 +252,12 @@
     <string name="settings_storage_apks_confirm_title">هل تريد حذف ملفات التثبيت؟</string>
     <string name="settings_storage_apks_confirm_message">يحذف ملفات APK المحفوظة على الجهاز مع إبقاء التنزيلات الجارية أو المتوقفة مؤقتًا.</string>
     <plurals name="settings_storage_apks_confirm_ready">
-        <item quantity="zero">%1$d apps are ready to install and would be deleted: putting them back means downloading them again. Transfers in progress or paused are left alone.</item>
-        <item quantity="one">%1$d apps are ready to install and would be deleted: putting them back means downloading them again. Transfers in progress or paused are left alone.</item>
-        <item quantity="two">%1$d apps are ready to install and would be deleted: putting them back means downloading them again. Transfers in progress or paused are left alone.</item>
-        <item quantity="few">%1$d apps are ready to install and would be deleted: putting them back means downloading them again. Transfers in progress or paused are left alone.</item>
-        <item quantity="many">%1$d apps are ready to install and would be deleted: putting them back means downloading them again. Transfers in progress or paused are left alone.</item>
-        <item quantity="other">%1$d apps are ready to install and would be deleted: putting them back means downloading them again. Transfers in progress or paused are left alone.</item>
+        <item quantity="zero">يوجد %1$d تطبيق جاهز للتثبيت وسيفقد ملفه عند المسح، وسيتطلب استعادته إعادة التنزيل. لن تتأثر التنزيلات الجارية أو المتوقفة.</item>
+        <item quantity="one">يوجد %1$d تطبيق جاهز للتثبيت وسيفقد ملفه عند المسح، وسيتطلب استعادته إعادة التنزيل. لن تتأثر التنزيلات الجارية أو المتوقفة.</item>
+        <item quantity="two">يوجد %1$d تطبيق جاهز للتثبيت وسيفقد ملفه عند المسح، وسيتطلب استعادته إعادة التنزيل. لن تتأثر التنزيلات الجارية أو المتوقفة.</item>
+        <item quantity="few">يوجد %1$d تطبيق جاهز للتثبيت وسيفقد ملفه عند المسح، وسيتطلب استعادته إعادة التنزيل. لن تتأثر التنزيلات الجارية أو المتوقفة.</item>
+        <item quantity="many">يوجد %1$d تطبيق جاهز للتثبيت وسيفقد ملفه عند المسح، وسيتطلب استعادته إعادة التنزيل. لن تتأثر التنزيلات الجارية أو المتوقفة.</item>
+        <item quantity="other">يوجد %1$d تطبيق جاهز للتثبيت وسيفقد ملفه عند المسح، وسيتطلب استعادته إعادة التنزيل. لن تتأثر التنزيلات الجارية أو المتوقفة.</item>
     </plurals>
 
     
