@@ -12,7 +12,7 @@ source you choose, through the same verification pipeline every time.
 </p>
 
 <p>
-<a href="https://github.com/mzo77/DEELA-V2/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/mzo77/DEELA-V2?include_prereleases&sort=semver&display_name=tag&label=release&color=912D55&style=flat-square"></a>
+<a href="https://github.com/mzo77/DEELA-V2/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/mzo77/DEELA-V2?include_prereleases&sort=semver&display_name=tag&label=release&color=912D55&style=flat-square"></a>
 <a href="https://github.com/mzo77/DEELA-V2/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/mzo77/DEELA-V2/total?label=downloads&color=4F5BD5&style=flat-square"></a>
 <img alt="Android 8.0+" src="https://img.shields.io/badge/Android-8.0%2B-4F5BD5?style=flat-square&logo=android&logoColor=white">
 <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.3-4F5BD5?style=flat-square&logo=kotlin&logoColor=white">
@@ -21,7 +21,7 @@ source you choose, through the same verification pipeline every time.
 </p>
 
 <p>
-<a href="https://github.com/mzo77/DEELA-V2/releases/latest"><img alt="Download the latest release" src="https://img.shields.io/badge/Download%20the%20latest%20release-4F5BD5?style=for-the-badge&logo=android&logoColor=white"></a>
+<a href="https://github.com/mzo77/DEELA-V2/releases"><img alt="Download the latest release" src="https://img.shields.io/badge/Download%20the%20latest%20release-4F5BD5?style=for-the-badge&logo=android&logoColor=white"></a>
 </p>
 
 </div>
@@ -30,7 +30,7 @@ source you choose, through the same verification pipeline every time.
 
 ## Install
 
-1. Download and install the `.apk` from the [latest release](https://github.com/mzo77/DEELA-V2/releases/latest).
+1. Download and install the `.apk` from [DEELA V2 Releases](https://github.com/mzo77/DEELA-V2/releases). The currently available preview builds use debug signing, and may need a clean install between CI runs until a permanent DEELA signing key is configured.
 2. Open it. Android asks once whether DEELA APPS may install applications. That is the
    `REQUEST_INSTALL_PACKAGES` permission, which any app that installs other apps needs. If your
    device makes that setting hard to find, DEELA APPS has a shortcut straight to it.
@@ -100,7 +100,7 @@ available with it, the interface says so.
 off by default, lives locally, and is exported by you as a plain-text file you can read before
 sending it anywhere.
 
-**Five languages, light and dark.** English, Italian, French, Spanish and German, all complete or
+**Six languages, light and dark.** Arabic (RTL), English, Italian, French, Spanish and German, all complete or
 the build fails. Every screen has a screenshot baseline in both themes, and each one is run through
 the Accessibility Test Framework.
 
@@ -187,10 +187,6 @@ the caller.
 
 [GPL-3.0](LICENSE).
 
-
-## Attribution and license
-
-DEELA APPS is based on [DEELA APPS by FedeFluork](https://github.com/mzo77/DEELA-V2), licensed under GPL-3.0. Original copyright and license notices remain applicable. The source of this derivative is available in this repository.
 
 
 ## Upstream attribution
