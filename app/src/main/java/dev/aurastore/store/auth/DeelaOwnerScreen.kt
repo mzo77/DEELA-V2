@@ -213,6 +213,7 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                     "الرسائل" -> DeelaOwnerEmailScreen(
                         session.token,
                         current.members.associate { it.id to it.email },
+                        current.email,
                     )
                     "السجل" -> LazyColumn(modifier=Modifier.weight(1f)) {
                         items(current.audit) {event->
