@@ -1,0 +1,19 @@
+{
+  "name": "MZO | مشاريعي الرقمية",
+  "short_name": "MZO",
+  "start_url": "/DEELA-V2/mzo/",
+  "scope": "/DEELA-V2/mzo/",
+  "display": "standalone",
+  "theme_color": "#101422",
+  "background_color": "#0c101b",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "/DEELA-V2/mzo/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
