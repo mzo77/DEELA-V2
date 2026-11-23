@@ -5,7 +5,7 @@ android {
     namespace = "com.deela.owner"
     compileSdk = 37
     defaultConfig {
-        applicationId = "com.deela.owner.control"
+        applicationId = "com.deela.owner.loginfix"
         minSdk = 27
         targetSdk = 35
         versionCode = 4
