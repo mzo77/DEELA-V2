@@ -1,0 +1,1 @@
+DEELA official 0.9.8 signing configuration verification after owner updated GitHub secrets. No signing material or secret values are stored here.
