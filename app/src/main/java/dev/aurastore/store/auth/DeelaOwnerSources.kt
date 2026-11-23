@@ -157,7 +157,7 @@ fun DeelaOwnerSources(token: String) {
                                 status = "فحص ${index + 1} من ${Sources.all.size}: ${source.id.label}"
                                 val outcome = runCatching {
                                     val apps = OwnerSourcesApi.latest(source)
-                                    if (apps.isEmpty()) error("المصدر لم يُرجع أي تطبيق")
+                                    if (apps.isEmpty()) throw IllegalStateException("المصدر لم يُرجع أي تطبيق")
                                     OwnerSourcesApi.scan(token, source, apps)
                                 }
                                 outcome.onSuccess { total += it.scanned }
