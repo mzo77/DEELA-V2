@@ -1,9 +1,10 @@
-name: Publish DEELA Owner Panel to GitHub Pages
+name: Publish DEELA Web Pages (Owner + iOS)
 on:
   push:
     branches: [main]
     paths:
       - 'docs/control/**'
+      - 'docs/ios/**'
       - '.github/workflows/deela-control-pages.yml'
   workflow_dispatch:
 permissions:
