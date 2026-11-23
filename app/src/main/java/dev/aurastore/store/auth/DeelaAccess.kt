@@ -48,6 +48,11 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import java.net.UnknownHostException
+import java.net.SocketTimeoutException
+import java.net.ConnectException
+import javax.net.ssl.SSLException
+import java.io.IOException
 import java.time.Instant
 import java.time.OffsetDateTime
 import java.util.concurrent.TimeUnit
@@ -76,6 +81,25 @@ sealed interface DeelaSessionCheck {
     data object Unavailable : DeelaSessionCheck
 }
 
+/**
+ * Translate transport failures without exposing backend hostnames or treating a DNS error
+ * as a wrong password, invalid membership, or expired recovery link.
+ */
+private fun deelaErrorForUser(failure: Throwable): String {
+    var problem: Throwable? = failure
+    repeat(8) {
+        when (problem) {
+            is UnknownHostException -> return "تعذر العثور على خادم ديلا عبر DNS. جرّب شبكة Wi-Fi أو بيانات الهاتف، وأوقف DNS الخاص أو VPN مؤقتًا إن كنت تستخدمهما. لم تتغير بيانات حسابك."
+            is SocketTimeoutException -> return "انتهت مهلة الاتصال بخادم ديلا. تأكد من استقرار الإنترنت وحاول مرة أخرى."
+            is ConnectException -> return "تعذر الاتصال بخادم ديلا حاليًا. جرّب شبكة أخرى ثم أعد المحاولة."
+            is SSLException -> return "تعذر إنشاء اتصال آمن بخادم ديلا. تحقق من ضبط التاريخ والوقت واتصال الشبكة."
+        }
+        problem = problem?.cause
+    }
+    if (failure is IOException) return "تعذر الاتصال بالإنترنت أو خادم ديلا. تحقق من الشبكة ثم أعد المحاولة."
+    return failure.message?.takeIf { it.isNotBlank() } ?: "حدث خطأ غير متوقع. حاول مجددًا."
+}
+
 object DeelaAuthApi {
     private val endpoint: String get() = BuildConfig.DEELA_API_BASE_URL.trim().trimEnd('/')
     private val client = OkHttpClient.Builder()
@@ -84,6 +108,20 @@ object DeelaAuthApi {
         .callTimeout(20, TimeUnit.SECONDS)
         .build()
     private val jsonType = "application/json; charset=utf-8".toMediaType()
+
+    /** Public health endpoint only; never sends credentials or changes account state. */
+    suspend fun testServerConnection(): Result<String> = withContext(Dispatchers.IO) {
+        runCatching {
+            require(endpoint.startsWith("https://")) { "عنوان الخادم غير مضبوط في هذا الإصدار." }
+            val request = Request.Builder().url("$endpoint/health").get().build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) error("الخادم يستجيب ولكن فحص الخدمة أعاد الرمز ${response.code}.")
+                val body = JSONObject(response.body.string())
+                require(body.optBoolean("ok", false)) { "الخادم يستجيب ولكن فحص الخدمة لم ينجح." }
+                "الاتصال بخادم ديلا يعمل بنجاح ✅"
+            }
+        }
+    }
 
     suspend fun login(email: String, password: String): Result<DeelaSession> =
         withContext(Dispatchers.IO) {
@@ -274,6 +312,7 @@ fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
     var selectedMonths by remember { mutableIntStateOf(1) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    var connectionStatus by remember { mutableStateOf<String?>(null) }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -355,12 +394,12 @@ fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
                         if (registerMode) {
                             val result = DeelaAuthApi.register(email, password, displayName, selectedMonths)
                             busy = false
-                            result.fold(onSuccess = { error = it }, onFailure = { error = it.message })
+                            result.fold(onSuccess = { error = it }, onFailure = { error = deelaErrorForUser(it) })
                         } else if (recoveryMode) {
                             val result = DeelaAuthApi.requestPasswordRecovery(email)
                             busy = false
                             result.fold(onSuccess = { error = it }, onFailure = {
-                                error = it.message ?: "تعذر طلب الاستعادة."
+                                error = deelaErrorForUser(it)
                             })
                         } else {
                             val result = DeelaAuthApi.login(email, password)
@@ -369,7 +408,7 @@ fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
                                 autofillManager?.commit()
                                 onAuthenticated(session)
                             }, onFailure = {
-                                error = it.message ?: "تعذر التحقق من الاشتراك."
+                                error = deelaErrorForUser(it)
                             })
                         }
                     }
@@ -384,6 +423,30 @@ fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
                 Text(
                     error.orEmpty(),
                     color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            TextButton(
+                enabled = !busy,
+                onClick = {
+                    busy = true
+                    connectionStatus = null
+                    scope.launch {
+                        val result = DeelaAuthApi.testServerConnection()
+                        busy = false
+                        connectionStatus = result.fold(
+                            onSuccess = { it },
+                            onFailure = { deelaErrorForUser(it) }
+                        )
+                    }
+                }
+            ) { Text("فحص الاتصال بخادم ديلا") }
+            connectionStatus?.let { status ->
+                Text(
+                    status,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.bodySmall,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),
                 )
