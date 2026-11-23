@@ -1,0 +1,21 @@
+{
+  "id": "/DEELA-V2/ios/",
+  "name": "DEELA iOS | تطبيقات ديلا",
+  "short_name": "DEELA iOS",
+  "description": "واجهة ديلا للمشتركين على الآيفون",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/DEELA-V2/ios/",
+  "scope": "/DEELA-V2/ios/",
+  "display": "standalone",
+  "background_color": "#0d111a",
+  "theme_color": "#101522",
+  "icons": [
+    {
+      "src": "/DEELA-V2/ios/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
