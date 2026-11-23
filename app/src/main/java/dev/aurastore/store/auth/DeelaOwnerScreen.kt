@@ -54,13 +54,15 @@ private object OwnerApi {
             if(!response.isSuccessful) error("تعذر تعديل الاشتراك: "+response.code)
         }
     }
-    suspend fun review(token:String,id:String,decision:String)=withContext(Dispatchers.IO) {
+    suspend fun review(token:String,id:String,decision:String):String?=withContext(Dispatchers.IO) {
         val payload=JSONObject().put("id",id).put("decision",decision)
         val request=Request.Builder().url(base+"/api/owner/requests/review")
             .header("Authorization","Bearer "+token)
             .post(payload.toString().toRequestBody("application/json".toMediaType())).build()
         client.newCall(request).execute().use { response ->
             if(!response.isSuccessful) error("تعذر مراجعة الطلب: "+response.code)
+            val emailStatus=JSONObject(response.body.string()).optString("email_status")
+            emailStatus.takeIf {it.isNotBlank()&&it!="null"}
         }
     }
 }
@@ -75,6 +77,7 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
     var reload by remember { mutableIntStateOf(0) }
     var selectedMonths by remember { mutableIntStateOf(1) }
     var requestReview by remember { mutableStateOf<Pair<OwnerRequest,String>?>(null) }
+    var mailNotice by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(session.token,reload,page) {
         busy=true
         try { data=OwnerApi.dashboard(session.token);error=null }
@@ -87,7 +90,17 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
             confirmButton={TextButton(onClick={
                 requestReview=null;busy=true
                 scope.launch {
-                    try {OwnerApi.review(session.token,request.id,decision);reload++}
+                    try {
+                        val status=OwnerApi.review(session.token,request.id,decision)
+                        mailNotice=when {
+                            decision=="rejected" -> "تم رفض الطلب."
+                            status=="sent" -> "تم تفعيل الاشتراك، وقبلت خدمة البريد رسالة التأكيد."
+                            status=="unconfigured" -> "تم تفعيل الاشتراك بنجاح، لكن خدمة البريد تحتاج إلى إعداد. يمكنك مراجعة تبويب الرسائل."
+                            status=="failed" || status=="pending" -> "تم تفعيل الاشتراك، وتعذر إرسال رسالة البريد حاليًا. يمكن إعادة المحاولة من تبويب الرسائل."
+                            else -> "تم تفعيل الاشتراك، ويمكنك مراجعة حالة البريد من تبويب الرسائل."
+                        }
+                        reload++
+                    }
                     catch(e:Exception){error=e.message?:"تعذر مراجعة الطلب"}
                     finally{busy=false}
                 }
@@ -117,11 +130,12 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
             Text("لوحة تحكم المالك 👑",style=MaterialTheme.typography.titleLarge)
             Spacer(Modifier.height(12.dp))
             Row(modifier=Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-                listOf("الرئيسية","الطلبات","المشتركون","السجل","التحديثات").forEach { tab ->
+                listOf("الرئيسية","الطلبات","المشتركون","السجل","التحديثات","الرسائل").forEach { tab ->
                     FilterChip(selected=page==tab,onClick={page=tab},label={Text(tab)})
                 }
             }
             if(busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+            mailNotice?.let { Text(it,style=MaterialTheme.typography.bodySmall) }
             error?.let {
                 Text(it,color=MaterialTheme.colorScheme.error)
                 TextButton(onClick={reload++}) {Text("إعادة المحاولة")}
@@ -196,6 +210,10 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                         }
                     }
                     "التحديثات" -> DeelaOwnerSources(session.token)
+                    "الرسائل" -> DeelaOwnerEmailScreen(
+                        session.token,
+                        current.members.associate { it.id to it.email },
+                    )
                     "السجل" -> LazyColumn(modifier=Modifier.weight(1f)) {
                         items(current.audit) {event->
                             Text(event,modifier=Modifier.padding(vertical=8.dp))
@@ -204,7 +222,7 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                     }
                 }
             }
-            if (page != "التحديثات") {
+            if (page != "التحديثات" && page != "الرسائل") {
                 Spacer(Modifier.height(8.dp))
                 OutlinedButton(onClick=onLogout,modifier=Modifier.fillMaxWidth()) {Text("تسجيل الخروج")}
                 Spacer(Modifier.height(16.dp))
