@@ -49,6 +49,7 @@ button,.nav button{border-radius:12px}.nav button.active,.tabs .active{backgroun
  },true);
 })();
 </script>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src https://api.github.com; img-src data: https://avatars.githubusercontent.com; base-uri 'none'; form-action 'none'; frame-src 'none';">
 </head>
 <body>
 <div class="mzo-lang-switch" role="group" aria-label="Language / اللغة"><button id="mzoAr" type="button" aria-pressed="true">AR</button><button id="mzoEn" type="button" aria-pressed="false">EN</button></div>
@@ -56,7 +57,7 @@ button,.nav button{border-radius:12px}.nav button.active,.tabs .active{backgroun
 <main class="main"><div class="top"><div><div class="eyebrow">لوحة التحكم / إصدار محلي</div><h1 id="heading">لوحة المعلومات</h1></div><div class="status"><span class="dot"></span> الواجهة تعمل</div></div>
 <section class="section active" id="dashboard"><div class="grid"><div class="card"><div class="muted">حالة النظام</div><div class="metric">متصل</div><div class="muted">واجهة المتصفح جاهزة</div></div><div class="card"><div class="muted">الأوامر المتاحة</div><div class="metric">١٦</div><div class="muted">أوامر جاهزة للنسخ</div></div><div class="card"><div class="muted">الإصدار</div><div class="metric">3.7.0</div><div class="muted">نسخة HTML مستقلة</div></div><div class="card wide"><h2>الوصول السريع</h2><div class="quick"><button data-go="commands">⌘ دليل الأوامر</button><button data-go="lab">⌨ مختبر البرمجة</button><button data-go="tools">⚙ أدوات المطور</button><button data-go="gamefiles">🎮 مختبر ملفات الألعاب</button><button data-go="security">◇ مركز الأمان</button></div></div><div class="card"><h2>نظرة عامة</h2><div class="muted">لوحة تحكم تعمل محليًا داخل المتصفح، ولا تحتاج إلى خادم. لا يتضمن الملف نموذج ذكاء اصطناعي أو اتصالًا تلقائيًا به.</div></div></div></section>
 <section class="section" id="commands"><div class="card"><h2>دليل الأوامر</h2><input class="search" id="search" placeholder="ابحث عن أمر، مثل /build" aria-label="البحث في الأوامر"><div class="cmdlist" id="cmdlist"></div><div class="note">اضغط «نسخ» لإرسال الأمر إلى مساعد البرمجة الذي تستخدمه. تُحفظ صيغ الأوامر الإنجليزية للتوافق.</div></div></section>
-<section class="section" id="lab"><div class="card"><h2>مختبر البرمجة</h2><div class="tabs" id="langs"></div><p class="muted" id="langinfo"></p><textarea class="editor" id="prompt" spellcheck="false" placeholder="صف المشروع أو التطبيق الذي تريد بناءه..."></textarea><div class="actions"><button id="copyPrompt">نسخ طلب البرمجة</button><button id="downloadPrompt">تصدير ملف TXT</button><button id="clearPrompt">مسح النص</button><button id="runAI" style="border-color:var(--red);color:#ddb7c7">✦ تنفيذ بالذكاء الاصطناعي</button></div><div class="note">يعمل الذكاء الاصطناعي عند تشغيل الخادم المحلي وإعداد مفتاح API. لا يتم تنفيذ الشيفرة على جهازك.<div style="margin-top:18px"><h2>نتيجة الذكاء الاصطناعي</h2><div id="aiStatus" class="muted" role="status">جاهز لاستقبال الطلب عند اتصال الخادم.</div><pre id="aiOutput" dir="auto" style="white-space:pre-wrap;overflow-wrap:anywhere;background:#070709;border:1px solid var(--line);border-radius:12px;padding:16px;min-height:110px;max-height:520px;overflow:auto;user-select:text"></pre><div class="actions"><button id="copyAI">نسخ النتيجة</button><button id="saveAI">حفظ النتيجة TXT</button></div></div></div></section>
+<section class="section" id="lab"><div class="card"><h2>مختبر البرمجة</h2><div class="tabs" id="langs"></div><p class="muted" id="langinfo"></p><textarea class="editor" id="prompt" spellcheck="false" placeholder="صف المشروع أو التطبيق الذي تريد بناءه..."></textarea><div class="actions"><button id="copyPrompt">نسخ طلب البرمجة</button><button id="downloadPrompt">تصدير ملف TXT</button><button id="clearPrompt">مسح النص</button><button id="runAI" style="border-color:var(--red);color:#ddb7c7">✦ تنفيذ بالذكاء الاصطناعي</button></div><div class="note">الذكاء الاصطناعي يعمل عبر خادم ديلا للمالك فقط عند إضافة مفتاح OpenAI API في Supabase. لا يتم تشغيل الشيفرة الناتجة على الجهاز.<div style="margin-top:18px"><h2>نتيجة الذكاء الاصطناعي</h2><div id="aiStatus" class="muted" role="status">جاهز لفحص اتصال الذكاء الاصطناعي.</div><pre id="aiOutput" dir="auto" style="white-space:pre-wrap;overflow-wrap:anywhere;background:#070709;border:1px solid var(--line);border-radius:12px;padding:16px;min-height:110px;max-height:520px;overflow:auto;user-select:text"></pre><div class="actions"><button id="copyAI">نسخ النتيجة</button><button id="saveAI">حفظ النتيجة TXT</button></div></div></div></section>
 <section class="section" id="gamefiles"><div class="card"><h2>🎮 مختبر فحص ملفات الألعاب</h2><p class="muted">اختر ملف APK أو ZIP أو OBB أو ملف بيانات من جهازك. التحليل محلي داخل المتصفح، ولا يتم رفع الملف إلى خادم. لا يتم تشغيل اللعبة أو فك تشفير الملفات المحمية.</p><input id="gameFile" type="file" accept=".apk,.zip,.obb,.so,.dat,.bin,.json,.txt,.assets,.bundle,.unity3d,*/*" class="search" aria-label="اختر ملف اللعبة"><div id="gameSummary" class="note">لم يتم اختيار ملف بعد.</div><div class="note">📁 اختر القسم المطابق للمسار الظاهر في تطبيق معلومات اللعبة. عند الضغط على «اختيار ملف» يفتح منتقي ملفات أندرويد، ثم ينتقل المختبر إلى نتيجة ذلك القسم. بعض مجلدات النظام محمية ولا يستطيع المتصفح فتحها مباشرة.</div>
 <div class="pathgrid" id="pathGrid">
 <div class="pathcard"><strong>دليل المصدر (APK)</strong><code>/data/app/…/com.miniclip.drone1-…</code><button data-target="paths" data-pick="apk">اختيار ملف APK والانتقال للمسارات</button><small data-upload="paths">لم يتم اختيار ملف</small></div>
@@ -91,7 +92,30 @@ function buildRequest(){return `/build\nنوع المهمة: ${mode}\nالتقن
 $('copyPrompt').onclick=()=>copy(buildRequest());$('downloadPrompt').onclick=()=>{const blob=new Blob(['\ufeff',buildRequest()],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='DEELA-APPS_طلب_برمجي.txt';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('تم تصدير الملف')};$('clearPrompt').onclick=()=>{$('prompt').value='';toast('تم مسح المحرر')};
 const tools=[['مولّد الشيفرة','إنشاء شيفرة كاملة ومنظمة'],['محلل الأخطاء','تحديد سبب المشكلة واقتراح إصلاح'],['مصمم الواجهات','تصميم واجهة متجاوبة مع الشاشات'],['مخطط الملفات','إنشاء هيكل ملفات المشروع'],['محلل الأداء','اكتشاف نقاط البطء وتحسين الأداء'],['كاتب التوثيق','إعداد توثيق تقني واضح']];tools.forEach(([name,desc])=>{const e=document.createElement('button');e.className='tool';const strong=document.createElement('strong');strong.textContent=name;const p=document.createElement('p');p.className='muted';p.textContent=desc;e.append(strong,p);e.onclick=()=>{mode=name;$('prompt').value=desc+' للمشروع التالي:\n';renderLangs();go('lab');$('prompt').focus()};$('toolgrid').append(e)});
 let busy=false;
-$('runAI').onclick=async()=>{if(busy)return;const task=$('prompt').value.trim();if(!task){toast('اكتب طلبك أولًا');return}busy=true;$('runAI').disabled=true;$('aiStatus').textContent='جارٍ الاتصال بالمساعد...';$('aiOutput').textContent='';try{const r=await fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:task,mode,language})});const data=await r.json();if(!r.ok)throw Error(data.error||'تعذر إكمال الطلب');$('aiOutput').textContent=data.output||'لم تصل نتيجة';$('aiStatus').textContent='اكتمل الطلب بنجاح';}catch(e){$('aiStatus').textContent='تعذر تنفيذ الطلب: '+e.message+' — تأكد من تشغيل الخادم وإعداد المفتاح.'}finally{busy=false;$('runAI').disabled=false}};
+window.deelaOwnerAIStatus=function(raw){
+  try{const data=JSON.parse(raw);
+    $('aiStatus').textContent=data.ready?'● الذكاء الاصطناعي متصل، الموديل: '+(data.model||'مهيأ')+' | حتى 20 طلبًا يوميًا':'○ الذكاء الاصطناعي يحتاج مفتاح OPENAI_API_KEY في إعدادات Supabase. بقية الأدوات تعمل محليًا.';
+  }catch{ $('aiStatus').textContent='تعذر قراءة حالة الذكاء الاصطناعي.' }
+};
+window.deelaOwnerAIResult=function(raw){
+  try{
+    const data=JSON.parse(raw);
+    if(data.output){$('aiOutput').textContent=data.output;$('aiStatus').textContent='✓ اكتمل الطلب عبر '+(data.model||'الخدمة');}
+    else{$('aiOutput').textContent=data.error||'لم تصل نتيجة';$('aiStatus').textContent='تعذر تنفيذ الطلب. يمكنك نسخ الطلب واستعماله خارجيًا.';}
+  }catch{ $('aiStatus').textContent='تعذر قراءة نتيجة الخدمة.' }
+  finally{busy=false;$('runAI').disabled=false;}
+};
+$('runAI').onclick=()=>{
+  if(busy)return;
+  const task=$('prompt').value.trim();
+  if(!task){toast('اكتب طلبك أولًا');return;}
+  if(!window.DeelaToolsNative){$('aiStatus').textContent='استخدم مختبر الذكاء الاصطناعي من داخل تطبيق ديلا للمالك.';return;}
+  busy=true;$('runAI').disabled=true;
+  $('aiStatus').textContent='جارٍ إنشاء النتيجة بأمان من خادم ديلا...';
+  $('aiOutput').textContent='';
+  DeelaToolsNative.runAI(task,language,mode);
+};
+
 $('copyAI').onclick=()=>copy($('aiOutput').textContent);
 $('saveAI').onclick=()=>{const blob=new Blob(['\ufeff',$('aiOutput').textContent],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='DEELA-APPS_AI.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
 
