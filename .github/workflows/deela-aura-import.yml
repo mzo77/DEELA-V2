@@ -1,0 +1,106 @@
+name: Replace MultiStore with Aura Store (one-time)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/deela-aura-import.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deela-aura-import-main
+  cancel-in-progress: false
+
+jobs:
+  import-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    steps:
+      - name: Checkout existing DEELA V2
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify old source backup exists before any replacement
+        run: |
+          set -euo pipefail
+          git ls-remote --exit-code origin refs/heads/backup/multistore-before-aura
+          test -f migration/import_aura.py
+          test -d store
+
+      - name: Obtain pinned MIT-licensed Aura Store sources
+        run: |
+          set -euo pipefail
+          git clone --branch kotlin --single-branch https://github.com/venudinesh/Aura-Store.git "$RUNNER_TEMP/aura-source"
+          git -C "$RUNNER_TEMP/aura-source" checkout --detach 56423776c368d3b95bae266623f3fbeeca582c5c
+          test "$(git -C "$RUNNER_TEMP/aura-source" rev-parse HEAD)" = "56423776c368d3b95bae266623f3fbeeca582c5c"
+          test -f "$RUNNER_TEMP/aura-source/LICENSE"
+          test -f "$RUNNER_TEMP/aura-source/app/build.gradle.kts"
+
+      - name: Replace old app source with clean Aura base and DEELA branding
+        run: |
+          python3 migration/import_aura.py "$RUNNER_TEMP/aura-source" "$GITHUB_WORKSPACE"
+          test -f app/src/main/java/dev/aurastore/store/data/sources/WebSources.kt
+          test ! -d store
+          grep -q 'applicationId = "com.deela.apps"' app/build.gradle.kts
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install the exact Android platform
+        run: |
+          set -euo pipefail
+          sdkmanager --channel=3 --install "platforms;android-37.0" "build-tools;36.1.0"
+          test -s "$ANDROID_HOME/platforms/android-37.0/android.jar"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build the replacement APK before changing main
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --no-daemon
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          mkdir -p "$RUNNER_TEMP/deela-output"
+          cp app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/deela-output/DEELA-Aura-preview.apk"
+          (cd "$RUNNER_TEMP/deela-output" && sha256sum DEELA-Aura-preview.apk > SHA256SUMS.txt)
+
+      - name: Save built APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DEELA-Aura-preview-APK
+          path: ${{ runner.temp }}/deela-output/
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Commit complete replacement only after successful build
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: rebuild DEELA V2 from Aura Store (MIT, pinned Kotlin source)"
+          git push origin HEAD:main
+
+      - name: Publish DEELA Aura preview release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create v0.9.0-aura.1 \
+            "$RUNNER_TEMP/deela-output/DEELA-Aura-preview.apk" \
+            "$RUNNER_TEMP/deela-output/SHA256SUMS.txt" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$(git rev-parse HEAD)" \
+            --title "DEELA APPS 0.9.0 | Aura Store Preview" \
+            --notes "First DEELA preview based on Aura Store MIT code. Arabic navigation foundation and DEELA branding. Subscription/authentication gate NOT yet added. Debug-signed preview; uninstall the old DEELA build if signatures differ." \
+            --prerelease --latest=false
