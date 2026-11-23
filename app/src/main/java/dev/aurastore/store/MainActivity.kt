@@ -98,6 +98,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.aurastore.store.data.AppState
 import dev.aurastore.store.data.BackgroundTheme
 import dev.aurastore.store.data.PaletteMode
+import dev.aurastore.store.auth.DeelaSubscriptionScreen
 import dev.aurastore.store.auth.DeelaOwnerScreen
 import dev.aurastore.store.auth.DeelaAccessScreen
 import dev.aurastore.store.auth.DeelaAuthApi
@@ -231,14 +232,14 @@ class MainActivity : ComponentActivity() {
                 while (deelaSession != null) {
                     kotlinx.coroutines.delay(60_000)
                     val current = deelaSession ?: break
-                    if (!DeelaAuthApi.check(current.token)) {
+                    if (current.subscriptionActive && !DeelaAuthApi.check(current.token)) {
                         deelaSession = null
                         tourOpen = false
                     }
                 }
             }
             LaunchedEffect(splashDone, tourSeen, deelaSession) {
-                if (splashDone && deelaSession != null && deelaSession?.role != "owner" && !tourSeen) {
+                if (splashDone && deelaSession?.subscriptionActive == true && deelaSession?.role != "owner" && !tourSeen) {
                     tourOpen = true
                 } else if (splashDone && deelaSession != null) {
                     // One ask per install, and never while the first-open tour is on screen: a
@@ -282,6 +283,8 @@ class MainActivity : ComponentActivity() {
                             }
                             if (splashDone && deelaSession?.role == "owner") {
                                 DeelaOwnerScreen(session = deelaSession!!, onLogout = { deelaSession = null })
+                            } else if (splashDone && deelaSession?.subscriptionActive == false) {
+                                DeelaSubscriptionScreen(session = deelaSession!!, onActivated = { deelaSession = deelaSession?.copy(subscriptionActive = true) }, onLogout = { deelaSession = null })
                             } else if (splashDone && deelaSession != null) {
                                 StoreApp(deepLink, onLogout = { deelaSession = null })
                             } else if (splashDone) {
@@ -289,7 +292,7 @@ class MainActivity : ComponentActivity() {
                             }
                             // The tour sits between the store and the splash. When the splash fades it
                             // reveals the first page instead of handing over to an empty feed for a beat.
-                            if (tourOpen && splashDone && deelaSession?.role != "owner") {
+                            if (tourOpen && splashDone && deelaSession?.subscriptionActive == true && deelaSession?.role != "owner") {
                                 AppTour(
                                     onDone = {
                                         Settings.markTourSeen(this@MainActivity)
