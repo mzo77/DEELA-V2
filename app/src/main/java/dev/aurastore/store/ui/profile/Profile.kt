@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -159,34 +160,11 @@ fun ProfilePicture(
                     modifier = Modifier.fillMaxSize(),
                 )
 
-                else -> Canvas(Modifier.fillMaxSize()) {
-                    drawRect(scheme.surfaceContainerHigh)
-                    val unit = this.size.minDimension / 100f
-                    scale(unit, unit, Offset.Zero) {
-                        // The same 136 × 212 letter the splash writes, fitted to 90 units of
-                        // height inside the circle: legs opened, the bar just above the middle,
-                        // and the bar running past both feet.
-                        val ink = scheme.onSurface
-                        drawPath(
-                            Path().apply {
-                                moveTo(33.1f, 88.7f)
-                                quadraticTo(39.7f, 44.5f, 50f, 6f)
-                                quadraticTo(60.3f, 45.5f, 66.9f, 90.6f)
-                                lineTo(23.7f, 50.2f)
-                            },
-                            ink,
-                            style = Stroke(4.5f, cap = StrokeCap.Round),
-                        )
-                        drawPath(
-                            Path().apply {
-                                moveTo(23.7f, 50.2f)
-                                lineTo(76.3f, 50.2f)
-                            },
-                            ink,
-                            style = Stroke(4.5f, cap = StrokeCap.Round),
-                        )
-                    }
-                }
+                else -> Image(
+                    painter = painterResource(R.drawable.deela_launcher),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
         }
         if (frame != AvatarFrame.NONE) {
@@ -278,7 +256,7 @@ fun AvatarPicker(
                         .padding(horizontal = 20.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    GlyphIcon(Glyph.Brand, size = 20.dp, tint = MaterialTheme.colorScheme.primary)
+                    Image(painter = painterResource(R.drawable.deela_launcher), contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.size(14.dp))
                     Text(
                         stringResource(R.string.profile_default),

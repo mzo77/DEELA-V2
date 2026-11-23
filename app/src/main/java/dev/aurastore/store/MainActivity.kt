@@ -28,6 +28,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -85,6 +86,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -1076,7 +1078,7 @@ private fun BrandBar(
             modifier = Modifier.size(28.dp),
         ) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                GlyphIcon(Glyph.Brand, size = 18.dp, tint = MaterialTheme.colorScheme.onPrimary)
+                Image(painter = painterResource(R.drawable.deela_launcher), contentDescription = null, modifier = Modifier.fillMaxSize())
             }
         }
         Spacer(Modifier.width(10.dp))
