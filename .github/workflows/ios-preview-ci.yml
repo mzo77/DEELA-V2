@@ -1,0 +1,58 @@
+name: Verify DEELA iPhone Subscriber Preview
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/ios/**'
+      - '.github/workflows/ios-preview-ci.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check HTML and JS for preview-only controls
+        run: |
+          set -euo pipefail
+          node --check docs/ios/app.js
+          node --check docs/ios/sw.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          html=Path("docs/ios/index.html").read_text()
+          script=Path("docs/ios/app.js").read_text()
+          manifest=json.loads(Path("docs/ios/manifest.webmanifest").read_text())
+          for name in ("appDetailDialog","myAppsGrid","mySearch","categoryFilter","moreApps","sourceProgress","refreshCatalog","accountStatus","ownerTab"):
+              assert 'id="'+name+'"' in html, name
+          for section in ("renderCatalog","openDetails","loadCatalog","loadSources","chooseSource"):
+              assert section in script,section
+          assert "/api/download" not in script
+          assert "download_url" not in script
+          assert "window.location.href" not in script
+          assert 'href="./install/"' not in html
+          assert "وضع العرض فقط" in html
+          assert manifest["display"]=="standalone"
+          assert "deela-ios-shell-v2" in Path("docs/ios/sw.js").read_text()
+          print("Preview-only catalogue and iPhone Home Screen app checks passed.")
+          PY
+      - name: Verify protected DEELA iOS API remains closed to anonymous visitors
+        run: |
+          set -euo pipefail
+          BASE="https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-ios-web"
+          curl --fail-with-body --retry 3 --max-time 20 "$BASE/health" -o /tmp/deela-ios-health.json
+          python3 - <<'PY'
+          import json
+          h=json.load(open('/tmp/deela-ios-health.json'))
+          assert h["platform"]=="ios" and h["sources"]==15
+          PY
+          for path in /api/catalog /api/sources '/api/source?id=0'; do
+            code="$(curl --silent --max-time 20 -o /dev/null -w '%{http_code}' "$BASE$path")"
+            test "$code" = "401" || (echo "Anonymous API unexpectedly accessible: $path ($code)" && exit 1)
+          done
+          code="$(curl --silent --max-time 20 -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' \
+            --data '{"app_id":"11111111-1111-1111-1111-111111111111"}' "$BASE/api/download")"
+          test "$code" = "401" || (echo "Anonymous download API unexpectedly accessible: $code" && exit 1)
+          echo "DEELA iOS subscriber data remains authorization-protected."
