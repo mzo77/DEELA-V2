@@ -1316,12 +1316,15 @@ fun LoadingRail(cards: Int = 4) {
  * Rating and size are pills, so they are not repeated here.
  */
 @Composable
-fun metaLine(post: PostSummary): String = remember(post.genre, post.type) {
+fun metaLine(post: PostSummary): String {
+    val raw = remember(post.genre, post.type) {
     listOfNotNull(
         post.genre?.takeIf { it.isNotBlank() },
         post.type?.takeIf { it.isNotBlank() },
     ).joinToString(" · ")
-}.ifBlank { stringResource(R.string.meta_line_fallback) }
+    }.ifBlank { stringResource(R.string.meta_line_fallback) }
+    return modDescriptionArabic(raw)
+}
 
 /** The unit table is a constant: a list literal here allocated one per call, per row. */
 private val SIZE_UNITS = arrayOf("B", "KB", "MB", "GB")
