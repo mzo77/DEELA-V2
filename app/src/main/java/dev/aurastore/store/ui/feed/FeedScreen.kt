@@ -68,6 +68,7 @@ import dev.aurastore.store.ui.PlayChip
 import dev.aurastore.store.ui.ScrollToTopOnRetap
 import dev.aurastore.store.ui.ScrollRevealHost
 import dev.aurastore.store.ui.SectionHeader
+import dev.aurastore.store.ui.subscriberLabel
 import dev.aurastore.store.ui.StateMessage
 import dev.aurastore.store.ui.StatusLine
 import dev.aurastore.store.ui.SwipeStep
@@ -940,7 +941,7 @@ fun FeedScreen(
             ) {
                 itemsIndexed(state.channels) { index, name ->
                     PlayChip(
-                        label = name,
+                        label = subscriberLabel(name),
                         selected = state.selectedChannel == index,
                         onClick = { viewModel.selectChannel(index) },
                     )
@@ -966,7 +967,7 @@ fun FeedScreen(
             ) {
                 items(state.sorts, key = { it.orderBy }) { sort ->
                     PlayChip(
-                        label = sort.label,
+                        label = subscriberLabel(sort.label),
                         selected = state.sort == sort.orderBy,
                         onClick = { viewModel.setSort(sort.orderBy) },
                     )
@@ -1006,14 +1007,14 @@ fun FeedScreen(
             item {
                 SectionHeader(
                     when (state.sort) {
-                        "modified" -> stringResource(R.string.feed_new_updated, kind.title)
-                        "post_views_week" -> stringResource(R.string.feed_trending, kind.title)
-                        else -> stringResource(R.string.feed_top_charts, kind.title)
+                        "modified" -> stringResource(R.string.feed_new_updated, subscriberLabel(kind.title))
+                        "post_views_week" -> stringResource(R.string.feed_trending, subscriberLabel(kind.title))
+                        else -> stringResource(R.string.feed_top_charts, subscriberLabel(kind.title))
                     },
                     subtitle = when (state.sort) {
-                        "modified" -> stringResource(R.string.feed_recently_updated, kind.title)
+                        "modified" -> stringResource(R.string.feed_recently_updated, subscriberLabel(kind.title))
                         "post_views_week" -> stringResource(R.string.feed_trending, kind.title)
-                        else -> stringResource(R.string.feed_most_viewed, kind.title)
+                        else -> stringResource(R.string.feed_most_viewed, subscriberLabel(kind.title))
                     },
                 )
             }

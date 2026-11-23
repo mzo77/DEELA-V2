@@ -327,14 +327,8 @@ fun YouScreen(
                             count = 0,
                             onClick = onOpenSettings,
                         )
-                        RowRule()
-                        HubRow(
-                            glyph = Glyph.Info,
-                            title = stringResource(R.string.sheet_about),
-                            note = stringResource(R.string.sheet_about_note),
-                            count = 0,
-                            onClick = onOpenAbout,
-                        )
+                        // The subscriber profile does not expose upstream developer/source details.
+                        // MIT license and third-party attributions stay in the public source tree.
                     }
                 }
             }

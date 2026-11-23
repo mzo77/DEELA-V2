@@ -55,9 +55,10 @@ import kotlinx.coroutines.delay
  */
 @Composable
 fun HelloSplash(onDone: () -> Unit) {
-    val paper = MaterialTheme.colorScheme.background
-    val ink = MaterialTheme.colorScheme.onBackground
-    val warm = MaterialTheme.colorScheme.primary
+    // Keep the original pale-blue animated star, independently of DEELA's red house palette.
+    val paper = Color(0xFF101116)
+    val ink = Color(0xFFDDE4FF)
+    val warm = Color(0xFFB2C4FA)
     val body = remember { Path().apply { aBodyInto() } }
     val bar = remember { Path().apply { aBarInto() } }
     val bodyMeasure = remember { PathMeasure().apply { setPath(body, false) } }

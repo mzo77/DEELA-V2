@@ -26,6 +26,7 @@ import dev.aurastore.store.R
 import dev.aurastore.store.ui.AppCard
 import dev.aurastore.store.ui.ScrollRevealHost
 import dev.aurastore.store.ui.SectionHeader
+import dev.aurastore.store.ui.subscriberLabel
 import dev.aurastore.store.ui.playEnter
 
 /**
@@ -62,8 +63,8 @@ fun RailRow(
 
     Column(modifier) {
         SectionHeader(
-            rail.title,
-            subtitle = rail.subtitle,
+            subscriberLabel(rail.title),
+            subtitle = rail.subtitle?.let { subscriberLabel(it) },
             onMore = onOpenAll?.let { open -> { open(rail) } },
             moreLabel = moreLabel,
         )

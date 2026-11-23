@@ -36,6 +36,7 @@ import dev.aurastore.store.ui.LoadingRail
 import dev.aurastore.store.ui.PagingFooter
 import dev.aurastore.store.ui.PlayChip
 import dev.aurastore.store.ui.SectionHeader
+import dev.aurastore.store.ui.subscriberLabel
 import dev.aurastore.store.ui.StateMessage
 import dev.aurastore.store.ui.playClickable
 import dev.aurastore.store.ui.statusText
@@ -179,7 +180,7 @@ internal fun LazyListScope.serverBrowse(
         // games shelf, say. This heading is what names that list when no chip can.
         if (state.serverCategories.none { it.id == category.id }) {
             item(key = "server-cat-header-${source.name}-${category.id}") {
-                SectionHeader(title = category.name, subtitle = source.label)
+                SectionHeader(title = subscriberLabel(category.name), subtitle = source.label)
             }
         }
         sourceGrid(state.serverApps, keyPrefix = "server-cat-${source.name}-", onPick = onPick)
@@ -238,7 +239,7 @@ private fun SourceShelfRow(
 ) {
     Column(Modifier.padding(bottom = 10.dp)) {
         SectionHeader(
-            shelf.title,
+            subscriberLabel(shelf.title),
             onMore = onOpenAll,
             moreLabel = if (onOpenAll != null) stringResource(R.string.feed_view_all) else null,
         )
