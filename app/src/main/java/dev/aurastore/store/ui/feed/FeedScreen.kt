@@ -106,7 +106,7 @@ enum class FeedKind(val title: String, val categoryName: String?, val homeTab: S
 data class Sort(val orderBy: String, val label: String)
 
 internal val SORTS = listOf(
-    Sort("modified", "New & updated"),
+    Sort("modified", "Latest Updates"),
     Sort("post_views", "Top charts"),
     Sort("post_views_week", "Trending"),
 )
