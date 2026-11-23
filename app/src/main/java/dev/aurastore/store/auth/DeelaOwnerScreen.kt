@@ -21,7 +21,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 private data class OwnerMember(val id:String,val email:String,val role:String,val active:Boolean,val suspended:Boolean,val endsAt:String)
-private data class OwnerRequest(val id:String,val email:String,val months:Int,val platform:String)
+private data class OwnerRequest(val id:String,val userId:String,val email:String,val months:Int,val platform:String)
 private data class OwnerData(val members:List<OwnerMember>,val audit:List<String>,val email:String,val requests:List<OwnerRequest>)
 private object OwnerApi {
     private val client=OkHttpClient()
@@ -41,7 +41,7 @@ private object OwnerApi {
                 },
                 (0 until audit.length()).map { i -> val a=audit.getJSONObject(i);a.optString("action")+" — "+a.optString("created_at").take(16) },
                 body.optJSONObject("owner")?.optString("email")?:"",
-                (0 until requests.length()).map { i -> val r=requests.getJSONObject(i);OwnerRequest(r.optString("id"),r.optString("email"),r.optInt("months"),r.optString("platform")) }
+                (0 until requests.length()).map { i -> val r=requests.getJSONObject(i);OwnerRequest(r.optString("id"),r.optString("user_id"),r.optString("email"),r.optInt("months"),r.optString("platform")) }
             )
         }
     }
@@ -131,13 +131,14 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                 when(page) {
                     "الرئيسية" -> {
                         val subscribers=current.members.filter {it.role!="owner"}
+                        val awaitingReview=current.requests.map { it.userId }.toSet()
                         Text("حساب المالك: "+current.email,style=MaterialTheme.typography.bodySmall)
                         Spacer(Modifier.height(16.dp))
                         Text("إجمالي المشتركين: "+subscribers.size,style=MaterialTheme.typography.titleMedium)
                         Text("الاشتراكات النشطة: "+subscribers.count {it.active})
                         Text("طلبات الاشتراك المعلقة: "+current.requests.size)
                         Button(onClick={page="الطلبات"}) {Text("مراجعة طلبات الاشتراك") }
-                        Text("غير النشطة: "+subscribers.count {!it.active})
+                        Text("غير النشطة: "+subscribers.count {!it.active && it.id !in awaitingReview})
                         Spacer(Modifier.height(16.dp))
                         Button(onClick={page="المشتركون"}) {Text("إدارة المشتركين والاشتراكات")}
                         OutlinedButton(onClick={reload++}) {Text("تحديث البيانات")}
