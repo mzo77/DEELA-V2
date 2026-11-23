@@ -1,0 +1,72 @@
+name: Build Private DEELA Owner Android APK and verify Firebase website
+on:
+  push:
+    branches:
+      - feature/deela-private-google-owner
+    paths:
+      - 'ownerapp/**'
+      - 'deela-google/**'
+      - 'settings.gradle.kts'
+      - '.github/workflows/deela-owner-app.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  site-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check private site sources
+        run: |
+          set -euo pipefail
+          node --check deela-google/site/app.js
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          cfg=json.loads(Path('deela-google/firebase.json').read_text())
+          assert cfg['hosting']['public']=='site'
+          html=Path('deela-google/site/index.html').read_text()
+          assert 'noindex,nofollow' in html
+          for element in ['id="loginForm"','id="uploadForm"','id="membersList"','id="filesList"']:
+              assert element in html,element
+          assert 'deela-owner-vault' in Path('deela-google/site/app.js').read_text()
+          assert not any('service_role' in p.read_text().lower() for p in Path('deela-google/site').glob('*') if p.is_file())
+          PY
+  owner-apk-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android platform 37
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --channel=3 --install "platforms;android-37.0" "build-tools;36.1.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build separate owner APK
+        env:
+          DEELA_OWNER_URL: ${{ vars.DEELA_OWNER_URL }}
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew :ownerapp:assembleDebug --no-daemon
+          test -s ownerapp/build/outputs/apk/debug/ownerapp-debug.apk
+          mkdir -p dist
+          cp ownerapp/build/outputs/apk/debug/ownerapp-debug.apk dist/DEELA-Owner-preview.apk
+          "$ANDROID_HOME/build-tools/36.1.0/apksigner" verify --print-certs dist/DEELA-Owner-preview.apk
+          (cd dist && sha256sum DEELA-Owner-preview.apk > SHA256SUMS.txt)
+          if [ -z "$DEELA_OWNER_URL" ]; then
+            echo "::warning::DEELA_OWNER_URL not configured. This is only a preview APK; link Firebase Hosting before distribution."
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DEELA-Owner-preview-APK
+          path: dist/
+          retention-days: 30
+          if-no-files-found: error
