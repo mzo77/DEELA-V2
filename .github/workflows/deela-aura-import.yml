@@ -52,13 +52,13 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install the exact Android platform
+      - name: Install Android SDK with preinstalled command-line tools
         run: |
           set -euo pipefail
-          sdkmanager --channel=3 --install "platforms;android-37.0" "build-tools;36.1.0"
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --channel=3 --install "platforms;android-37.0" "build-tools;36.1.0"
           test -s "$ANDROID_HOME/platforms/android-37.0/android.jar"
 
       - name: Set up Gradle
