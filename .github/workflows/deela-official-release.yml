@@ -138,7 +138,7 @@ jobs:
       - name: Publish public, stable GitHub Release for in-app update notifications
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_NOTES: ${{ inputs.release_notes || 'تحديث تطبيقات ديلا 0.9.8: إصدار رسمي بنظام التحديثات للمشتركين.' }}
+          RELEASE_NOTES: "${{ inputs.release_notes || 'تحديث تطبيقات ديلا 0.9.8: إصدار رسمي بنظام التحديثات للمشتركين.' }}"
           TAG: ${{ steps.verify.outputs.tag }}
           APK: ${{ steps.verify.outputs.apk }}
         run: |
