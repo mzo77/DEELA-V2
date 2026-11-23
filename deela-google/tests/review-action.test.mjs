@@ -30,7 +30,7 @@ function findButton(root, text) {
   }
   return null;
 }
-function harness({ reviewReply = { ok: true }, requests } = {}) {
+function harness({ reviewReply = { ok: true }, loginReply = {role:"owner",access_token:"valid_owner_test_token"}, requests } = {}) {
   const elements = new Map();
   const calls = [];
   const pending = requests ?? [{
@@ -56,11 +56,13 @@ function harness({ reviewReply = { ok: true }, requests } = {}) {
     sessionStorage: { getItem: () => null, setItem() {}, removeItem() {} },
     createClient: () => ({ storage: { from: () => ({}) } }),
     setTimeout: () => 1, clearTimeout() {},
+    AbortSignal,
     fetch: async (url, init = {}) => {
       const body = init.body ? JSON.parse(init.body) : null;
       calls.push({ url, body });
       let data, status = 200;
-      if (url.endsWith("/api/owner/dashboard"))
+      if (url.endsWith("/api/v1/auth/login")) data = loginReply;
+      else if (url.endsWith("/api/owner/dashboard"))
         data = { members: [], requests: pending };
       else if (url.endsWith("/api/owner/requests/review")) {
         data = reviewReply;
@@ -108,4 +110,18 @@ test("failed rejection keeps request and surfaces backend error", async () => {
   await clicked;
   assert.equal(h.$("pendingRequests").children.length, 1, "Request must remain on error");
   assert.equal(h.$("feedback").textContent, "الطلب غير موجود أو تمت مراجعته");
+});
+
+test("login works without downloading the external Supabase module", async () => {
+  assert.ok(!src.startsWith("import "), "Startup must have no remote module dependency");
+  const h=harness();
+  await vm.runInContext('login("owner@example.invalid","sample-secret")',h.ctx);
+  assert.equal(h.$("shell").hidden,false);
+  assert.equal(h.$("login").hidden,true);
+  assert.equal(h.$("loginStatus").textContent,"تم تسجيل الدخول بنجاح");
+  assert.ok(h.calls.some(c=>c.url.endsWith("/api/v1/auth/login")));
+});
+test("server owner role is required", async()=>{
+ const h=harness({loginReply:{role:"subscriber",access_token:"subscriber_token"}});
+ await assert.rejects(vm.runInContext('login("member@example.invalid","sample-secret")',h.ctx),/لا يمكن الدخول إلا بحساب المالك/);
 });
