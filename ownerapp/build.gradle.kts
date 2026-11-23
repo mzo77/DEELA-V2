@@ -8,8 +8,8 @@ android {
         applicationId = "com.deela.owner.control"
         minSdk = 27
         targetSdk = 35
-        versionCode = 3
-        versionName = "0.3.0"
+        versionCode = 4
+        versionName = "0.4.0"
         val publicUrl = System.getenv("DEELA_OWNER_URL")?.trim()
             ?.takeIf { it.startsWith("https://") && !it.contains("\"") }
             ?: "https://appassets.androidplatform.net/assets/www/index.html"
