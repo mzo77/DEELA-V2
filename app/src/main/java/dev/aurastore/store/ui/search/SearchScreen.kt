@@ -1,5 +1,6 @@
 package dev.aurastore.store.ui.search
 
+import dev.aurastore.store.ui.modDescriptionArabic
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -857,7 +858,7 @@ private fun SourceResultRow(
             val meta = listOfNotNull(app.version, app.size).joinToString(" · ")
             if (meta.isNotBlank()) {
                 Text(
-                    meta,
+                    modDescriptionArabic(meta),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
