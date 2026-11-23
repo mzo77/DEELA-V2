@@ -77,18 +77,28 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          tag="deela-preview-$GITHUB_RUN_NUMBER"
-          {
-            echo "DEELA V2 preview, built from commit $GITHUB_SHA."
-            echo
-            echo "TEST BUILD ONLY. Signed with an automatically generated debug key."
-            echo "Do not distribute as the production release. Later CI builds may use different signing keys and fail to update in place."
-            echo "A stable release requires a persistent private DEELA signing key."
-          } > dist/RELEASE_NOTES.txt
+          tag="v0.8.0-beta.$GITHUB_RUN_NUMBER"
+          cat > dist/RELEASE_NOTES.txt <<'NOTES'
+          # DEELA APPS V2 | تطبيقات ديلا
+          
+          **إصدار تجريبي من تطبيق MultiStore بهوية ديلا**
+          
+          - البحث في مصادر متعددة للتطبيقات
+          - عرض معلومات التطبيقات وتنزيلها وتحديثها
+          - إدارة التنزيلات والتطبيقات المثبتة
+          - دعم الوضع الفاتح والداكن
+          - خيارات التثبيت العادي وRoot وShizuku عند توفرها
+          
+          **تنبيه:** هذه نسخة تجريبية موقعة بمفتاح اختبار، وليست إصدارًا نهائيًا. قد لا تقبل تثبيت تحديث فوق نسخة موقعة بمفتاح مختلف.
+          
+          مبني على مشروع MultiStore لـFedeFluork وفق GPL-3.0.
+          NOTES
+          echo "" >> dist/RELEASE_NOTES.txt
+          echo "Commit: $GITHUB_SHA" >> dist/RELEASE_NOTES.txt
           gh release create "$tag" dist/DEELA-V2-preview.apk dist/SHA256SUMS.txt \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
-            --title "DEELA V2 · Test APK #$GITHUB_RUN_NUMBER" \
+            --title "DEELA V2 | تطبيقات ديلا - Beta 0.8.0 #$GITHUB_RUN_NUMBER" \
             --notes-file dist/RELEASE_NOTES.txt \
             --prerelease \
             --latest=false
