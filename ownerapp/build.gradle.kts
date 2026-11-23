@@ -8,11 +8,11 @@ android {
         applicationId = "com.deela.owner"
         minSdk = 27
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
         val publicUrl = System.getenv("DEELA_OWNER_URL")?.trim()
             ?.takeIf { it.startsWith("https://") && !it.contains("\"") }
-            ?: "https://deela-owner.invalid/"
+            ?: "https://appassets.androidplatform.net/assets/www/index.html"
         buildConfigField("String", "DEELA_OWNER_URL", "\"" + publicUrl + "\"")
     }
     buildFeatures { buildConfig = true }
@@ -25,4 +25,8 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+}
+
+dependencies {
+    implementation("androidx.webkit:webkit:1.18.0")
 }
