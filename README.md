@@ -12,12 +12,12 @@ source you choose, through the same verification pipeline every time.
 </p>
 
 <p>
-<a href="https://github.com/mzo77/DEELA-V2/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/mzo77/DEELA-V2?include_prereleases&sort=semver&display_name=tag&label=release&color=4F5BD5&style=flat-square"></a>
+<a href="https://github.com/mzo77/DEELA-V2/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/mzo77/DEELA-V2?include_prereleases&sort=semver&display_name=tag&label=release&color=912D55&style=flat-square"></a>
 <a href="https://github.com/mzo77/DEELA-V2/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/mzo77/DEELA-V2/total?label=downloads&color=4F5BD5&style=flat-square"></a>
 <img alt="Android 8.0+" src="https://img.shields.io/badge/Android-8.0%2B-4F5BD5?style=flat-square&logo=android&logoColor=white">
 <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.3-4F5BD5?style=flat-square&logo=kotlin&logoColor=white">
 <a href="LICENSE"><img alt="License GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-4F5BD5?style=flat-square"></a>
-<a href="https://github.com/mzo77/DEELA-V2/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/FedeFluork/multistore/ci.yml?branch=main&label=CI&style=flat-square"></a>
+<a href="https://github.com/mzo77/DEELA-V2/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/mzo77/DEELA-V2/ci.yml?branch=main&label=CI&style=flat-square"></a>
 </p>
 
 <p>
@@ -190,4 +190,9 @@ the caller.
 
 ## Attribution and license
 
-DEELA APPS is based on [MultiStore by FedeFluork](https://github.com/FedeFluork/multistore), licensed under GPL-3.0. Original copyright and license notices remain applicable. The source of this derivative is available in this repository.
+DEELA APPS is based on [DEELA APPS by FedeFluork](https://github.com/mzo77/DEELA-V2), licensed under GPL-3.0. Original copyright and license notices remain applicable. The source of this derivative is available in this repository.
+
+
+## Upstream attribution
+
+DEELA APPS is based on [MultiStore by FedeFluork](https://github.com/FedeFluork/multistore), licensed under GPL-3.0. Original copyright and license notices are retained in the source tree. This fork is independently maintained.
