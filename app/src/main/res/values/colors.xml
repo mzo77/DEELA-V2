@@ -9,7 +9,7 @@
 -->
 <resources>
     <color name="window_background">#FFFBFF</color>
-    <color name="ic_launcher_background">#4F5BD5</color>
+    <color name="ic_launcher_background">#58112F</color>
 
     <!--
       The splash background is the brand indigo in **both** themes, and deliberately has no
@@ -20,5 +20,5 @@
       that followed @color/window_background would therefore be white even for somebody who chose
       the dark theme. A brand colour, always the same, cannot be "the wrong one".
     -->
-    <color name="splash_background">#4F5BD5</color>
+    <color name="splash_background">#58112F</color>
 </resources>

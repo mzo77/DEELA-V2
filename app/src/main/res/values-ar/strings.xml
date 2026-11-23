@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    
+    <string name="nav_home">الرئيسية</string>
+    <string name="nav_search">بحث</string>
+    <string name="nav_myapps">تطبيقاتي</string>
+    <string name="nav_downloads">التنزيلات</string>
+    <string name="nav_downloads_badge">تنزيلات جارية</string>
+    <string name="nav_settings">الإعدادات</string>
+    <string name="nav_bar_content_description">التنقل الرئيسي</string>
+</resources>

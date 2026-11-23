@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    <string name="home_title">الرئيسية</string>
+    <string name="home_refresh_action">تحديث فهرس التطبيقات</string>
+
+    
+    <string name="home_first_sync_title">لم يُنزّل فهرس التطبيقات على هذا الجهاز بعد</string>
+    <string name="home_first_sync_message">يمكنك البحث دون اتصال بعد تنزيل فهرس المتجر لأول مرة.</string>
+    <string name="home_first_sync_action">تنزيل الفهرس</string>
+
+    
+    <string name="home_syncing_title">جارٍ تنزيل فهرس التطبيقات</string>
+    <string name="home_syncing_progress">%1$d من أصل %2$d تطبيق</string>
+    <string name="home_syncing_processed">تم العثور على %1$d تطبيق حتى الآن</string>
+
+    
+    <string name="home_sync_failed_title">تعذّر تحديث فهرس التطبيقات</string>
+    <string name="home_sync_retry">إعادة المحاولة</string>
+    <string name="home_sync_dismiss">إغلاق</string>
+
+    
+    <string name="home_recently_updated_title">المحدّثة مؤخرًا</string>
+    <plurals name="home_catalogue_size">
+        <item quantity="zero">%1$d تطبيق في الفهرس</item>
+        <item quantity="one">%1$d تطبيق في الفهرس</item>
+        <item quantity="two">%1$d تطبيق في الفهرس</item>
+        <item quantity="few">%1$d تطبيق في الفهرس</item>
+        <item quantity="many">%1$d تطبيق في الفهرس</item>
+        <item quantity="other">%1$d تطبيق في الفهرس</item>
+    </plurals>
+    <string name="home_catalogue_empty_title">فهرس التطبيقات فارغ</string>
+    <string name="home_catalogue_empty_message">اكتملت المزامنة، لكن المصدر لم يوفر تطبيقات للعرض.</string>
+    <string name="home_no_indexed_store_title">لا يوجد فهرس متاح دون اتصال</string>
+    <string name="home_no_indexed_store_message">لا يوفر أي مصدر متصل فهرسًا كاملًا للتنزيل.</string>
+
+    
+    <string name="home_metered_title">هل تريد استخدام بيانات الجوال؟</string>
+    <string name="home_metered_message">حجم الفهرس كبير وقد تُحتسب تكلفة بيانات. ينطبق هذا القرار على التنزيل الحالي فقط.</string>
+    <string name="home_metered_confirm">التنزيل الآن</string>
+    <string name="home_metered_dismiss">ليس الآن</string>
+    
+    <string name="home_categories_title">تصفح التطبيقات</string>
+    <string name="home_categories_all">جميع التطبيقات</string>
+
+    
+    <string name="home_updates_version_change">%1$s ← %2$s</string>
+    <string name="home_popular_title">الأكثر شعبية</string>
+    <string name="home_new_title">الجديد</string>
+    <string name="home_self_update_title">يتوفر إصدار جديد من تطبيقات ديلا</string>
+    <string name="home_self_update_versions">%1$s ← %2$s</string>
+    <string name="home_self_update_action">تحديث تطبيقات ديلا</string>
+    <string name="home_self_update_downloading">جارٍ تنزيل التحديث…</string>
+    <string name="home_self_update_installing">جارٍ التثبيت. سيُغلق تطبيق ديلا.</string>
+    <string name="home_self_update_dismiss">إغلاق</string>
+</resources>

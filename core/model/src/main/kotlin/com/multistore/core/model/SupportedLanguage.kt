@@ -21,6 +21,7 @@ enum class SupportedLanguage(
     FRENCH("fr", "Français"),
     SPANISH("es", "Español"),
     GERMAN("de", "Deutsch"),
+    ARABIC("ar", "العربية"),
     ;
 
     companion object {
