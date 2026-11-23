@@ -1,26 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  The window's XML theme.
+<resources>
 
-  It exists only for what comes *before* Compose: the window background and the splash screen. The
-  app's real palette is :core:designsystem's — these two colours exist because the system draws the
-  window before our code runs, and they must match `background` in the two ColorSchemes, otherwise a
-  flash of the wrong colour shows at startup.
--->
-<resources xmlns:tools="http://schemas.android.com/tools">
-
-    <style name="Theme.MultiStore" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <item name="android:windowBackground">@color/window_background</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar" tools:targetApi="23">true</item>
+    <style name="Theme.AuraStore" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- Both of these are the system's own paint, taken before any of our code runs: the starting
+             window is `colorBackground`, and the surface behind the activity is `windowBackground`.
+             The night qualifier on @color/store_background is what makes them dark, because a parent
+             theme cannot be switched per-configuration without duplicating this whole style. -->
+        <item name="android:colorBackground">@color/store_background</item>
+        <item name="android:windowBackground">@color/store_background</item>
     </style>
-
-    <style name="Theme.MultiStore.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/splash_background</item>
-        <!-- White foreground on indigo: maximum contrast, identical in both themes. -->
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
-        <item name="postSplashScreenTheme">@style/Theme.MultiStore</item>
-    </style>
-
 </resources>

@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <resources>
-    
-    <string name="nav_home">الرئيسية</string>
-    <string name="nav_search">بحث</string>
-    <string name="nav_myapps">تطبيقاتي</string>
-    <string name="nav_downloads">التنزيلات</string>
-    <string name="nav_downloads_badge">تنزيلات جارية</string>
-    <string name="nav_settings">الإعدادات</string>
-    <string name="nav_bar_content_description">التنقل الرئيسي</string>
+  <string name="app_name">تطبيقات ديلا</string>
+  <string name="tab_games">الألعاب</string>
+  <string name="tab_apps">التطبيقات</string>
+  <string name="tab_search">البحث</string>
+  <string name="tab_browse">تصفح</string>
+  <string name="tab_wishlist">المفضلة</string>
+  <string name="tab_you">حسابي</string>
+  <string name="a11y_downloads">التنزيلات</string>
+  <string name="a11y_account">الحساب</string>
+  <string name="a11y_back">رجوع</string>
 </resources>

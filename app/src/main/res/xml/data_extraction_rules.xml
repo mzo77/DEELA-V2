@@ -1,16 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Android 12+. Same exclusions as backup_rules.xml, new format. -->
+<!--
+  Nothing leaves the device through backup or device-to-device transfer.
+
+  `android:allowBackup="false"` already says this, but Android 12 reads the newer attribute first,
+  and a phone that has one of these rules but not the other is a phone where the answer depends on
+  the OS version. The queue in `SharedPreferences` carries signed download links, which are
+  device-scoped credentials, so both paths are closed and both say so.
+-->
 <data-extraction-rules>
     <cloud-backup>
-        <exclude domain="file" path="datastore/" />
-        <exclude domain="file" path="staging/" />
-        <exclude domain="file" path="remoteconfig/" />
-        <exclude domain="database" path="multistore.db" />
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
     </cloud-backup>
     <device-transfer>
-        <exclude domain="file" path="datastore/" />
-        <exclude domain="file" path="staging/" />
-        <exclude domain="file" path="remoteconfig/" />
-        <exclude domain="database" path="multistore.db" />
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
     </device-transfer>
 </data-extraction-rules>

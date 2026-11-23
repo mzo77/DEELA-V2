@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The themed (monochrome) launcher icon: the same signature A, one opaque colour so Android can
+  tint it. Same geometry and stroke as the foreground, which is why the two never disagree about
+  where the pen went.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="4.6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M43.2,79.8 Q47.4,51.6 54,27 Q60.6,52.2 64.8,81 L37.2,55.2" />
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="4.6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M37.2,55.2 L70.8,55.2" />
+</vector>
