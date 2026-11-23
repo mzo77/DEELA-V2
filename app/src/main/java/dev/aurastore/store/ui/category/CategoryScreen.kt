@@ -434,7 +434,7 @@ fun CategoryScreen(
             ) {
                 items(state.sorts, key = { it.orderBy }) { sort ->
                     PlayChip(
-                        label = sort.label,
+                        label = subscriberLabel(sort.label),
                         selected = state.sort == sort.orderBy,
                         onClick = { viewModel.setSort(sort.orderBy) },
                     )
