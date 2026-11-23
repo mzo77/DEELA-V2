@@ -280,7 +280,7 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             if (splashDone && deelaSession != null) {
-                                StoreApp(deepLink)
+                                StoreApp(deepLink, onLogout = { deelaSession = null })
                             } else if (splashDone) {
                                 DeelaAccessScreen(onAuthenticated = { deelaSession = it })
                             }
@@ -366,7 +366,7 @@ class MainActivity : ComponentActivity() {
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class, ExperimentalLayoutApi::class)
 @Composable
-fun StoreApp(deepLink: MutableState<String?> = mutableStateOf(null)) {
+fun StoreApp(deepLink: MutableState<String?> = mutableStateOf(null), onLogout: () -> Unit = {}) {
     val context = LocalContext.current
     // The store's own update: one silent check when it opens, and the offer if GitHub has a newer
     // build. The check is throttled in [AppUpdater], so a tab switch does not ask again.
@@ -838,6 +838,7 @@ fun StoreApp(deepLink: MutableState<String?> = mutableStateOf(null)) {
                                     onOpenDownloads = { push(Route.Downloads) },
                                     onOpenSettings = { push(Route.Settings) },
                                     onOpenAbout = { push(Route.About) },
+                                    onLogout = onLogout,
                                     scrollTopKey = scrollTop,
                                     listState = youScroll,
                                 )

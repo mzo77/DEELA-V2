@@ -143,6 +143,7 @@ fun YouScreen(
     onOpenDownloads: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenAbout: () -> Unit,
+    onLogout: () -> Unit = {},
     modifier: Modifier = Modifier,
     /** Bumped by the shell when the tab already showing is tapped again. */
     scrollTopKey: Int = 0,
@@ -328,7 +329,15 @@ fun YouScreen(
                             onClick = onOpenSettings,
                         )
                         // The subscriber profile does not expose upstream developer/source details.
-                        // MIT license and third-party attributions stay in the public source tree.
+                        // MIT license and third-party attributions stay in the source tree.
+                        RowRule()
+                        HubRow(
+                            glyph = Glyph.Shield,
+                            title = stringResource(R.string.deela_logout),
+                            note = stringResource(R.string.deela_logout_note),
+                            count = 0,
+                            onClick = onLogout,
+                        )
                     }
                 }
             }
