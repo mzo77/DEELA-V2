@@ -5,6 +5,7 @@ on:
     paths:
       - 'docs/control/**'
       - 'docs/ios/**'
+      - 'docs/mzo/**'
       - '.github/workflows/deela-control-pages.yml'
   workflow_dispatch:
 permissions:
