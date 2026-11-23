@@ -83,7 +83,10 @@ object AppUpdater {
     private const val TAG = "AuraUpdate"
 
     /** How often an automatic check may ask GitHub. Manual checks ignore it. */
-    private const val CHECK_EVERY_MS = 12L * 60 * 60 * 1000
+    // Check on each fresh app session. Avoid repeat hits when users switch tabs or log in again.
+    // This is process-local: an app reopened after a full close checks for a newer release.
+    private const val CHECK_EVERY_MS = 15L * 60 * 1000
+    private var checkedThisProcessAt = 0L
 
     /** The longest a check may hold the state before it is called a network failure. */
     private const val CHECK_TIMEOUT_MS = 60_000L
@@ -126,7 +129,8 @@ object AppUpdater {
         val app = context.applicationContext
         if (!Settings.appAutoUpdate.value) return
         val now = System.currentTimeMillis()
-        if (now - Settings.appUpdateCheckedAt.value < CHECK_EVERY_MS) return
+        if (checkedThisProcessAt > 0L && now - checkedThisProcessAt < CHECK_EVERY_MS) return
+        checkedThisProcessAt = now
         check(app, manual = false)
     }
 
@@ -156,11 +160,7 @@ object AppUpdater {
                 result.isFailure -> AppUpdateState.Failed(null, AppUpdateFailure.NETWORK)
                 release == null -> AppUpdateState.UpToDate
                 !isNewer(app, release) -> AppUpdateState.UpToDate
-                !manual && Settings.appUpdatePrompted.value == release.version.text -> AppUpdateState.Idle
-                else -> {
-                    if (!manual) Settings.markAppUpdatePrompted(app, release.version.text)
-                    AppUpdateState.Available(release)
-                }
+                else -> AppUpdateState.Available(release)
             }
         }
     }
