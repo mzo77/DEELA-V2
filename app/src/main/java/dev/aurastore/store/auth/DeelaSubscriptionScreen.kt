@@ -8,7 +8,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
 @Composable
-fun DeelaSubscriptionScreen(session:DeelaSession,onActivated:(DeelaSession)->Unit,onLogout:()->Unit) {
+fun DeelaSubscriptionScreen(session:DeelaSession,onSessionUpdated:(DeelaSession)->Unit,onLogout:()->Unit) {
     val scope=rememberCoroutineScope()
     var months by remember {mutableIntStateOf(1)}
     var busy by remember {mutableStateOf(false)}
@@ -29,8 +29,19 @@ fun DeelaSubscriptionScreen(session:DeelaSession,onActivated:(DeelaSession)->Uni
             Button(enabled=!busy,onClick={
                 busy=true
                 scope.launch {
-                    val result=DeelaAuthApi.submitSubscription(session.token,months)
-                    status=result.getOrElse {it.message?:"تعذر إرسال الطلب"}
+                    when (val verified = DeelaAuthApi.checkSession(session)) {
+                        is DeelaSessionCheck.Verified -> {
+                            onSessionUpdated(verified.session)
+                            if (verified.session.subscriptionActive) {
+                                status = "اشتراكك فعّال."
+                            } else {
+                                val result = DeelaAuthApi.submitSubscription(verified.session.token, months)
+                                status = result.getOrElse { it.message ?: "تعذر إرسال الطلب" }
+                            }
+                        }
+                        DeelaSessionCheck.Invalid -> status = "انتهت جلسة الدخول. سجّل الدخول مجددًا."
+                        DeelaSessionCheck.Unavailable -> status = "تعذر الاتصال. حاول بعد قليل، حسابك محفوظ."
+                    }
                     busy=false
                 }
             },modifier=Modifier.fillMaxWidth()) {Text("إرسال الطلب للمالك")}
@@ -38,9 +49,11 @@ fun DeelaSubscriptionScreen(session:DeelaSession,onActivated:(DeelaSession)->Uni
                 busy=true
                 scope.launch {
                     when (val result = DeelaAuthApi.checkSession(session)) {
-                        is DeelaSessionCheck.Verified ->
-                            if (result.session.subscriptionActive) onActivated(result.session)
-                            else status = "لم يُفعّل اشتراكك بعد. يمكنك المحاولة بعد موافقة المالك."
+                        is DeelaSessionCheck.Verified -> {
+                            onSessionUpdated(result.session)
+                            if (!result.session.subscriptionActive)
+                                status = "لم يُفعّل اشتراكك بعد. يمكنك المحاولة بعد موافقة المالك."
+                        }
                         DeelaSessionCheck.Invalid -> status = "انتهت جلسة الدخول. سجّل الدخول مجددًا."
                         DeelaSessionCheck.Unavailable -> status = "تعذر الاتصال. حاول بعد قليل، حسابك محفوظ."
                     }
