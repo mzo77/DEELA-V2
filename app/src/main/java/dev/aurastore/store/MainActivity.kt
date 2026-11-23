@@ -230,6 +230,7 @@ class MainActivity : ComponentActivity() {
             var tourOpen by rememberSaveable { mutableStateOf(false) }
             // Never display cached privileges before the backend has re-verified them.
             // The encrypted rotating token outlives the Activity and in-place APK updates.
+            var ownerStoreMode by rememberSaveable { mutableStateOf(false) }
             var deelaSession by remember { mutableStateOf<DeelaSession?>(null) }
             var restoringSession by remember { mutableStateOf(DeelaSessionStore.load(this@MainActivity) != null) }
             var restoreUnavailable by remember { mutableStateOf(false) }
@@ -345,7 +346,32 @@ class MainActivity : ComponentActivity() {
                                     TextButton(onClick = { logout() }) { Text("تسجيل الدخول بحساب آخر") }
                                 }
                             } else if (splashDone && deelaSession?.role == "owner") {
-                                DeelaOwnerScreen(session = deelaSession!!, onLogout = { logout() })
+                                if (ownerStoreMode) {
+                                    Box(Modifier.fillMaxSize()) {
+                                        StoreApp(
+                                            deepLink,
+                                            onLogout = { ownerStoreMode = false },
+                                            sessionToken = deelaSession!!.token
+                                        )
+                                        androidx.compose.material3.FloatingActionButton(
+                                            onClick = { ownerStoreMode = false },
+                                            modifier = Modifier.align(Alignment.TopEnd)
+                                                .statusBarsPadding()
+                                                .padding(16.dp)
+                                        ) {
+                                            Text(
+                                                "لوحة المالك",
+                                                modifier = Modifier.padding(horizontal = 12.dp)
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    DeelaOwnerScreen(
+                                        session = deelaSession!!,
+                                        onLogout = { logout(); ownerStoreMode = false },
+                                        onOpenStore = { ownerStoreMode = true }
+                                    )
+                                }
                             } else if (splashDone && deelaSession?.subscriptionActive == false) {
                                 DeelaSubscriptionScreen(
                                     session = deelaSession!!,
