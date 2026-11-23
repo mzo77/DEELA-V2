@@ -348,7 +348,7 @@ class MainActivity : ComponentActivity() {
                             } else if (splashDone && deelaSession?.subscriptionActive == false) {
                                 DeelaSubscriptionScreen(
                                     session = deelaSession!!,
-                                    onActivated = { verified ->
+                                    onSessionUpdated = { verified ->
                                         DeelaSessionStore.save(this@MainActivity, verified)
                                         deelaSession = verified
                                     },
