@@ -1,5 +1,6 @@
 package dev.aurastore.store.ui.feed
 
+import dev.aurastore.store.ui.modDescriptionArabic
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -84,7 +85,7 @@ internal fun LazyListScope.serverBrowse(
                 }
                 items(state.serverCategories, key = { "${source.name}-${it.id}" }) { category ->
                     PlayChip(
-                        label = category.name,
+                        label = subscriberLabel(category.name),
                         selected = state.serverCategory?.id == category.id,
                         count = category.count,
                         onClick = { onSelectCategory(category) },
@@ -272,7 +273,7 @@ private fun SourceRailCard(app: SourceApp, onPick: () -> Unit) {
         )
         appMeta(app)?.let { meta ->
             Text(
-                meta,
+                modDescriptionArabic(meta),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
