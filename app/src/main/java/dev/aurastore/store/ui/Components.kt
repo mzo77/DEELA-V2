@@ -1318,10 +1318,10 @@ fun LoadingRail(cards: Int = 4) {
 @Composable
 fun metaLine(post: PostSummary): String {
     val raw = remember(post.genre, post.type) {
-    listOfNotNull(
-        post.genre?.takeIf { it.isNotBlank() },
-        post.type?.takeIf { it.isNotBlank() },
-    ).joinToString(" · ")
+        listOfNotNull(
+            post.genre?.takeIf { it.isNotBlank() },
+            post.type?.takeIf { it.isNotBlank() },
+        ).joinToString(" · ")
     }.ifBlank { stringResource(R.string.meta_line_fallback) }
     return modDescriptionArabic(raw)
 }
