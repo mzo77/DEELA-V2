@@ -72,6 +72,12 @@
             </intent-filter>
         </activity>
 
+        <!-- The private owner menu is inside the same app, never a public activity. -->
+        <activity
+            android:name=".auth.DeelaEmbeddedOwnerActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <service
             android:name=".download.DownloadService"
             android:exported="false"
