@@ -78,7 +78,7 @@ internal fun LazyListScope.serverBrowse(
                 // list; this chip goes back to the shelves without reaching for the back gesture.
                 item(key = "server-home-${source.name}") {
                     PlayChip(
-                        label = source.label,
+                        label = subscriberLabel(source.label),
                         selected = state.serverCategory == null && !state.serverAllOpen,
                         onClick = onHome,
                     )
@@ -130,7 +130,7 @@ internal fun LazyListScope.serverBrowse(
         if (allShown) {
             item(key = "server-all-header-${source.name}") {
                 SectionHeader(
-                    title = stringResource(R.string.src_all_apps, source.label),
+                    title = stringResource(R.string.src_all_apps, subscriberLabel(source.label)),
                     subtitle = stringResource(R.string.src_all_apps_note),
                 )
             }
@@ -181,7 +181,7 @@ internal fun LazyListScope.serverBrowse(
         // games shelf, say. This heading is what names that list when no chip can.
         if (state.serverCategories.none { it.id == category.id }) {
             item(key = "server-cat-header-${source.name}-${category.id}") {
-                SectionHeader(title = subscriberLabel(category.name), subtitle = source.label)
+                SectionHeader(title = subscriberLabel(category.name), subtitle = subscriberLabel(source.label))
             }
         }
         sourceGrid(state.serverApps, keyPrefix = "server-cat-${source.name}-", onPick = onPick)
