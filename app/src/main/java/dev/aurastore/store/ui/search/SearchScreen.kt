@@ -1,5 +1,6 @@
 package dev.aurastore.store.ui.search
 
+import dev.aurastore.store.ui.subscriberLabel
 import dev.aurastore.store.ui.modDescriptionArabic
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -532,7 +533,7 @@ fun SearchScreen(
                 ) {
                     items(otherSources, key = { it.id.name }) { source ->
                         PlayChip(
-                            label = source.id.label,
+                            label = subscriberLabel(source.id.label),
                             selected = false,
                             onClick = { onOpenSource(source.id, state.query) },
                         )
@@ -761,7 +762,7 @@ private fun SearchSiteTabs(
         ) {
             items(tabs, key = { it.id.name }) { tab ->
                 PlayChip(
-                    label = tab.id.label,
+                    label = subscriberLabel(tab.id.label),
                     count = tab.count,
                     selected = tab.id == selected,
                     onClick = { onSelect(tab.id) },
