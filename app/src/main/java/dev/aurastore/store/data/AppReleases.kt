@@ -107,12 +107,16 @@ object AppReleases {
         client.newBuilder().callTimeout(25, TimeUnit.SECONDS).build()
     }
 
-    /** The newest release this build can install, or null when there is no version to offer. */
+    /** The newest stable release, including a save-only official build for old debug installs. */
     suspend fun latest(debuggable: Boolean): AppRelease? = withContext(Dispatchers.IO) {
         val parsed = payload(get(LATEST)) ?: return@withContext null
-        // An offer is only made when a build can replace this installation. The other asset still
-        // travels in `builds`, so the dialog can name it and a test build can be saved.
-        val installed = parsed.builds.firstOrNull { it.debug == debuggable } ?: return@withContext null
+        // Prefer an in-place compatible build. For users of old debug previews, a newly
+        // published, stable signed APK must still appear as an announcement; it cannot be
+        // installed over their debug key, so the UI offers a verified file to save instead.
+        // Future release-signed updates continue to use the exact same certificate.
+        val installed = parsed.builds.firstOrNull { it.debug == debuggable }
+            ?: parsed.builds.firstOrNull { !it.debug }
+            ?: return@withContext null
         val builds = parsed.builds.map { build ->
             if (build.sha256 != null) {
                 build
@@ -139,7 +143,9 @@ object AppReleases {
      */
     fun parse(json: String, debuggable: Boolean): AppRelease? {
         val parsed = payload(json) ?: return null
-        val installed = parsed.builds.firstOrNull { it.debug == debuggable } ?: return null
+        val installed = parsed.builds.firstOrNull { it.debug == debuggable }
+            ?: parsed.builds.firstOrNull { !it.debug }
+            ?: return null
         return AppRelease(
             version = parsed.version,
             tag = parsed.tag,
