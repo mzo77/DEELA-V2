@@ -22,6 +22,7 @@ jobs:
           set -euo pipefail
           node --check deela-google/site/app.js
           node --check ownerapp/src/main/assets/www/app.js
+          node --test deela-google/tests/review-action.test.mjs
           diff -rq deela-google/site ownerapp/src/main/assets/www
           python3 - <<'PY'
           import json
