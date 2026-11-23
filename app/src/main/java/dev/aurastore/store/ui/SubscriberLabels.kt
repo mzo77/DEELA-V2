@@ -61,6 +61,19 @@ fun subscriberLabel(label: String): String {
         "productivity" -> "إنتاجية"
         "social" -> "تواصل اجتماعي"
         "photography" -> "تصوير"
+        "auto & vehicles", "auto and vehicles" -> "السيارات والمركبات"
+        "beauty" -> "الجمال"
+        "dating" -> "التعارف"
+        "events" -> "الفعاليات"
+        "food & drink", "food and drink" -> "الطعام والشراب"
+        "house & home", "house and home" -> "المنزل"
+        "libraries & demo", "libraries and demo" -> "المكتبات والعروض التجريبية"
+        "medical" -> "الطب"
+        "parenting" -> "الأبوة والأمومة"
+        "travel & local", "travel and local" -> "السفر والمحليات"
+        "video players & editors", "video players and editors" -> "مشغلات ومحررات الفيديو"
+        "comics" -> "القصص المصورة"
+        "art & design", "art and design" -> "الفن والتصميم"
         else -> null
     }
     if (fixed != null) return fixed
