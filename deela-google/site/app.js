@@ -15,6 +15,38 @@ function feedback(msg,error=false){
  const el=$("feedback");el.textContent=String(msg);el.classList.toggle("error",error);el.hidden=false;
  clearTimeout(feedback.timeout);feedback.timeout=setTimeout(()=>{el.hidden=true},6500);
 }
+// In-app dialogs work in Android WebView even when native confirm/prompt
+// dialogs are unavailable or auto-dismissed.
+let dialogPending=false;
+function ownerDecision({title="تأكيد الإجراء",message="",action="تأكيد",danger=false,months=false}={}){
+ if(dialogPending){feedback("أكمل النافذة المفتوحة أولًا",true);return Promise.resolve(null)}
+ dialogPending=true;
+ const overlay=$("ownerDialog"),yes=$("ownerDialogConfirm"),no=$("ownerDialogCancel");
+ $("ownerDialogTitle").textContent=title;
+ $("ownerDialogBody").textContent=message;
+ $("ownerDialogMonthsField").hidden=!months;
+ $("ownerDialogMonths").value="1";
+ yes.textContent=action;
+ yes.classList.toggle("owner-danger",danger);
+ overlay.hidden=false;
+ return new Promise(resolve=>{
+  let completed=false;
+  function done(value){
+   if(completed)return;
+   completed=true;
+   overlay.hidden=true;
+   dialogPending=false;
+   yes.onclick=null;no.onclick=null;
+   document.removeEventListener("keydown",onKey);
+   resolve(value);
+  }
+  function onKey(ev){if(ev.key==="Escape"||ev.key==="Backspace"&&ev.target===document.body){ev.preventDefault();done(null)}}
+  no.onclick=()=>done(null);
+  yes.onclick=()=>done(months?Number($("ownerDialogMonths").value):true);
+  document.addEventListener("keydown",onKey);
+  yes.focus();
+ });
+}
 function element(tag,text="",cls=""){const node=document.createElement(tag);node.textContent=String(text??"");if(cls)node.className=cls;return node}
 function button(text,fn,danger=false){const node=element("button",text,danger?"danger":"");node.type="button";node.onclick=fn;return node}
 async function fetchJson(url,body,authenticated=true){
@@ -77,22 +109,41 @@ function renderRequests(requests){
   info.append(element("div",request.email||request.user_id||"مشترك","member-title"));
   info.append(element("div",(request.platform==="ios"?"آيفون":"أندرويد")+" · "+request.months+" شهر · "+fmt(request.created_at),"member-sub"));
   const actions=element("div","","member-actions");
-  actions.append(button("موافقة",()=>reviewRequest(request,"approved")));
-  actions.append(button("رفض",()=>reviewRequest(request,"rejected"),true));
+  const approveButton=button("موافقة",()=>reviewRequest(request,"approved",approveButton));
+  const rejectButton=button("رفض",()=>reviewRequest(request,"rejected",rejectButton),true);
+  actions.append(approveButton,rejectButton);
   row.append(info,actions);root.append(row);
  }
 }
-async function reviewRequest(request,decision){
- if(busy)return;
- if(!confirm(decision==="approved"?"الموافقة على هذا الاشتراك وإرسال التفعيل؟":"هل تؤكد رفض طلب الاشتراك؟"))return;
+async function reviewRequest(request,decision,clicked){
+ if(busy)return feedback("جارٍ تنفيذ عملية أخرى، حاول بعد اكتمالها",true);
+ const rejecting=decision==="rejected";
+ const approved=await ownerDecision({
+  title:rejecting?"رفض طلب الاشتراك":"الموافقة على الاشتراك",
+  message:rejecting?"سيتم رفض هذا الطلب ولن يُفعّل اشتراك صاحبه. هل تريد المتابعة؟":"سيتم تفعيل اشتراك هذا المشترك وإرسال إشعار التفعيل إن كان البريد مهيأً.",
+  action:rejecting?"نعم، ارفض الطلب":"نعم، فعّل الاشتراك",
+  danger:rejecting
+ });
+ if(!approved)return;
  busy=true;
+ const old=clicked?.textContent||"";
+ if(clicked){clicked.disabled=true;clicked.textContent=rejecting?"جارٍ الرفض…":"جارٍ التفعيل…"}
+ feedback(rejecting?"يتم إرسال قرار الرفض إلى الخادم…":"يتم تفعيل الاشتراك على الخادم…");
  try{
   const result=await api("/api/owner/requests/review",{id:request.id,decision});
-  await loadMembers();await loadOverview();
-  if(result.email_status==="failed"||result.email_status==="unconfigured")feedback("تم تحديث الطلب، لكن إرسال بريد التفعيل غير جاهز.",true);
-  else feedback(decision==="approved"?"تم تفعيل الاشتراك":"تم رفض الطلب");
- }catch(e){showError(e)}finally{busy=false}
+  if(result?.ok!==true)throw Error(result?.error||"لم يؤكد الخادم تنفيذ القرار");
+  if(result.email_status==="failed"||result.email_status==="unconfigured")
+   feedback("تم تفعيل الاشتراك، لكن بريد التفعيل لم يُرسل. راجع إعدادات البريد.",true);
+  else feedback(rejecting?"تم رفض طلب الاشتراك بنجاح":"تم قبول الطلب وتفعيل الاشتراك");
+  try{await Promise.all([loadMembers(),loadOverview()])}
+  catch(e){feedback("تم حفظ القرار في الخادم، لكن تحديث القائمة تعذر. اضغط تحديث القائمة.",true)}
+ }catch(e){showError(e)}
+ finally{
+  busy=false;
+  if(clicked){clicked.disabled=false;clicked.textContent=old}
+ }
 }
+
 function renderMembers(){
  const container=$("membersList");container.replaceChildren();
  const needle=$("membersSearch").value.trim().toLocaleLowerCase();
@@ -114,10 +165,22 @@ function renderMembers(){
  }
 }
 async function subscription(m,action){
- if(busy)return;
+ if(busy)return feedback("جارٍ تنفيذ عملية أخرى",true);
  let months;
- if(action==="renew"){months=Number(prompt("عدد أشهر التجديد (1 أو 2 أو 3 أو 6 أو 12)","1"));if(![1,2,3,6,12].includes(months))return feedback("اختر مدة صحيحة",true)}
- if(["suspend","revoke"].includes(action)&&!confirm("تأكيد تنفيذ الإجراء على حساب المشترك؟"))return;
+ if(action==="renew"){
+  months=await ownerDecision({title:"تجديد الاشتراك",message:"اختر عدد الأشهر قبل التجديد.",action:"تجديد الآن",months:true});
+  if(months===null)return;
+  if(![1,2,3,6,12].includes(months))return feedback("اختر مدة صحيحة",true);
+ }
+ if(["suspend","revoke"].includes(action)){
+  const confirmed=await ownerDecision({
+   title:action==="revoke"?"إلغاء الاشتراك":"إيقاف الاشتراك",
+   message:"هل تريد تأكيد هذا الإجراء على حساب المشترك؟",
+   action:action==="revoke"?"نعم، ألغ الاشتراك":"نعم، أوقف الاشتراك",
+   danger:true
+  });
+  if(!confirmed)return;
+ }
  busy=true;
  try{await api("/api/owner/subscription",{user_id:m.id,action,platform:m.platform||"android",...(months?{months}:{})});await loadMembers();await loadOverview();feedback("تم تحديث الاشتراك")}
  catch(e){showError(e)}finally{busy=false}
@@ -144,7 +207,8 @@ function renderFiles(){
    }catch(e){showError(e)}
   }));
   const del=button("حذف",async()=>{
-   if(!confirm("حذف الملف نهائيًا من الخزنة؟"))return;
+   const confirmed=await ownerDecision({title:"حذف ملف من الخزنة",message:"الحذف نهائي ولا يمكن استعادة الملف بعده.",action:"حذف نهائي",danger:true});
+   if(!confirmed)return;
    del.disabled=true;try{await vault("/files/delete",{id:file.id});await loadFiles();await loadOverview();feedback("تم حذف الملف")}catch(e){showError(e)}finally{del.disabled=false}
   },true);
   del.classList.add("delete");actions.append(del);
