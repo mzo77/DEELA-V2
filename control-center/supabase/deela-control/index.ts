@@ -260,6 +260,45 @@ if(req.method==="GET"&&path==="/api/owner/subscription-email/status"){
  if(error)throw error;
  return j({ready:!!(Deno.env.get("RESEND_API_KEY")&&Deno.env.get("DEELA_EMAIL_FROM")),messages:messages||[]});
 }
+if(req.method==="POST"&&path==="/api/owner/subscription-email/test"){
+ const apiKey=(Deno.env.get("RESEND_API_KEY")||"").trim();
+ const sender=(Deno.env.get("DEELA_EMAIL_FROM")||"").trim();
+ if(!apiKey||!sender)return j({ok:false,status:"unconfigured",reason:"email_provider_not_configured"},503);
+ const recipient=u.email.trim();
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient))
+  return fail("حساب المالك لا يحتوي على بريد صالح للاختبار",400);
+ const label="اختبار إرسال البريد من تطبيقات ديلا ❤️";
+ const bodyText="مرحبًا بك!\\n\\nهذه رسالة اختبار من نظام البريد في تطبيقات ديلا. "+
+  "لا توجد أي عملية تفعيل اشتراك مرتبطة بهذه الرسالة، ولا حاجة لاتخاذ أي إجراء.\\n\\nتطبيقات ديلا ❤️";
+ const bodyHtml=`<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8">
+ <body style="margin:0;background:#0c090b;font-family:Tahoma,Arial,sans-serif;color:#fce8ed">
+ <div style="max-width:510px;margin:30px auto;padding:28px;background:#1c1118;border-radius:16px">
+ <h1 style="color:#ff315e">تطبيقات ديلا ❤️</h1>
+ <h2 style="color:#fff">اختبار إرسال البريد ✅</h2>
+ <p style="line-height:1.9">هذا اختبار لخدمة الإشعارات البريدية في تطبيقات ديلا.
+ لم يتم تفعيل أي اشتراك أو إجراء أي تعديل على حسابات المشتركين.</p>
+ <p style="font-size:12px;color:#cba3b2">رسالة اختبار داخلية للمالك فقط.</p></div></body></html>`;
+ try {
+  const response=await fetch("https://api.resend.com/emails",{
+   method:"POST",signal:AbortSignal.timeout(15000),
+   headers:{"Authorization":"Bearer "+apiKey,"Content-Type":"application/json",
+    "Idempotency-Key":"deela-test-"+u.id+"-"+Math.floor(Date.now()/300000)},
+   body:JSON.stringify({from:sender,to:[recipient],subject:label,html:bodyHtml,text:bodyText})
+  });
+  if(!response.ok){
+   console.error("DEELA test email was rejected",response.status);
+   await log(u.id,"owner_email_test_failed");
+   return j({ok:false,status:"failed",reason:"provider_http_"+response.status},502);
+  }
+  const result=await response.json();
+  await log(u.id,"owner_email_test_accepted");
+  return j({ok:true,status:"accepted",provider_message_id:String(result.id||"")||null});
+ } catch(error) {
+  console.error("DEELA test email transport failure",error instanceof Error?error.name:"unknown");
+  await log(u.id,"owner_email_test_failed");
+  return j({ok:false,status:"failed",reason:"provider_unreachable"},502);
+ }
+}
 if(req.method==="POST"&&path==="/api/owner/subscription-email/retry"){
  const b=await req.json(),id=String(b.request_id||"");
  if(!/^[a-f0-9-]{36}$/i.test(id))return fail("طلب غير صالح",400);
