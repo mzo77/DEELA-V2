@@ -305,7 +305,7 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                             listOf(1, 2, 3, 6, 12).forEach { months ->
                                 FilterChip(selected = selectedMonths == months,
                                     onClick = { selectedMonths = months },
-                                    label = { Text(if (months == 12) "سنة" else "$" + months + " شهر") })
+                                    label = { Text(if (months == 12) "سنة" else months.toString() + " شهر") })
                             }
                         }
                         LazyColumn(
