@@ -72,6 +72,12 @@
             </intent-filter>
         </activity>
 
+        <!-- Owner center is reachable only from the server-verified owner session. -->
+        <activity
+            android:name=".auth.DeelaEmbeddedOwnerActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <service
             android:name=".download.DownloadService"
             android:exported="false"

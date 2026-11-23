@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="theme-color" content="#0b1220">
+<meta name="description" content="بوابة إدارة DEELA الخاصة بالمالك.">
+<title>DEELA | مركز المالك الخاص</title>
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div id="feedback" role="status" aria-live="polite" hidden></div>
+<div id="ownerDialog" class="owner-dialog-overlay" hidden>
+  <section class="owner-dialog-card" role="dialog" aria-modal="true" aria-labelledby="ownerDialogTitle" aria-describedby="ownerDialogBody">
+    <span class="owner-dialog-icon" aria-hidden="true">⚙</span>
+    <h2 id="ownerDialogTitle">تأكيد الإجراء</h2>
+    <p id="ownerDialogBody"></p>
+    <label id="ownerDialogMonthsField" class="owner-dialog-field" hidden>مدة التجديد
+      <select id="ownerDialogMonths">
+        <option value="1">شهر واحد</option>
+        <option value="2">شهران</option>
+        <option value="3">3 أشهر</option>
+        <option value="6">6 أشهر</option>
+        <option value="12">12 شهرًا</option>
+      </select>
+    </label>
+    <div class="owner-dialog-actions">
+      <button id="ownerDialogCancel" type="button" class="secondary">تراجع</button>
+      <button id="ownerDialogConfirm" type="button" class="primary">تأكيد</button>
+    </div>
+  </section>
+</div>
+<section id="login" class="auth-scene">
+  <div class="auth-card">
+    <div class="identity"><span class="logo">D</span><div><strong>DEELA</strong><small>OWNER CONTROL</small></div></div>
+    <p class="eyebrow">بوابة المالك الخاصة</p>
+    <h1>كل مشروعك، من مكان واحد.</h1>
+    <p class="muted">موقع خاص لإدارة تطبيقات ديلا وملفات APK وIPA والاشتراكات. لا تظهر بيانات المالك إلا بعد التحقق من صلاحياته.</p>
+    <form id="loginForm" class="form-stack">
+      <label>اسم مستخدم المالك أو بريده<input id="username" autocomplete="username" required placeholder="بريدك أو اسم المستخدم"></label>
+      <label>كلمة المرور<input id="password" type="password" autocomplete="current-password" required placeholder="••••••••••••"></label>
+      <button id="signIn" class="primary" type="submit">دخول مركز المالك <span aria-hidden="true">←</span></button>
+    <p id="loginStatus" class="caption" role="status" aria-live="polite">جارٍ تجهيز لوحة المالك…</p>
+    </form>
+    <p class="security-hint">🔒 الوصول للمالك فقط · البيانات محفوظة بخادم محمي</p>
+  </div>
+</section>
+<div id="shell" class="shell" hidden>
+  <aside class="sidebar">
+    <div class="identity"><span class="logo">D</span><div><strong>DEELA</strong><small>CONTROL STUDIO</small></div></div>
+    <p class="nav-title">مركز الإدارة</p>
+    <nav id="nav" aria-label="الأقسام">
+      <button data-page="overview" class="active"><span>▦</span> نظرة عامة</button>
+      <button data-page="members"><span>♧</span> المشتركين</button>
+      <button data-page="ios"><span>◈</span> تطبيقات iPhone</button>
+      <button data-page="android"><span>⬡</span> تطبيقات Android</button>
+      <button data-page="files"><span>▣</span> خزنة IPA وAPK</button>
+      <button data-page="projects"><span>⌁</span> المشاريع والخدمات</button>
+      <button data-page="security"><span>⚿</span> الأمان والحساب</button>
+    </nav>
+    <div class="sidebar-foot"><span class="status-dot"></span> خاص بالمالك <small>DEELA • Private Workspace</small></div>
+  </aside>
+  <div class="workspace">
+    <header class="topbar"><div><span class="top-label">مركز إدارة ديلا</span><strong id="currentTitle">نظرة عامة</strong></div>
+      <div class="header-actions"><span class="private-pill">خاص • غير منشور</span><button id="refresh" class="icon-btn" aria-label="تحديث البيانات" title="تحديث البيانات">↻</button><button id="logout" class="logout-btn">خروج</button></div>
+    </header>
+    <main>
+      <section data-section="overview">
+        <div class="welcome"><div><p class="eyebrow">DEELA OPERATIONS</p><h1>مركز قيادة ديلا</h1><p>أدر الاشتراكات، وأصول تطبيقات iOS وAndroid، وملفات التوزيع من واجهة واحدة.</p></div><div class="welcome-icon">D<span>✦</span></div></div>
+        <div class="metric-grid">
+          <article class="metric"><span>جميع المشتركين</span><strong id="countUsers">—</strong><small>حسابات المشتركين</small></article>
+          <article class="metric"><span>اشتراكات فعالة</span><strong id="countActive">—</strong><small>بحسب الخادم</small></article>
+          <article class="metric"><span>تطبيقات iPhone</span><strong id="countIos">—</strong><small>السجلات الموجودة</small></article>
+          <article class="metric"><span>تطبيقات Android</span><strong id="countAndroid">—</strong><small>السجلات الموجودة</small></article>
+          <article class="metric"><span>ملفات خاصة</span><strong id="countFiles">—</strong><small>IPA / APK / الحزم</small></article>
+        </div>
+        <div class="two-cols">
+          <article class="panel"><div class="panel-head"><h2>الوصول السريع</h2><span class="small-label">الإدارة</span></div><div class="quick-grid"><button data-jump="members">♧ <span>إدارة الاشتراكات</span></button><button data-jump="files">▣ <span>رفع IPA / APK</span></button><button data-jump="ios">◈ <span>تطبيقات الآيفون</span></button><button data-jump="projects">⌁ <span>المشاريع</span></button></div></article>
+          <article class="panel"><div class="panel-head"><h2>حالة المنصة</h2><span class="good-label">متصل بخدمات DEELA</span></div><div class="status-row"><span>خادم الاشتراكات</span><strong id="backendStatus">جار الفحص</strong></div><div class="status-row"><span>خزنة الملفات</span><strong>خاصة بالمالك</strong></div><div class="status-row"><span>نشر الموقع للعامة</span><strong>غير مفعل</strong></div><p class="caption">استضافة الواجهة على Google تحتاج إكمال إعداد Firebase Hosting. بيانات المشتركين منفصلة ومحمية.</p></article>
+        </div>
+      </section>
+      <section data-section="members" hidden>
+        <div class="section-heading"><div><p class="eyebrow">MEMBERSHIP</p><h1>المشتركون والاشتراكات</h1><p>التحكم في التجارب والتجديدات والحظر والإلغاء من خادم ديلا الحالي.</p></div><button id="reloadMembers" class="secondary">تحديث القائمة</button></div>
+        <article class="panel"><div class="form-inline"><label>دعوة مشترك جديد<input id="inviteEmail" type="email" placeholder="example@email.com"></label><button id="inviteBtn" class="primary">إرسال الدعوة</button></div></article>
+        <article class="panel"><div class="panel-head"><h2>طلبات الاشتراك المعلقة</h2><span id="pendingCount" class="small-label">0 طلب</span></div><div id="pendingRequests" class="member-list"><p class="muted">لا توجد طلبات معلقة.</p></div></article>
+        <article class="panel"><div class="panel-head"><h2>سجل المشتركين</h2><input id="membersSearch" class="search" type="search" placeholder="ابحث بالاسم أو البريد"></div><div id="membersList" class="member-list"><p class="muted">سجّل الدخول لعرض القائمة.</p></div></article>
+      </section>
+      <section data-section="ios" hidden>
+        <div class="section-heading"><div><p class="eyebrow">APPLE DISTRIBUTION</p><h1>تطبيقات iPhone وملفات IPA</h1><p>إدارة ملفات IPA وإصداراتها وحالة النشر، مع فصل الملفات الخاصة عن متجر المشتركين.</p></div><button class="primary" data-jump="files">+ إضافة ملف IPA</button></div>
+        <div class="two-cols"><article class="panel feature-panel"><div class="big-icon">◈</div><h2>خزنة ملفات IPA</h2><p>ارفع ملفًا خاصًا، راجع الاسم والإصدار والحجم، وأنشئ رابط تنزيل مؤقت للمالك فقط.</p><button class="secondary" data-jump="files">فتح الخزنة</button></article><article class="panel feature-panel"><div class="big-icon">⌁</div><h2>واجهة متجر الآيفون</h2><p>واجهة المشتركين منفصلة. عرض التطبيقات لا يعني إمكانية تثبيت IPA بدون توقيع Apple صالح.</p><a href="https://mzo77.github.io/DEELA-V2/ios/" target="_blank" rel="noopener noreferrer" class="secondary link-button">فتح متجر iOS الحالي</a></article></div>
+      </section>
+      <section data-section="android" hidden>
+        <div class="section-heading"><div><p class="eyebrow">ANDROID STORE</p><h1>تطبيقات Android</h1><p>ملفات APK وإصدارات متجر ديلا، مع المحافظة على نسخ المشتركين الحالية.</p></div><button class="primary" data-jump="files">+ إضافة ملف APK</button></div>
+        <div class="two-cols"><article class="panel feature-panel"><div class="big-icon">⬡</div><h2>إدارة ملفات APK</h2><p>ارفع حزم APK وXAPK وAPKS واربط كل حزمة برقم إصدارها.</p><button class="secondary" data-jump="files">رفع ملف خاص</button></article><article class="panel feature-panel"><div class="big-icon">▦</div><h2>بناء التطبيق</h2><p>ملفات إصدار أندرويد تبقى في GitHub Actions. بناء APK يحتاج مرور خطوات التحقق والتوقيع.</p><a href="https://github.com/mzo77/DEELA-V2/actions" target="_blank" rel="noopener noreferrer" class="secondary link-button">عرض عمليات البناء</a></article></div>
+      </section>
+      <section data-section="files" hidden>
+        <div class="section-heading"><div><p class="eyebrow">PRIVATE VAULT</p><h1>خزنة الملفات الخاصة</h1><p>ملفاتك لا تُنشر للعامة. روابط التنزيل المؤقتة تنتهي بعد دقيقتين.</p></div><button id="reloadFiles" class="secondary">تحديث الملفات</button></div>
+        <div class="two-cols cols-form">
+          <article class="panel"><h2>رفع ملف جديد</h2><form id="uploadForm" class="form-stack">
+            <label>اختر الملف<input id="asset" type="file" accept=".ipa,.apk,.apks,.xapk,.aab,.zip,.plist,.json" required></label>
+            <label>المنصة<select id="platform"><option value="ios">آيفون • iOS</option><option value="android">أندرويد • Android</option><option value="other">ملفات أخرى</option></select></label>
+            <label>رقم الإصدار<input id="version" maxlength="70" placeholder="مثال 1.2.0"></label>
+            <label>ملاحظات<textarea id="fileDescription" maxlength="1000" placeholder="تفاصيل التعديل أو وصف الملف"></textarea></label>
+            <button id="uploadBtn" type="submit" class="primary">رفع الملف إلى الخزنة</button>
+            <p id="uploadStatus" class="caption">قد يفرض اشتراك التخزين الحالي حدودًا أصغر على الملفات الكبيرة. تجنّب إعادة توزيع تطبيقات لا تملك حقوقها.</p>
+          </form></article>
+          <article class="panel"><div class="panel-head"><h2>ملفاتي</h2><span class="small-label" id="fileTotal">0 ملف</span></div><div id="filesList" class="files-list"><p class="muted">لا توجد ملفات مرفوعة بعد.</p></div></article>
+        </div>
+      </section>
+      <section data-section="projects" hidden>
+        <div class="section-heading"><div><p class="eyebrow">CONNECTED PROJECTS</p><h1>المشاريع والخدمات</h1><p>اختصارات إلى الخدمات الحالية، دون إعادة تهيئة أنظمة المشتركين.</p></div></div>
+        <div class="project-grid">
+          <a href="https://github.com/mzo77/DEELA-V2" target="_blank" rel="noopener noreferrer" class="project-card"><span>⌘</span><strong>مشروع DEELA-V2</strong><small>الملفات والأكواد الرئيسية على GitHub</small></a>
+          <a href="https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-control" target="_blank" rel="noopener noreferrer" class="project-card"><span>◉</span><strong>مركز ديلا الحالي</strong><small>لوحة الاشتراكات والخادم</small></a>
+          <a href="https://mzo77.github.io/DEELA-V2/mzo/" target="_blank" rel="noopener noreferrer" class="project-card"><span>⌁</span><strong>موقع MZO الحالي</strong><small>الموقع المنشور سابقًا</small></a>
+          <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" class="project-card"><span>◇</span><strong>Firebase من Google</strong><small>ربط الاستضافة والنطاق عند تجهيزهما</small></a>
+        </div>
+      </section>
+      <section data-section="security" hidden>
+        <div class="section-heading"><div><p class="eyebrow">ACCOUNT SECURITY</p><h1>الأمان والحساب</h1><p>تغيير كلمة المرور من خادم DEELA الموثّق، مع إنهاء الجلسة بعد التغيير.</p></div></div>
+        <article class="panel narrow"><h2>تحديث كلمة مرور المالك</h2><form id="passwordForm" class="form-stack">
+          <label>كلمة المرور الحالية<input id="currentPassword" type="password" autocomplete="current-password" required></label>
+          <label>كلمة المرور الجديدة<input id="newPassword" type="password" minlength="12" maxlength="128" autocomplete="new-password" required></label>
+          <button class="primary">حفظ كلمة المرور وتسجيل الخروج</button>
+        </form></article>
+        <article class="panel narrow"><h2>خصوصية DEELA</h2><p class="muted">الواجهة لا تضع كلمات المرور أو مفاتيح الخادم الإدارية في ملفات الموقع. جميع عمليات إدارة الملفات والاشتراكات تمر عبر التحقق من دور المالك بالخادم.</p></article>
+      </section>
+    </main>
+    <footer>DEELA Control Studio · موقع خاص بالمالك · لا يمنح عرض بيانات الموقع صلاحية تثبيت ملفات IPA.</footer>
+  </div>
+  <nav id="mobileNav" class="mobile-nav" aria-label="التنقل السريع"><button data-page="overview">الرئيسية</button><button data-page="members">المشتركين</button><button data-page="files">الملفات</button><button data-page="projects">المشاريع</button></nav>
+</div>
+<script defer src="./app.js"></script>
+</body>
+</html>

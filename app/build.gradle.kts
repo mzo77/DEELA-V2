@@ -32,7 +32,7 @@ android {
         // compares. The code is derived here so a release cannot publish a name and a code that
         // disagree — major × 10 000 + minor × 100 + patch, so 1.4.0 is 10 400. The bounds are the
         // ones the scheme can hold, and they are also the ones AppVersion parses.
-        val appVersionName = "0.9.1"
+        val appVersionName = "0.9.9"
         versionName = appVersionName
         versionCode = appVersionName.split('.').let { parts ->
             require(parts.size == 3) { "versionName must be major.minor.patch, was $appVersionName" }
@@ -64,6 +64,14 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Preview runs beside the user's signed DEELA install without uninstalling it.
+            // Production release always keeps its original package com.deela.apps.
+            if (System.getenv("DEELA_UNIFIED_OWNER_PREVIEW") == "true") {
+                applicationIdSuffix = ".preview"
+                versionNameSuffix = "-preview"
+            }
+        }
         release {
             // Shrinking is on, and its keep rules are the two enums and the worker in
             // proguard-rules.pro. It was off while a release artefact could not be run here; the
@@ -148,4 +156,6 @@ dependencies {
 
   // Background update checks — the policy must be honoured when no screen is open.
   implementation(libs.androidx.work.runtime.ktx)
+  // Secure embedded first-party owner console in the same DEELA APK.
+  implementation("androidx.webkit:webkit:1.18.0")
 }

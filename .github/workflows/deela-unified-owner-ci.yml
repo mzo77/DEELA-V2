@@ -1,0 +1,90 @@
+name: DEELA Unified Owner and Subscriber APK Preview
+
+on:
+  push:
+    branches:
+      - feature/deela-private-google-owner
+    paths:
+      - "app/**"
+      - "deela-google/**"
+      - "gradle/**"
+      - "gradlew"
+      - "settings.gradle.kts"
+      - ".github/workflows/deela-unified-owner-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-owner-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate embedded owner menu and mirrored assets
+        run: |
+          set -euo pipefail
+          diff -rq deela-google/site app/src/main/assets/owner
+          node --check app/src/main/assets/owner/app.js
+          node --test deela-google/tests/review-action.test.mjs
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path("app/src/main")
+          manifest=(root/"AndroidManifest.xml").read_text()
+          owner=(root/"java/dev/aurastore/store/auth/DeelaOwnerScreen.kt").read_text()
+          activity=(root/"java/dev/aurastore/store/auth/DeelaEmbeddedOwnerActivity.kt").read_text()
+          main=(root/"java/dev/aurastore/store/MainActivity.kt").read_text()
+          build=Path("app/build.gradle.kts").read_text()
+          assert 'android:exported="false"' in manifest
+          assert 'DeelaEmbeddedOwnerActivity' in manifest
+          assert 'مركز التحكم' in owner
+          assert 'DeelaEmbeddedOwnerActivity.EXTRA_OWNER_TOKEN' in owner
+          assert 'onOpenStore' in owner and 'ownerStoreMode' in main
+          assert 'deelaSession?.role == "owner"' in main
+          assert 'location.reload()' in activity
+          assert 'JSONObject.quote(jwt)' in activity
+          assert 'WebViewAssetLoader' in activity
+          assert 'applicationIdSuffix = ".preview"' in build
+          assert 'val appVersionName = "0.9.9"' in build
+          assert len(list((root/"assets/owner").glob("*"))) == 4
+          print("Unified DEELA owner navigation and bundled assets verified")
+          PY
+
+  build-unified-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install Android 37 SDK
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --channel=3 --install "platforms;android-37.0" "build-tools;36.1.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build merged subscriber and owner preview
+        env:
+          DEELA_UNIFIED_OWNER_PREVIEW: "true"
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon :app:assembleDebug
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/36.1.0/aapt" dump badging "$APK" \
+            | grep -F "package: name='com.deela.apps.preview'"
+          "$ANDROID_HOME/build-tools/36.1.0/apksigner" verify --print-certs "$APK"
+          mkdir -p dist
+          cp "$APK" dist/DEELA-Unified-Owner-and-Subscribers-preview.apk
+          (cd dist && sha256sum *.apk > SHA256SUMS.txt)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DEELA-Unified-Owner-Subscriber-Preview-APK
+          path: dist/
+          retention-days: 30
+          if-no-files-found: error
