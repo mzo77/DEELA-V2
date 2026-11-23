@@ -44,6 +44,7 @@ import dev.aurastore.store.data.Category
 import dev.aurastore.store.data.ListPager
 import dev.aurastore.store.data.Module
 import dev.aurastore.store.data.PostSummary
+import dev.aurastore.store.ui.subscriberLabel
 import dev.aurastore.store.ui.AppRow
 import dev.aurastore.store.ui.LocalNavBarInset
 import dev.aurastore.store.ui.Glyph
@@ -359,7 +360,7 @@ fun CategoryScreen(
                 }
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    state.current?.name ?: stringResource(R.string.cat_all),
+                    state.current?.name?.let { subscriberLabel(it) } ?: stringResource(R.string.cat_all),
                     style = MaterialTheme.typography.titleLarge,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -416,7 +417,7 @@ fun CategoryScreen(
                 ) {
                     items(state.subcategories, key = { it.id }) { child ->
                         PlayChip(
-                            label = child.name,
+                            label = subscriberLabel(child.name),
                             selected = false,
                             onClick = { viewModel.open(child.id) },
                         )
@@ -469,8 +470,8 @@ fun CategoryScreen(
         if (state.posts.isNotEmpty()) {
             item {
                 SectionHeader(
-                    stringResource(R.string.cat_all_in, state.current?.name.orEmpty()),
-                    subtitle = state.sorts.firstOrNull { it.orderBy == state.sort }?.label,
+                    stringResource(R.string.cat_all_in, subscriberLabel(state.current?.name.orEmpty())),
+                    subtitle = state.sorts.firstOrNull { it.orderBy == state.sort }?.label?.let { subscriberLabel(it) },
                 )
             }
             itemsIndexed(state.posts, key = { _, post -> post.id }) { position, post ->
@@ -524,7 +525,7 @@ private fun CategoryGroup(
                 .padding(start = 16.dp, end = 12.dp, top = 12.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(parent.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(subscriberLabel(parent.name), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
             PlayBadge(text = parent.total.toString())
             Spacer(Modifier.width(8.dp))
             GlyphIcon(Glyph.ChevronRight, size = 18.dp, tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -535,7 +536,7 @@ private fun CategoryGroup(
                     .padding(start = 32.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(child.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                Text(subscriberLabel(child.name), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                 PlayBadge(text = child.count.toString())
                 Spacer(Modifier.width(8.dp))
                 GlyphIcon(Glyph.ChevronRight, size = 16.dp, tint = MaterialTheme.colorScheme.onSurfaceVariant)
