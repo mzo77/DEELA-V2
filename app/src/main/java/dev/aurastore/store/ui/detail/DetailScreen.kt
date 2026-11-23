@@ -563,21 +563,21 @@ fun DetailScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                     Text(
-                                        chosen.versionLabel.ifBlank {
+                                        modDescriptionArabic(chosen.versionLabel.ifBlank {
                                             stringResource(R.string.chooser_unlabelled)
-                                        },
+                                        }),
                                         style = MaterialTheme.typography.titleSmall,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                     )
                                     Spacer(Modifier.height(2.dp))
                                     Text(
-                                        listOfNotNull(
+                                        modDescriptionArabic(listOfNotNull(
                                             chosen.file.abi.ifBlank {
                                                 stringResource(R.string.detail_abi_universal)
                                             },
                                             formatSize(chosen.file.sizeText),
-                                        ).joinToString(" · "),
+                                        ).joinToString(" · ")),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         maxLines = 1,
@@ -1036,7 +1036,7 @@ private fun DetailHero(
                 }
                 if (publisher != null) {
                     Text(
-                        publisher,
+                        modDescriptionArabic(publisher),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
                         maxLines = 1,
@@ -1311,11 +1311,11 @@ private fun VersionPickerDialog(
                     ) {
                         Column(Modifier.weight(1f)) {
                             Text(
-                                artefact.versionLabel.ifBlank { unlabelled },
+                                modDescriptionArabic(artefact.versionLabel.ifBlank { unlabelled }),
                                 style = MaterialTheme.typography.titleSmall,
                             )
                             Text(
-                                artefact.label,
+                                modDescriptionArabic(artefact.label),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
