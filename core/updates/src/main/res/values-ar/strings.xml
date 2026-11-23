@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    <string name="update_notification_channel_name">التحديثات</string>
+    <string name="update_notification_channel_description">تنبيه عند توفر تحديث للتطبيقات المثبتة عبر ديلا.</string>
+    <plurals name="update_notification_title">
+        <item quantity="zero">يتوفر %1$d تحديث</item>
+        <item quantity="one">يتوفر %1$d تحديث</item>
+        <item quantity="two">يتوفر %1$d تحديث</item>
+        <item quantity="few">يتوفر %1$d تحديث</item>
+        <item quantity="many">يتوفر %1$d تحديث</item>
+        <item quantity="other">يتوفر %1$d تحديث</item>
+    </plurals>
+    <string name="install_notification_channel_name">عمليات التثبيت</string>
+    <string name="install_notification_channel_description">تنبيهات التحديثات الجاهزة ونتائج التثبيت.</string>
+    <plurals name="install_ready_title">
+        <item quantity="zero">%1$d تطبيق جاهز للتثبيت</item>
+        <item quantity="one">%1$d تطبيق جاهز للتثبيت</item>
+        <item quantity="two">%1$d تطبيق جاهز للتثبيت</item>
+        <item quantity="few">%1$d تطبيق جاهز للتثبيت</item>
+        <item quantity="many">%1$d تطبيق جاهز للتثبيت</item>
+        <item quantity="other">%1$d تطبيق جاهز للتثبيت</item>
+    </plurals>
+    <plurals name="install_result_title">
+        <item quantity="zero">تم تحديث %1$d تطبيق</item>
+        <item quantity="one">تم تحديث %1$d تطبيق</item>
+        <item quantity="two">تم تحديث %1$d تطبيق</item>
+        <item quantity="few">تم تحديث %1$d تطبيق</item>
+        <item quantity="many">تم تحديث %1$d تطبيق</item>
+        <item quantity="other">تم تحديث %1$d تطبيق</item>
+    </plurals>
+    <plurals name="install_result_failed_title">
+        <item quantity="zero">تعذّر تحديث %1$d تطبيق</item>
+        <item quantity="one">تعذّر تحديث %1$d تطبيق</item>
+        <item quantity="two">تعذّر تحديث %1$d تطبيق</item>
+        <item quantity="few">تعذّر تحديث %1$d تطبيق</item>
+        <item quantity="many">تعذّر تحديث %1$d تطبيق</item>
+        <item quantity="other">تعذّر تحديث %1$d تطبيق</item>
+    </plurals>
+    <string name="store_alert_channel_name">المصادر غير المتاحة</string>
+    <string name="store_alert_channel_description">تنبيه عند عدم استجابة مصدر تحديث التطبيقات.</string>
+    <plurals name="store_alert_title">
+        <item quantity="zero">لم يستجب %1$d مصدر</item>
+        <item quantity="one">لم يستجب %1$d مصدر</item>
+        <item quantity="two">لم يستجب %1$d مصدر</item>
+        <item quantity="few">لم يستجب %1$d مصدر</item>
+        <item quantity="many">لم يستجب %1$d مصدر</item>
+        <item quantity="other">لم يستجب %1$d مصدر</item>
+    </plurals>
+</resources>

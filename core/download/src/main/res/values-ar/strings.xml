@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    <string name="download_notification_channel_name">التنزيلات</string>
+    <string name="download_notification_channel_description">متابعة تنزيل التطبيقات.</string>
+    <string name="download_notification_title">جارٍ تنزيل %1$s</string>
+    <string name="download_notification_title_unknown">جارٍ تنزيل تطبيق</string>
+    <string name="download_notification_cancel">إلغاء</string>
+</resources>

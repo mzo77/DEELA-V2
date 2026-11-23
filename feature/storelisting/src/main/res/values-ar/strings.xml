@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    <string name="storelisting_all_categories">الكل</string>
+    <string name="storelisting_load_more">عرض المزيد</string>
+    <string name="storelisting_empty_title">لا توجد تطبيقات في هذه الفئة</string>
+    <string name="storelisting_empty_message">لا توجد تطبيقات في الفهرس المنزّل لهذه الفئة. جرّب فئة أخرى أو حدّث الفهرس.</string>
+    <string name="storelisting_choose_category">اختر فئة</string>
+    <plurals name="storelisting_category_app_count">
+        <item quantity="zero">%1$d تطبيق</item>
+        <item quantity="one">%1$d تطبيق</item>
+        <item quantity="two">%1$d تطبيق</item>
+        <item quantity="few">%1$d تطبيق</item>
+        <item quantity="many">%1$d تطبيق</item>
+        <item quantity="other">%1$d تطبيق</item>
+    </plurals>
+</resources>

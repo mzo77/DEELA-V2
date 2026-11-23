@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    <string name="myapps_title">تطبيقاتي</string>
+    <string name="myapps_empty_state_title">لم تثبّت أي تطبيقات عبر ديلا بعد</string>
+    <string name="myapps_empty_state_message">تظهر التطبيقات التي ثبتّها هنا، مع المصدر الذي يأتي منه تحديثها.</string>
+
+    
+    <plurals name="myapps_installed_count">
+        <item quantity="zero">تم تثبيت %1$d تطبيق عبر ديلا</item>
+        <item quantity="one">تم تثبيت %1$d تطبيق عبر ديلا</item>
+        <item quantity="two">تم تثبيت %1$d تطبيق عبر ديلا</item>
+        <item quantity="few">تم تثبيت %1$d تطبيق عبر ديلا</item>
+        <item quantity="many">تم تثبيت %1$d تطبيق عبر ديلا</item>
+        <item quantity="other">تم تثبيت %1$d تطبيق عبر ديلا</item>
+    </plurals>
+    <string name="myapps_version">الإصدار %1$s</string>
+    <string name="myapps_installed_from">من %1$s</string>
+    <string name="myapps_uninstall_app">إلغاء تثبيت %1$s</string>
+
+    
+    <string name="myapps_action_uninstall">إلغاء التثبيت</string>
+    <string name="myapps_uninstall_confirm_title">هل تريد إلغاء تثبيت %1$s؟</string>
+    <string name="myapps_uninstall_confirm_message">سيُحذف التطبيق وبياناته من الجهاز، لكنه سيظل متاحًا لدى المصدر.</string>
+    <string name="myapps_uninstall_confirm_action">إلغاء التثبيت</string>
+    <string name="myapps_uninstall_dismiss">إلغاء</string>
+    <string name="myapps_uninstalling">بانتظار تأكيد النظام…</string>
+    <string name="myapps_uninstall_failed_title">تعذّر إلغاء التثبيت</string>
+    <string name="myapps_uninstall_failed_dismiss">حسنًا</string>
+
+    
+    <string name="myapps_action_check">التحقق من التحديثات</string>
+    <string name="myapps_checking">جارٍ التحقق من التحديثات…</string>
+    <string name="myapps_check_dismiss">حسنًا</string>
+    <string name="myapps_update_available">يتوفر تحديث: %1$s</string>
+    <string name="myapps_update_paused">التحديثات متوقفة مؤقتًا</string>
+    <string name="myapps_update_paused_with_pending">التحديثات متوقفة ويتوفر إصدار أحدث</string>
+    <string name="myapps_update_pinned">مثبت على رمز الإصدار %1$d — يتوفر %2$s</string>
+    <string name="myapps_update_undeterminable">هذا المصدر لا يتيح رمز الإصدار، لذا لا يمكن تحديد التحديثات</string>
+    <string name="myapps_update_no_channel">مصدر التحديث غير معروف</string>
+    <string name="myapps_more_actions">خيارات إضافية لـ%1$s</string>
+    <string name="myapps_action_pause_updates">إيقاف التحديثات مؤقتًا</string>
+    <string name="myapps_action_resume_updates">استئناف التحديثات</string>
+    <string name="myapps_action_pin">تثبيت الإصدار %1$s</string>
+    <string name="myapps_action_unpin">إزالة تثبيت الإصدار</string>
+    <plurals name="myapps_check_incomplete">
+        <item quantity="zero">لم يستجب %1$d مصدر</item>
+        <item quantity="one">لم يستجب %1$d مصدر</item>
+        <item quantity="two">لم يستجب %1$d مصدر</item>
+        <item quantity="few">لم يستجب %1$d مصدر</item>
+        <item quantity="many">لم يستجب %1$d مصدر</item>
+        <item quantity="other">لم يستجب %1$d مصدر</item>
+    </plurals>
+
+    
+    <string name="myapps_action_sort">تغيير الترتيب</string>
+    <string name="myapps_sort_dialog_title">ترتيب القائمة</string>
+    <string name="myapps_sort_dialog_close">إغلاق</string>
+    <string name="myapps_search_label">البحث في تطبيقاتي</string>
+    <string name="myapps_search_clear">مسح البحث</string>
+    <string name="myapps_no_matches_title">لا توجد نتائج مطابقة</string>
+    <string name="myapps_no_matches_message">لا يوجد تطبيق مثبت باسم «%1$s». امسح البحث لرؤية جميع التطبيقات.</string>
+
+    
+    <string name="myapps_updates_from">التحديثات من %1$s</string>
+</resources>

@@ -33,7 +33,7 @@ class TranslationParityTest {
         const val BASE_QUALIFIER = "values"
 
         /** The 4 mandatory translations. English is the base, not a translation. */
-        val REQUIRED_QUALIFIERS = listOf("values-it", "values-fr", "values-es", "values-de")
+        val REQUIRED_QUALIFIERS = listOf("values-it", "values-fr", "values-es", "values-de", "values-ar")
 
         /**
          * Quantity forms CLDR requires for each language.
@@ -47,6 +47,7 @@ class TranslationParityTest {
             "values-fr" to setOf("one", "many", "other"),
             "values-es" to setOf("one", "many", "other"),
             "values-de" to setOf("one", "other"),
+            "values-ar" to setOf("zero", "one", "two", "few", "many", "other"),
         )
 
         /** `%s`, `%1$s`, `%d`, `%1$.2f`… — the placeholders must match between languages. */
