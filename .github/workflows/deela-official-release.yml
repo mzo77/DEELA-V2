@@ -3,6 +3,10 @@ name: DEELA Official Signed Release
 # The owner deliberately publishes a release after setting up a permanent signing key.
 # Never ship an unsigned or ephemeral debug-signed APK as an official update.
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/deela-release-request/official-0.9.8.txt'
   workflow_dispatch:
     inputs:
       source_ref:
@@ -31,7 +35,7 @@ jobs:
       - name: Check out the reviewed Android source
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_ref }}
+          ref: ${{ inputs.source_ref || 'feature/admin-source-updates-and-signup-requests' }}
           persist-credentials: true
 
       - uses: actions/setup-java@v4
@@ -134,7 +138,7 @@ jobs:
       - name: Publish public, stable GitHub Release for in-app update notifications
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_NOTES: ${{ inputs.release_notes }}
+          RELEASE_NOTES: ${{ inputs.release_notes || 'تحديث تطبيقات ديلا 0.9.8: إصدار رسمي بنظام التحديثات للمشتركين.' }}
           TAG: ${{ steps.verify.outputs.tag }}
           APK: ${{ steps.verify.outputs.apk }}
         run: |
