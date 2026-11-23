@@ -64,6 +64,14 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Preview runs beside the user's signed DEELA install without uninstalling it.
+            // Production release always keeps its original package com.deela.apps.
+            if (System.getenv("DEELA_UNIFIED_OWNER_PREVIEW") == "true") {
+                applicationIdSuffix = ".preview"
+                versionNameSuffix = "-preview"
+            }
+        }
         release {
             // Shrinking is on, and its keep rules are the two enums and the worker in
             // proguard-rules.pro. It was off while a release artefact could not be run here; the
