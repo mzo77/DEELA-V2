@@ -50,7 +50,14 @@ jobs:
           "$SDKMANAGER" --channel=3 --install "platforms;android-37.0" "build-tools;36.1.0"
           test -x "$ANDROID_HOME/build-tools/36.1.0/apksigner"
 
-      - name: Verify release signing secrets and restore private keystore
+      - name: Build production APK without any signing secrets
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon :app:assembleRelease
+          test -s app/build/outputs/apk/release/app-release-unsigned.apk
+
+      - name: Restore permanent signing key only after Gradle has finished
         env:
           DEELA_RELEASE_KEYSTORE_BASE64: ${{ secrets.DEELA_RELEASE_KEYSTORE_BASE64 }}
           DEELA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.DEELA_RELEASE_KEYSTORE_PASSWORD }}
@@ -64,18 +71,26 @@ jobs:
           printf '%s' "$DEELA_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/deela-release.p12"
           test -s "$RUNNER_TEMP/deela-release.p12"
 
-      - name: Build release APK with the permanent DEELA signing certificate
+      - name: Align and sign without exposing secrets to project build scripts
         env:
-          AuraStoreFile: ${{ runner.temp }}/deela-release.p12
-          AuraStorePassword: ${{ secrets.DEELA_RELEASE_KEYSTORE_PASSWORD }}
-          AuraStoreKeyPassword: ${{ secrets.DEELA_RELEASE_KEYSTORE_PASSWORD }}
-          AuraStoreKeyAlias: deela_release
-          DEELA_API_BASE_URL: https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-control
+          DEELA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.DEELA_RELEASE_KEYSTORE_PASSWORD }}
         run: |
           set -euo pipefail
-          chmod +x gradlew
-          ./gradlew --no-daemon :app:assembleRelease
-          test -s app/build/outputs/apk/release/app-release.apk
+          VERSION="$(sed -n 's/.*val appVersionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Unexpected Android version"; exit 1; }
+          mkdir -p dist
+          "$ANDROID_HOME/build-tools/36.1.0/zipalign" -f 4 \
+            app/build/outputs/apk/release/app-release-unsigned.apk \
+            "$RUNNER_TEMP/deela-release-aligned.apk"
+          "$ANDROID_HOME/build-tools/36.1.0/apksigner" sign \
+            --ks "$RUNNER_TEMP/deela-release.p12" \
+            --ks-type PKCS12 \
+            --ks-key-alias deela_release \
+            --ks-pass env:DEELA_RELEASE_KEYSTORE_PASSWORD \
+            --key-pass env:DEELA_RELEASE_KEYSTORE_PASSWORD \
+            --out "dist/DEELA-$VERSION-release.apk" \
+            "$RUNNER_TEMP/deela-release-aligned.apk"
+          test -s "dist/DEELA-$VERSION-release.apk"
 
       - name: Verify signature identity, version, and APK digest
         id: verify
@@ -89,19 +104,18 @@ jobs:
             exit 1
           fi
           SIGNER_REPORT="$RUNNER_TEMP/deela-signature.txt"
-          "$ANDROID_HOME/build-tools/36.1.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk > "$SIGNER_REPORT"
+          "$ANDROID_HOME/build-tools/36.1.0/apksigner" verify --verbose --print-certs "dist/DEELA-$VERSION-release.apk" > "$SIGNER_REPORT"
           SIGNER="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$SIGNER_REPORT" | tr -d ':' | tr '[:upper:]' '[:lower:]' | head -n 1)"
           PIN="83698bc6e21ddabb83eaf45d3386170d676dcf96270081c163f8b2e107fdef3c"
           if [ "$SIGNER" != "$PIN" ]; then
             echo "::error::APK signing certificate does not match DEELA's permanent official signing identity."
             exit 1
           fi
-          PKG="$("$ANDROID_HOME/build-tools/36.1.0/aapt" dump badging app/build/outputs/apk/release/app-release.apk | head -n 1)"
+          PKG="$("$ANDROID_HOME/build-tools/36.1.0/aapt" dump badging "dist/DEELA-$VERSION-release.apk" | head -n 1)"
           echo "$PKG" | grep -Fq "name='com.deela.apps'"
           echo "$PKG" | grep -Fq "versionName='$VERSION'"
           mkdir -p dist
           APK="DEELA-$VERSION-release.apk"
-          cp app/build/outputs/apk/release/app-release.apk "dist/$APK"
           (cd dist && sha256sum "$APK" > "$APK.sha256")
           test -s "dist/$APK.sha256"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
