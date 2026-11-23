@@ -92,6 +92,18 @@ object DeelaAuthApi {
             }
         }
 
+    suspend fun requestPasswordRecovery(email: String): Result<String> = withContext(Dispatchers.IO) {
+        runCatching {
+            require(email.trim().contains("@")) { "أدخل البريد الإلكتروني المسجل في ديلا." }
+            val request = Request.Builder().url("$endpoint/api/v1/auth/recover")
+                .post(JSONObject().put("email", email.trim()).toString().toRequestBody(jsonType)).build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) error("تعذر إرسال طلب الاستعادة. حاول لاحقًا.")
+            }
+            "إذا كان البريد مسجلًا فستصلك رسالة لاستعادة كلمة المرور."
+        }
+    }
+
     suspend fun check(token: String): Boolean = withContext(Dispatchers.IO) {
         runCatching { entitlement(token) != null }.getOrDefault(false)
     }
@@ -124,6 +136,7 @@ fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
+    var recoveryMode by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
@@ -159,7 +172,7 @@ fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
                 shape = RoundedCornerShape(16.dp),
             )
             Spacer(Modifier.height(14.dp))
-            OutlinedTextField(
+            if (!recoveryMode) OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("كلمة المرور") },
@@ -176,22 +189,30 @@ fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
             )
             Spacer(Modifier.height(22.dp))
             Button(
-                enabled = !busy && email.isNotBlank() && password.isNotBlank(),
+                enabled = !busy && email.isNotBlank() && (recoveryMode || password.isNotBlank()),
                 onClick = {
                     busy = true
                     error = null
                     scope.launch {
-                        val result = DeelaAuthApi.login(email, password)
-                        busy = false
-                        result.fold(onSuccess = onAuthenticated, onFailure = {
-                            error = it.message ?: "تعذر التحقق من الاشتراك."
-                        })
+                        if (recoveryMode) {
+                            val result = DeelaAuthApi.requestPasswordRecovery(email)
+                            busy = false
+                            result.fold(onSuccess = { error = it }, onFailure = {
+                                error = it.message ?: "تعذر طلب الاستعادة."
+                            })
+                        } else {
+                            val result = DeelaAuthApi.login(email, password)
+                            busy = false
+                            result.fold(onSuccess = onAuthenticated, onFailure = {
+                                error = it.message ?: "تعذر التحقق من الاشتراك."
+                            })
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
             ) {
                 if (busy) CircularProgressIndicator()
-                else Text("تسجيل الدخول")
+                else Text(if (recoveryMode) "إرسال رابط استعادة كلمة المرور" else "تسجيل الدخول")
             }
             if (error != null) {
                 Spacer(Modifier.height(14.dp))
@@ -201,6 +222,9 @@ fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),
                 )
+            }
+            TextButton(onClick = { recoveryMode = !recoveryMode; error = null }) {
+                Text(if (recoveryMode) "العودة إلى تسجيل الدخول" else "نسيت كلمة المرور؟")
             }
             Spacer(Modifier.height(26.dp))
             Text(
