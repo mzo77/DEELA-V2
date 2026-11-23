@@ -67,6 +67,31 @@ async function loadMembers(){
  if(!Array.isArray(d.members))throw Error("قائمة المشتركين غير متاحة");
  members=d.members;
  renderMembers();
+ renderRequests(Array.isArray(d.requests)?d.requests:[]);
+}
+function renderRequests(requests){
+ const root=$("pendingRequests");root.replaceChildren();$("pendingCount").textContent=requests.length+" طلب";
+ if(!requests.length){root.append(element("p","لا توجد طلبات انتظار حالياً.","muted"));return}
+ for(const request of requests){
+  const row=element("div","","member"),info=element("div");
+  info.append(element("div",request.email||request.user_id||"مشترك","member-title"));
+  info.append(element("div",(request.platform==="ios"?"آيفون":"أندرويد")+" · "+request.months+" شهر · "+fmt(request.created_at),"member-sub"));
+  const actions=element("div","","member-actions");
+  actions.append(button("موافقة",()=>reviewRequest(request,"approved")));
+  actions.append(button("رفض",()=>reviewRequest(request,"rejected"),true));
+  row.append(info,actions);root.append(row);
+ }
+}
+async function reviewRequest(request,decision){
+ if(busy)return;
+ if(!confirm(decision==="approved"?"الموافقة على هذا الاشتراك وإرسال التفعيل؟":"هل تؤكد رفض طلب الاشتراك؟"))return;
+ busy=true;
+ try{
+  const result=await api("/api/owner/requests/review",{id:request.id,decision});
+  await loadMembers();await loadOverview();
+  if(result.email_status==="failed"||result.email_status==="unconfigured")feedback("تم تحديث الطلب، لكن إرسال بريد التفعيل غير جاهز.",true);
+  else feedback(decision==="approved"?"تم تفعيل الاشتراك":"تم رفض الطلب");
+ }catch(e){showError(e)}finally{busy=false}
 }
 function renderMembers(){
  const container=$("membersList");container.replaceChildren();
