@@ -478,7 +478,7 @@ fun HeroCard(
                 modifier = Modifier.padding(12.dp).align(Alignment.TopStart),
             ) {
                 Text(
-                    badge,
+                    subscriberLabel(badge),
                     style = MaterialTheme.typography.labelMedium,
                     color = Color.White,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -495,7 +495,7 @@ fun HeroCard(
             )
             if (!subtitle.isNullOrBlank()) {
                 Text(
-                    subtitle,
+                    modDescriptionArabic(subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White.copy(alpha = 0.9f),
                     maxLines = 2,
