@@ -12,6 +12,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.FilterChip
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -21,6 +25,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -99,14 +104,18 @@ object DeelaAuthApi {
             }
         }
 
-    suspend fun register(email: String, password: String, displayName: String): Result<String> = withContext(Dispatchers.IO) {
+    suspend fun register(email: String, password: String, displayName: String, months: Int): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
-            require(email.contains("@") && password.length >= 12) { "أدخل بريدًا صحيحًا وكلمة مرور من 12 رمزًا على الأقل." }
-            val payload = JSONObject().put("email", email.trim()).put("password", password).put("display_name", displayName.trim())
+            require(email.contains("@") && password.length >= 8) { "أدخل بريدًا صحيحًا وكلمة مرور من 8 رموز على الأقل." }
+            val payload = JSONObject().put("email", email.trim()).put("password", password).put("display_name", displayName.trim()).put("months", months)
             val request = Request.Builder().url("$endpoint/api/v1/auth/register")
                 .post(payload.toString().toRequestBody(jsonType)).build()
             client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) error("تعذر إنشاء الحساب. تأكد من البريد أو استخدم استعادة كلمة المرور.")
+                if (!response.isSuccessful) {
+                    val body = response.body.string()
+                    val message = runCatching { JSONObject(body).optString("error") }.getOrDefault("")
+                    error(message.ifBlank { "تعذر إنشاء الحساب (رمز ${response.code}). حاول لاحقًا." })
+                }
             }
             "تم طلب إنشاء الحساب. افتح بريدك لتأكيده ثم سجل الدخول لطلب الاشتراك."
         }
@@ -194,6 +203,7 @@ fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
     var registerMode by remember { mutableStateOf(false) }
     var displayName by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var selectedMonths by remember { mutableIntStateOf(1) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
@@ -252,15 +262,30 @@ fun DeelaAccessScreen(onAuthenticated: (DeelaSession) -> Unit) {
                 Spacer(Modifier.height(14.dp))
                 OutlinedTextField(value = confirmPassword, onValueChange = { confirmPassword = it }, label = { Text("تأكيد كلمة المرور") }, singleLine = true, visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
             }
+            if (registerMode) {
+                Spacer(Modifier.height(14.dp))
+                Text("مدة الاشتراك المطلوبة", style = MaterialTheme.typography.titleMedium)
+                Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+                    listOf(1, 2, 3, 6, 12).forEach { m ->
+                        FilterChip(
+                            selected = selectedMonths == m,
+                            onClick = { selectedMonths = m },
+                            label = { Text(if (m == 12) "سنة" else "$m شهر") },
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                    }
+                }
+                Text("يُرسل طلب المدة بعد تأكيد البريد وتسجيل الدخول، ولا يُفعّل إلا بموافقة المالك.", style = MaterialTheme.typography.bodySmall)
+            }
             Spacer(Modifier.height(22.dp))
             Button(
-                enabled = !busy && email.isNotBlank() && (recoveryMode || password.isNotBlank()) && (!registerMode || (displayName.isNotBlank() && password.length >= 12 && confirmPassword == password)),
+                enabled = !busy && email.isNotBlank() && (recoveryMode || password.isNotBlank()) && (!registerMode || (displayName.isNotBlank() && password.length >= 8 && confirmPassword == password)),
                 onClick = {
                     busy = true
                     error = null
                     scope.launch {
                         if (registerMode) {
-                            val result = DeelaAuthApi.register(email, password, displayName)
+                            val result = DeelaAuthApi.register(email, password, displayName, selectedMonths)
                             busy = false
                             result.fold(onSuccess = { error = it }, onFailure = { error = it.message })
                         } else if (recoveryMode) {
