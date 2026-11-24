@@ -3,6 +3,10 @@ name: DEELA Official Signed Release
 # The owner deliberately publishes a release after setting up a permanent signing key.
 # Never ship an unsigned or ephemeral debug-signed APK as an official update.
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/deela-release-request/official-0.9.11.txt'
   workflow_dispatch:
     inputs:
       source_ref:
@@ -14,7 +18,7 @@ on:
         description: "Short update notes shown to subscribers"
         required: false
         type: string
-        default: "تحديث تطبيقات ديلا: تحسين تسجيل الدخول، الاشتراكات، إدارة المصادر، والاستقرار."
+        default: "إصدار ديلا 0.9.11 الرسمي: مركز ذكاء المالك، مختبر أمان تجريبي، وتحسينات إدارة التطبيقات مع الحفاظ على المتجر والاشتراكات."
 
 permissions:
   contents: write
@@ -46,7 +50,7 @@ jobs:
       - name: Check out the reviewed Android source
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_ref || 'feature/admin-source-updates-and-signup-requests' }}
+          ref: ${{ inputs.source_ref || '09a94edec953febcbd05042d80c94054b2679db9' }}
           persist-credentials: true
 
       - uses: actions/setup-java@v4
@@ -69,7 +73,7 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x gradlew
-          ./gradlew --no-daemon :app:assembleRelease
+          ./gradlew --no-daemon :app:assembleRelease :app:testDebugUnitTest --tests 'dev.aurastore.store.data.AppReleasesTest'
           test -s app/build/outputs/apk/release/app-release-unsigned.apk
 
       - name: Restore permanent signing key only after Gradle has finished
@@ -136,6 +140,10 @@ jobs:
           VERSION="$(sed -n 's/.*val appVersionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
           [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Unexpected Android version"; exit 1; }
           TAG="v$VERSION"
+          if [ "${{ github.event_name }}" = "push" ] && [ "$VERSION" != "0.9.11" ]; then
+            echo "::error::This official push request is pinned to DEELA 0.9.11 only."
+            exit 1
+          fi
           if GH_TOKEN="${{ github.token }}" gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "::error::Official release $TAG already exists. Bump the version before publishing."
             exit 1
@@ -171,7 +179,7 @@ jobs:
       - name: Publish public, stable GitHub Release for in-app update notifications
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_NOTES: "${{ inputs.release_notes || 'تحديث تطبيقات ديلا 0.9.8: إصدار رسمي بنظام التحديثات للمشتركين.' }}"
+          RELEASE_NOTES: "${{ inputs.release_notes || 'DEELA 0.9.11: مركز الأمان التجريبي للمالك، فحوص كود مصدر موثقة، والاحتفاظ بإدارة التطبيقات والاشتراكات. المحركات الثلاثة غير مستضافة بعد ولا توجد وظائف استرجاع حسابات أو تجاوز 2FA.' }}"
           TAG: ${{ steps.verify.outputs.tag }}
           APK: ${{ steps.verify.outputs.apk }}
         run: |
