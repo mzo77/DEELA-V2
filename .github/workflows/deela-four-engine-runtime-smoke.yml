@@ -79,21 +79,28 @@ jobs:
           set -euo pipefail
           cd upstream
           python3 -m venv /tmp/deela-hexstrike-env
-          # Install the documented core HTTP/MCP dependencies first.
-          # angr is optional binary analysis and compiling it can exhaust CI time.
-          /tmp/deela-hexstrike-env/bin/pip install --only-binary=:all: 'flask>=2.3,<4' 'requests>=2.31,<3' 'psutil>=5.9,<6' 'fastmcp>=0.2,<1' 'beautifulsoup4>=4.12,<5' 'aiohttp>=3.8,<4' 'selenium>=4.15,<5' 'webdriver-manager>=4,<5' 'mitmproxy>=9,<11'
+          # The HexStrike HTTP server imports mitmproxy but NOT fastmcp.
+          # Installing fastmcp together with legacy mitmproxy pulls incompatible
+          # HTTP protocol packages (httpcore/h11). Test HTTP API separately;
+          # the MCP adapter requires a separate environment/test.
+          # angr is optional binary analysis and is not needed for HTTP health.
+          /tmp/deela-hexstrike-env/bin/pip install --only-binary=:all: 'flask>=2.3,<4' 'requests>=2.31,<3' 'psutil>=5.9,<6' 'beautifulsoup4>=4.12,<5' 'aiohttp>=3.8,<4' 'selenium>=4.15,<5' 'webdriver-manager>=4,<5' 'mitmproxy==10.4.2'
+          /tmp/deela-hexstrike-env/bin/pip check
           nohup /tmp/deela-hexstrike-env/bin/python hexstrike_server.py > /tmp/deela-hexstrike.log 2>&1 &
           echo $! > /tmp/deela-hexstrike.pid
           python3 - <<'PY'
           import time, urllib.request, urllib.error
           for attempt in range(30):
               try:
-                  with urllib.request.urlopen('http://127.0.0.1:8888/', timeout=3) as response:
-                      print('HexStrike HTTP response:',response.status)
+                  with urllib.request.urlopen('http://127.0.0.1:8888/api/process/health-check', timeout=3) as response:
+                      import json
+                      payload = json.load(response)
+                      assert response.status == 200 and payload.get('success') is True, f'Unexpected health response: {payload}'
+                      print('Real HexStrike HTTP health responded:',response.status, payload.get('health_report', {}).get('overall_status'))
                       break
               except urllib.error.HTTPError as exc:
-                  print('HexStrike HTTP service answered:',exc.code)
-                  break
+                  print('HexStrike HTTP error:',exc.code)
+                  time.sleep(2)
               except Exception:
                   time.sleep(2)
           else:
