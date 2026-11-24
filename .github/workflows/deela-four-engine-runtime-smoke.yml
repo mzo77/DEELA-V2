@@ -1,0 +1,48 @@
+name: DEELA Four Upstream Engine Runtime Smoke
+on:
+  push:
+    branches: [release/deela-0913-source]
+    paths: ['.github/workflows/deela-four-engine-runtime-smoke.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  upstream-engine-check:
+    name: Real upstream engine installation
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { engine: pentagi, repo: vxcontrol/pentagi }
+          - { engine: pentest-swarm, repo: Armur-Ai/Pentest-Swarm-AI }
+          - { engine: hexstrike, repo: 0x4m4/hexstrike-ai }
+          - { engine: pentestgpt, repo: GreyDGL/PentestGPT }
+    steps:
+      - name: Clone real upstream source
+        env:
+          ENGINE_REPO: ${{ matrix.repo }}
+        run: |
+          set -euo pipefail
+          git clone --depth 1 "https://github.com/$ENGINE_REPO.git" upstream
+          git -C upstream rev-parse HEAD
+      - name: Verify actual runtime manifest
+        run: |
+          set -euo pipefail
+          cd upstream
+          find . -maxdepth 3 -type f \( -name Dockerfile -o -name pyproject.toml -o -name requirements.txt -o -name package.json -o -name go.mod \) -print | head -30
+          find . -maxdepth 3 -type f \( -name Dockerfile -o -name pyproject.toml -o -name requirements.txt -o -name package.json -o -name go.mod \) | grep -q .
+      - name: Install and invoke real PentestGPT CLI
+        if: matrix.engine == 'pentestgpt'
+        run: |
+          set -euo pipefail
+          python3 -m pip install --user uv
+          export PATH="$HOME/.local/bin:$PATH"
+          cd upstream
+          uv sync --no-dev
+          uv run pentestgpt-legacy --help
+      - name: Report truthful scope
+        run: |
+          echo "Real upstream checkout checked. This is NOT a persistent running AI model."
+          echo "No external targets or subscriber devices were scanned."
