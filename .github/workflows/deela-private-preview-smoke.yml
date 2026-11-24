@@ -1,0 +1,49 @@
+name: DEELA Private Shop Preview HTTP Smoke Test
+on:
+  push:
+    branches: [feature/deela-commerce-90waves-style]
+    paths: ['.github/workflows/deela-private-preview-smoke.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  private-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Verify private site, login gate, API and protected assets
+        run: |
+          set -euo pipefail
+          BASE="https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-shop-preview"
+          API="https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-shop"
+          curl --fail-with-body -sSL --retry 4 --retry-delay 3 --max-time 30 \
+            "$BASE/health" -o /tmp/private-health.json
+          python3 - <<'PY'
+          import json
+          data=json.load(open("/tmp/private-health.json"))
+          assert data.get("ok") and data.get("private")
+          print("Private preview health responded")
+          PY
+          curl --fail-with-body -sSL --max-time 30 \
+            "$BASE/" -D /tmp/login-headers -o /tmp/private-login.html
+          grep -q 'معاينة متجر DEELA' /tmp/private-login.html
+          grep -qi 'x-frame-options: DENY' /tmp/login-headers
+          grep -qi 'cache-control: private, no-store' /tmp/login-headers
+          curl --fail-with-body -sSL --max-time 30 \
+            "$BASE/style.css" -D /tmp/css-headers -o /tmp/protected-css.html
+          grep -q 'معاينة متجر DEELA' /tmp/protected-css.html
+          grep -qi 'content-type: text/html' /tmp/css-headers
+          code="$(curl -sSL -o /tmp/invalid-login.html -w '%{http_code}' \
+            --max-time 30 -X POST "$BASE/login" \
+            --data-urlencode 'email=invalid-owner@example.invalid' \
+            --data-urlencode 'password=not-a-real-password')"
+          test "$code" = "401"
+          grep -q 'تعذر الدخول' /tmp/invalid-login.html
+          curl --fail-with-body -sSL --max-time 30 \
+            "$API/catalog" -o /tmp/catalog.json
+          python3 - <<'PY'
+          import json
+          data=json.load(open('/tmp/catalog.json'))
+          assert len(data.get('products',[]))>=3
+          print('Private preview, owner login gate, asset protection and catalog verified')
+          PY
