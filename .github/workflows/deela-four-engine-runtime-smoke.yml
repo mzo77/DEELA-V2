@@ -93,6 +93,20 @@ jobs:
               print(open('/tmp/deela-hexstrike.log').read()[-5000:])
               raise SystemExit('HexStrike local server did not respond')
           PY
+      - name: Build real PentAGI Go backend package
+        if: matrix.engine == 'pentagi'
+        run: |
+          set -euo pipefail
+          cd upstream/backend
+          go version
+          go build ./...
+      - name: Build real Pentest Swarm Go packages
+        if: matrix.engine == 'pentest-swarm'
+        run: |
+          set -euo pipefail
+          cd upstream
+          go version
+          go build ./...
       - name: Report truthful scope
         run: |
           echo "Real upstream checkout checked. This is NOT a persistent running AI model."
