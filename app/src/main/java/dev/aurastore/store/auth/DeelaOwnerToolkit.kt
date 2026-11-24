@@ -239,9 +239,9 @@ private class OwnerToolBridge(
         val task = prompt.trim()
         if (task.length !in 10..1400) return
         // Owner explicitly confirms in GitHub before any workflow can execute.
-        val title = "[DEELA AGENT] " + task.take(55).replace('\\n', ' ')
-        val body = "## طلب المالك باللغة العربية\\n\\n" + task +
-            "\\n\\n## ضوابط التنفيذ\\n- العمل على نسخة التطوير فقط.\\n- يمنع تعديل أسرار المشروع أو نشر APK للمشتركين.\\n- اعرض التغييرات ونتيجة الاختبارات للمراجعة."
+        val title = "[DEELA AGENT] " + task.take(55).replace('\n', ' ')
+        val body = "## طلب المالك باللغة العربية\n\n" + task +
+            "\n\n## ضوابط التنفيذ\n- العمل على نسخة التطوير فقط.\n- يمنع تعديل أسرار المشروع أو نشر APK للمشتركين.\n- اعرض التغييرات ونتيجة الاختبارات للمراجعة."
         val url = Uri.Builder()
             .scheme("https")
             .authority("github.com")
