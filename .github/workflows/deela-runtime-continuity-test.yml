@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths: ['.github/workflows/deela-runtime-continuity-test.yml']
   workflow_dispatch:
+# No APK builds, new accounts, payment method, open ports, or external scan targets.
 permissions:
   contents: read
 concurrency:
