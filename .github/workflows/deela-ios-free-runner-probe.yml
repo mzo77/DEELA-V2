@@ -1,0 +1,20 @@
+name: DEELA iOS Free Public Runner Check
+on:
+  push:
+    paths:
+      - '.github/workflows/deela-ios-free-runner-probe.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  macos-check:
+    name: Check free standard macOS runner
+    runs-on: macos-latest
+    timeout-minutes: 5
+    steps:
+      - name: Confirm macOS Apple build tools
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          swift --version
+          echo 'DEELA FREE PUBLIC MACOS RUNNER IS READY'
