@@ -238,23 +238,22 @@ private class OwnerToolBridge(
     fun openAgentIssue(prompt: String) {
         val task = prompt.trim()
         if (task.length !in 10..1400) return
-        // Owner explicitly confirms in GitHub before any workflow can execute.
-        val title = "[DEELA AGENT] " + task.take(55).replace('\n', ' ')
-        val body = "## طلب المالك باللغة العربية\n\n" + task +
-            "\n\n## ضوابط التنفيذ\n- العمل على نسخة التطوير فقط.\n- يمنع تعديل أسرار المشروع أو نشر APK للمشتركين.\n- اعرض التغييرات ونتيجة الاختبارات للمراجعة."
-        val url = Uri.Builder()
-            .scheme("https")
-            .authority("github.com")
-            .appendPath("mzo77")
-            .appendPath("DEELA-V2")
-            .appendPath("issues")
-            .appendPath("new")
-            .appendQueryParameter("title", title)
-            .appendQueryParameter("body", body)
-            .build()
+        // GitHub Issues are disabled in this repository. Use the owner's workflow
+        // dispatch page rather than offering a broken issue-submission link.
+        // GitHub requires the owner to paste the task and explicitly run it.
+        val uri = Uri.parse(
+            "https://github.com/mzo77/DEELA-V2/actions/workflows/deela-arabic-coding-agent.yml",
+        )
         web.post {
-            runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, url)) }
-                .onFailure { Toast.makeText(context, "تعذر فتح GitHub. تحقق من المتصفح.", Toast.LENGTH_LONG).show() }
+            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            clipboard.setPrimaryClip(ClipData.newPlainText("مهمة وكيل ديلا العربي", task))
+            Toast.makeText(
+                context,
+                "نسخت أمرك. افتح Run workflow ثم الصق في خانة task واضغط تشغيل.",
+                Toast.LENGTH_LONG,
+            ).show()
+            runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri)) }
+                .onFailure { Toast.makeText(context, "تعذر فتح GitHub. يمكنك تشغيل وكيل البرمجة من Actions.", Toast.LENGTH_LONG).show() }
         }
     }
 
