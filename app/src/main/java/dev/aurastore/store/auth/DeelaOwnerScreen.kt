@@ -163,7 +163,7 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
             ) {
-                listOf("الرئيسية", "الطلبات", "المشتركون", "التحديثات", "القوة الغاشمة ⚡", "الرسائل", "السجل").forEach { tab ->
+                listOf("الرئيسية", "الطلبات", "المشتركون", "التحديثات", "القوة الغاشمة ⚡", "مركز الذكاء 🤖", "الرسائل", "السجل").forEach { tab ->
                     FilterChip(
                         selected = page == tab,
                         onClick = { page = tab },
@@ -345,7 +345,16 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                         }
                     }
                     "التحديثات" -> Box(Modifier.weight(1f)) { DeelaOwnerSources(session.token) }
-                    "القوة الغاشمة ⚡" -> Box(Modifier.weight(1f)) { DeelaOwnerToolkit(session.token) }
+                    "القوة الغاشمة ⚡" -> Column(Modifier.weight(1f)) {
+                        OutlinedButton(
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = { page = "مركز الذكاء 🤖" }
+                        ) { Text("🤖 افتح مركز الذكاء وPentAGI") }
+                        Box(Modifier.weight(1f)) { DeelaOwnerToolkit(session.token) }
+                    }
+                    "مركز الذكاء 🤖" -> Box(Modifier.weight(1f)) {
+                        DeelaPentagiScreen(session.token, openOriginalToolkit = { page = "القوة الغاشمة ⚡" })
+                    }
                     "الرسائل" -> Box(Modifier.weight(1f)) {
                         DeelaOwnerEmailScreen(session.token, current.members.associate { it.id to it.email }, current.email)
                     }
