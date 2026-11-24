@@ -59,7 +59,7 @@ button,.nav button{border-radius:12px}.nav button.active,.tabs .active{backgroun
 <section class="section" id="agent">
 <div class="card" style="background:linear-gradient(135deg,#312334,#1d1623);border:1px solid #8b5772;border-radius:22px">
   <h2 style="color:#f0c1d4">🤖 وكيل ديلا البرمجي — أوامر بالعربي</h2>
-  <p class="muted">تكلم باللهجة السعودية أو اكتب المطلوب. عند إرسال المهمة ستفتح صفحة GitHub لتأكيد إنشاء طلب عام. بعدها يستطيع وكيل OpenCode المجاني العمل على نسخة تطوير منفصلة دون نشر تحديث للمشتركين.</p>
+  <p class="muted">تكلم باللهجة السعودية أو اكتب المطلوب. بعد موافقتك يُنسخ طلبك ويُفتح GitHub Actions؛ الصقه في خانة task واضغط Run workflow. يعالج OpenCode المهمة في فرع مراجعة دون نشر نسخة للمشتركين. الحصة المجانية محدودة.</p>
   <div style="padding:12px;border-radius:13px;background:#1a1420;border:1px solid #63465a;margin:12px 0">
     <strong>🎙️ تحدث بالعربي</strong>
     <p class="muted">اضغط الميكروفون وتكلم طبيعيًا. التعرف على الصوت يعتمد على خدمة الإملاء الموجودة في جهازك وقد يحتاج اتصالًا بالإنترنت.</p>
@@ -67,9 +67,9 @@ button,.nav button{border-radius:12px}.nav button.active,.tabs .active{backgroun
   </div>
   <label for="deelaAgentPrompt">وش تبي الوكيل يسوي في مشروع ديلا؟</label>
   <textarea id="deelaAgentPrompt" spellcheck="true" dir="auto" maxlength="1400" style="width:100%;min-height:180px;background:#100d16;color:#fff4f7;border:1px solid #8b5772;border-radius:14px;padding:14px;line-height:1.8;resize:vertical" placeholder="مثال: يا ديلا، أصلح أزرار لوحة المالك، وخل القوائم كلها عربية، واختبر التغييرات بدون نشرها للمشتركين."></textarea>
-  <label style="display:flex;align-items:flex-start;gap:8px;margin:14px 0;color:#e0c5d3"><input type="checkbox" id="deelaAgentPublicConfirm" style="margin-top:4px">أوافق على أن وصف المهمة سيُنشر علنًا في GitHub Issues. لن أكتب أي كلمات مرور أو بيانات مشتركين أو مفاتيح سرية.</label>
-  <div class="actions"><button id="deelaAgentSubmit" type="button">🚀 إنشاء مهمة للوكيل على GitHub</button><button id="deelaAgentCopy" type="button">📋 نسخ الطلب</button></div>
-  <div id="deelaAgentStatus" class="note" role="status">جاهز لاستقبال الأوامر بالعربية. تنفيذ الكود يتم على GitHub Actions بعد اعتماد إنشاء المهمة.</div>
+  <label style="display:flex;align-items:flex-start;gap:8px;margin:14px 0;color:#e0c5d3"><input type="checkbox" id="deelaAgentPublicConfirm" style="margin-top:4px">أوافق على إرسال وصف المهمة إلى GitHub Actions في مستودع عام، وأتعهد بألا أكتب أي كلمات مرور أو بيانات مشتركين أو مفاتيح سرية.</label>
+  <div class="actions"><button id="deelaAgentSubmit" type="button">📋 نسخ المهمة وفتح GitHub Actions</button><button id="deelaAgentCopy" type="button">📋 نسخ الطلب</button></div>
+  <div id="deelaAgentStatus" class="note" role="status">جاهز لاستقبال الأوامر بالعربية. بعد الضغط سيُنسخ أمرك، وتُفتح صفحة GitHub Actions لتلصقه وتضغط Run workflow. التنفيذ لا يبدأ تلقائيًا.</div>
   <div class="note">🛡️ لا حذف جماعي، ولا نشر إصدار للمشتركين، ولا التعامل مع أسرار الحساب تلقائيًا. يحصل المالك على مراجعة ونتيجة اختبارات، ويختار اعتماد التغييرات بنفسه. النماذج المجانية قد تتوقف أو تصل لحد الاستخدام.</div>
 </div></section>
 <section class="section" id="commands"><div class="card"><h2>دليل الأوامر</h2><input class="search" id="search" placeholder="ابحث عن أمر، مثل /build" aria-label="البحث في الأوامر"><div class="cmdlist" id="cmdlist"></div><div class="note">اضغط «نسخ» لإرسال الأمر إلى مساعد البرمجة الذي تستخدمه. تُحفظ صيغ الأوامر الإنجليزية للتوافق.</div></div></section>
@@ -123,12 +123,48 @@ $('deelaAgentCopy').onclick=()=>copy($('deelaAgentPrompt').value.trim());
 $('deelaAgentSubmit').onclick=()=>{
  const prompt=$('deelaAgentPrompt').value.trim();
  if(prompt.length<10||prompt.length>1400){$('deelaAgentStatus').textContent='اكتب أمرًا واضحًا من 10 إلى 1400 حرف.';return;}
- if(!$('deelaAgentPublicConfirm').checked){$('deelaAgentStatus').textContent='فعّل موافقتك على نشر وصف المهمة علنًا في GitHub أولًا.';return;}
+ if(!$('deelaAgentPublicConfirm').checked){$('deelaAgentStatus').textContent='لازم توافق أولًا على رفع وصف المهمة إلى سجل GitHub Actions العام.';return;}
  if(!window.DeelaToolsNative){$('deelaAgentStatus').textContent='افتح وكيل البرمجة داخل تطبيق المالك لتجهيز المهمة.';return;}
- $('deelaAgentStatus').textContent='جارٍ فتح نموذج إنشاء المهمة في GitHub. راجع النص ثم اضغط Submit new issue لتبدأ.';
+ $('deelaAgentStatus').textContent='تم تجهيز المهمة. يُفتح GitHub Actions؛ اضغط Run workflow، الصق النص في خانة task، ثم اضغط Run workflow للتشغيل.';
  DeelaToolsNative.openAgentIssue(prompt);
 };
 
+window.deelaRouteToolToAgent=function(source,details) {
+  const text=String(details||'').trim();
+  const head='يا وكيل ديلا، نفّذ مهمة برمجية من أداة '+source+' داخل مشروع DEELA-V2. افحص الشيفرة ذات الصلة، واكتب التغييرات والاختبارات على فرع مراجعة فقط؛ لا تنشر نسخة للمشتركين ولا تعدل البيانات الخاصة.';
+  $('deelaAgentPrompt').value=(head+'\n\n'+text).slice(0,1400);
+  $('deelaAgentPublicConfirm').checked=false;
+  $('deelaAgentStatus').textContent='أمرك انتقل من '+source+' إلى وكيل البرمجة. راجعه جيدًا ثم وافق على إرسال وصف المهمة إلى GitHub.';
+  go('agent');
+};
+(function linkAllPowerTools(){
+  const items=[
+    {id:'lab',name:'مختبر البرمجة',details:()=>String($('prompt').value||'').trim()+'\nالتقنية: '+language+'\nالمهمة: '+mode},
+    {id:'commands',name:'دليل الأوامر',details:()=>String($('search').value||'').trim()||'فحص دليل أوامر ديلا وتطوير أوامر برمجية فعّالة'},
+    {id:'gamefiles',name:'مختبر ملفات الألعاب',details:()=>String($('smartQuery').value||'').trim()||'طوّر فحص ملفات APK وZIP المحلي وأصلح أخطاء التحليل بدون تحميل الملفات إلى الخادم'},
+    {id:'github',name:'مستكشف GitHub',details:()=>String($('ghQuery')?.value||'').trim()||'راجع تكامل GitHub ومستودع ديلا وتحقق من سلامة أزرار البحث'},
+    {id:'tools',name:'أدوات المطور',details:()=>String($('prompt').value||'').trim()||'حسّن أدوات المطور في تطبيق ديلا واختبرها'},
+    {id:'security',name:'مركز الأمان',details:()=> 'راجع أمان تطبيق ديلا وتحكم الصلاحيات بدون إرسال أسرار أو تعطيل الحماية'},
+  ];
+  for(const item of items){
+    const section=$(item.id);
+    if(!section)continue;
+    const btn=document.createElement('button');
+    btn.type='button';btn.textContent='🤖 حوّل طلب '+item.name+' إلى وكيل البرمجة';
+    btn.style.cssText='display:block;width:100%;margin:14px auto;padding:13px;border:1px solid #875069;border-radius:13px;background:#402638;color:#f9dce8;font-weight:700;cursor:pointer';
+    btn.onclick=()=>window.deelaRouteToolToAgent(item.name,item.details());
+    section.appendChild(btn);
+  }
+  const labBtn=document.createElement('button');
+  labBtn.type='button';labBtn.textContent='🤖 تنفيذ أمر المختبر عبر وكيل GitHub المجاني';
+  labBtn.onclick=()=>window.deelaRouteToolToAgent('مختبر البرمجة',String($('prompt').value||'').trim()+'\nالتقنية: '+language+'\nنوع المهمة: '+mode);
+  $('copyPrompt').parentNode?.appendChild(labBtn);
+  const quick=document.querySelector('#dashboard .quick');
+  if(quick){
+    const b=document.createElement('button');b.type='button';b.textContent='🤖 وكيل البرمجة العربي';
+    b.onclick=()=>go('agent');quick.appendChild(b);
+  }
+})();
 function renderCmd(){const q=$('search').value.toLowerCase();$('cmdlist').replaceChildren();cmds.filter(c=>c.join(' ').toLowerCase().includes(q)).forEach(([cmd,desc])=>{const el=document.createElement('div');el.className='cmd';const content=document.createElement('div');const code=document.createElement('code');code.textContent=cmd;const detail=document.createElement('div');detail.className='muted';detail.textContent=desc;content.append(code,detail);const btn=document.createElement('button');btn.textContent='استخدام';btn.onclick=()=>{if(cmd==='/help'||cmd==='/menu'){go('commands');toast('اختر أمرًا من القائمة');return}if(cmd==='/reset'){$('prompt').value='';$('aiOutput').textContent='';toast('تم مسح الطلب والنتيجة');return}mode=cmd;$('prompt').value=cmd+'\n';renderLangs();go('lab');$('prompt').focus()};el.append(content,btn);$('cmdlist').append(el)})} $('search').addEventListener('input',renderCmd);renderCmd();
 function renderLangs(){$('langs').replaceChildren();languages.forEach(l=>{const b=document.createElement('button');b.textContent=l;b.className=l===language?'active':'';b.onclick=()=>{language=l;renderLangs()};$('langs').append(b)});$('langinfo').textContent=`التقنية المختارة: ${language} · نوع المهمة: ${mode}`};renderLangs();
 function buildRequest(){return `/build\nنوع المهمة: ${mode}\nالتقنية: ${language}\nالمتطلبات:\n${$('prompt').value.trim()||'[اكتب وصف المشروع هنا]'}\n\nقدّم هيكل المشروع، والشيفرة الكاملة، وخطوات الإعداد والاختبار، مع شرح واضح باللغة العربية.`}
