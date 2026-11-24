@@ -6,7 +6,7 @@ const admin=createClient(projectUrl,adminKey,{auth:{persistSession:false,autoRef
 const responseHeaders={"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"};
 const answer=(data:Record<string,unknown>,status=200)=>new Response(JSON.stringify(data),{status,headers:responseHeaders});
 const allowedModel=/^[a-zA-Z0-9._-]{1,70}$/;
-const modelName=()=>{const selected=Deno.env.get("DEELA_AI_MODEL")||"gpt-5.4-mini";return allowedModel.test(selected)?selected:"gpt-5.4-mini";};
+const modelName=()=>{const selected=Deno.env.get("DEELA_AI_MODEL")||"gpt-5.6-luna";return allowedModel.test(selected)?selected:"gpt-5.6-luna";};
 
 Deno.serve(async(req:Request)=>{
   if(req.method!=="GET"&&req.method!=="POST") return answer({error:"طريقة الطلب غير مدعومة"},405);
@@ -56,8 +56,36 @@ Deno.serve(async(req:Request)=>{
     }catch(e){return answer({error:e instanceof DOMException&&e.name==="AbortError"?"استغرق الرد وقتًا طويلًا، حاول بطلب أقصر":"تعذر الاتصال بمزوّد الذكاء الاصطناعي"},504)}
     finally{clearTimeout(timer);}
     if(!provider.ok){
-      const code=provider.status;
-      return answer({error:code===401?"مفتاح OpenAI غير صالح":code===429?"الحد المالي أو معدل استخدام OpenAI API وصل إلى الحد المسموح":"تعذر توليد النتيجة عبر OpenAI (رمز "+code+")"},502);
+      const status=provider.status;
+      let reason="";
+      try {
+        const responseBody=await provider.json();
+        const errorCode=responseBody?.error?.code??responseBody?.error?.type??"";
+        reason=typeof errorCode==="string"?errorCode.slice(0,90):"";
+      } catch { /* Never expose provider error text or secrets. */ }
+      let message="";
+      if(status===429){
+        if(["credit_balance_exhausted","insufficient_quota"].includes(reason)) {
+          message="رصيد OpenAI API غير متاح أو نفد. افتح إعدادات Billing في OpenAI Platform وراجع الرصيد والفوترة. اشتراك ChatGPT منفصل.";
+        } else if(["organization_spend_limit_exceeded","project_spend_limit_exceeded"].includes(reason)) {
+          message="وصلت إلى حد الإنفاق الذي حددته للمشروع أو المؤسسة. راجع Limits في OpenAI Platform.";
+        } else if(reason==="organization_usage_limit_exceeded") {
+          message="بلغت الحد المعتمد لاستخدام API. راجع Limits في OpenAI Platform.";
+        } else if(reason==="rate_limit_exceeded") {
+          message="طلبات OpenAI كثيرة في وقت قصير. انتظر قليلًا ثم أعد المحاولة.";
+        } else {
+          message="رفض OpenAI الطلب برمز 429. راجع رصيد API وحدود الإنفاق وسرعة الطلبات في OpenAI Platform.";
+        }
+      } else if(status===401||status===403) {
+        message="مفتاح OpenAI API غير صالح أو صلاحياته لا تسمح باستخدام الخدمة.";
+      } else if(status===404) {
+        message="النموذج غير متاح لمشروعك. راجع DEELA_AI_MODEL أو صلاحيات النموذج.";
+      } else if(status===400) {
+        message="رفض OpenAI إعداد النموذج أو صيغة الطلب؛ راجع إعدادات الخادم.";
+      } else {
+        message="تعذر تنفيذ طلب OpenAI API (رمز "+status+").";
+      }
+      return answer({error:message,provider_status:status,provider_code:reason||"unknown"},status===429?429:502);
     }
     const result=await provider.json();
     const output=String(result.output_text||((result.output||[]).flatMap((x:any)=>(x.content||[]).filter((c:any)=>c.type==="output_text").map((c:any)=>c.text)).join("\\n"))||"").trim();
