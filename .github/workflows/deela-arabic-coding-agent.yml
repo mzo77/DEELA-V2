@@ -1,10 +1,6 @@
 name: DEELA Arabic Coding Agent (Free Preview)
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/deela-release-request/arabic-agent-smoke-test.txt'
   issues:
     types: [opened]
   workflow_dispatch:
@@ -26,7 +22,7 @@ concurrency:
 jobs:
   create-review:
     if: >-
-      ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'push' ||
+      ${{ github.event_name == 'workflow_dispatch' ||
           (github.event.issue.user.login == github.repository_owner &&
           startsWith(github.event.issue.title, '[DEELA AGENT]')) }}
     runs-on: ubuntu-latest
@@ -55,8 +51,6 @@ jobs:
               if not title.startswith("[DEELA AGENT]"):sys.exit("Not an agent task")
               # Preserve Arabic natural language; reject empty or excessive requests.
               task=title.replace("[DEELA AGENT]","",1).strip()+"\n"+text
-          elif os.environ["GITHUB_EVENT_NAME"] == "push":
-              task="أنشئ ملف docs/DEELA_ARABIC_AGENT_TEST.md بعنوان نجاح اختبار الوكيل العربي، واكتب فيه أن العمل مقتصر على فرع مراجعة دون نشر APK. لا تغير أي ملف آخر."
           else:
               task=str(e.get("inputs",{}).get("task","")).strip()
           if not 10 <= len(task) <= 6000:sys.exit("Task must have 10–6000 characters")
