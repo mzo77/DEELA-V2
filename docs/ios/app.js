@@ -59,7 +59,7 @@ async function loadRequests(){
  }catch(e){flash(e.message)}
 }
 function el(tag,className,text){const x=document.createElement(tag);if(className)x.className=className;if(text!==undefined)x.textContent=String(text);return x}
-// Display-only catalogue: original Feather source metadata, no IPA download handlers.
+// Display-only catalogue: Accretion metadata from a protected DEELA iOS API; never expose IPA URLs or signing keys.
 function card(item){
  const x=el("article","app"),head=el("div","apphead"),icon=safeURL(item.icon_url);
  if(icon){
@@ -142,14 +142,14 @@ function renderCatalog(){
  ));
  const list=$("myAppsGrid");list.replaceChildren();
  if(!filtered.length){
-  list.append(el("div","empty",fetching?"جارٍ جلب قوائم برامج الآيفون من مصادر Feather...":"لم تتوفر نتائج مطابقة الآن؛ جرّب تحديث القائمة أو تغيير البحث."));
+  list.append(el("div","empty",fetching?"جارٍ جلب مكتبة Accretion الكبيرة...":"لم تتوفر نتائج مطابقة الآن؛ جرّب تحديث القائمة أو تغيير البحث."));
  }else{
   const fragment=document.createDocumentFragment();
   filtered.slice(0,renderLimit).forEach(item=>fragment.append(card(item)));
   list.append(fragment);
  }
  show("moreApps",filtered.length>renderLimit);
- $("catalogSummary").textContent=allApps.length+" برنامج للعرض • "+(fetching?"جاري تحديث المصادر":"التحميل مقفل");
+ $("catalogSummary").textContent=allApps.length.toLocaleString("ar-SA")+" تطبيق في المكتبة • "+(fetching?"جاري التحديث":"تصفح فقط • التثبيت يحتاج توقيعًا");
 }
 async function loadSources(){
  if(sourcesLoaded)return allSources;
@@ -247,6 +247,10 @@ async function controlCall(path,body=null) {
 }
 async function loadOwnerRequests(){
  if(!current?.owner)return;
+ const stats=$("ownerCatalogStats");
+ if(stats)call("/api/catalog-stats").then(data=>{stats.textContent=
+  (data.apps||0).toLocaleString("ar-SA")+" تطبيقًا • "+(data.sources||0)+" مصدرًا • آخر تحديث: "+(data.updated||"غير محدد");
+ }).catch(()=>{stats.textContent="تعذر قراءة إحصاءات المكتبة الآن."});
  const target=$("ownerRequests");target.replaceChildren(el("div","empty","جارٍ قراءة طلبات الآيفون..."));
  try{
   const data=await controlCall("/api/owner/dashboard");
