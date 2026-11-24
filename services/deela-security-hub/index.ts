@@ -58,6 +58,47 @@ Deno.serve(async(req:Request)=>{
       return reply({ok:false,available:false,reason:"تعذر الاتصال بخدمة GitHub Actions",actions_url:"https://github.com/mzo77/DEELA-V2/actions/workflows/deela-security-audit.yml"},502);
     }
   }
+  if(req.method==="GET"&&path==="/integrations"){
+    // Read-only upstream CLI checks on temporary GitHub CI runners.
+    // A successful CI job is NOT an always-on hosted agent.
+    const workflowUrl="https://api.github.com/repos/mzo77/DEELA-V2/actions/workflows/deela-engine-probes.yml/runs?per_page=1";
+    const ghHeaders={"Accept":"application/vnd.github+json","User-Agent":"DEELA-owner-engine-status/1.0","X-GitHub-Api-Version":"2022-11-28"};
+    try {
+      const response=await fetch(workflowUrl,{headers:ghHeaders,signal:AbortSignal.timeout(12000)});
+      if(!response.ok)return reply({ok:false,available:false,error:"تعذر جلب فحوص تشغيل المحركات من GitHub",http_status:response.status},502);
+      const data=await response.json();
+      const run=Array.isArray(data.workflow_runs)?data.workflow_runs[0]:null;
+      if(!run)return reply({ok:true,available:false,engines:engines.map(e=>({...e,ci_status:"not_tested",runtime:"not_deployed"})),
+        note:"لا يوجد فحص تشغيل لمحركات GitHub Actions حتى الآن."});
+      const runId=Number(run.id);
+      if(!Number.isSafeInteger(runId)||runId<=0)return error("معرف فحص GitHub غير صالح",502);
+      const jobsResp=await fetch("https://api.github.com/repos/mzo77/DEELA-V2/actions/runs/"+runId+"/jobs?per_page=30",
+        {headers:ghHeaders,signal:AbortSignal.timeout(12000)});
+      if(!jobsResp.ok)return reply({ok:false,available:false,error:"تعذر جلب تفاصيل تشغيل المحركات",http_status:jobsResp.status},502);
+      const jobsData=await jobsResp.json();
+      const jobs=Array.isArray(jobsData.jobs)?jobsData.jobs:[];
+      const namePrefixes:Record<string,string>={
+        "pentest-swarm":"Pentest Swarm",
+        "hexstrike":"HexStrike",
+        "pentestgpt":"PentestGPT"
+      };
+      const engineStatuses=engines.map(e=>{
+        const job=jobs.find((j:Record<string,unknown>)=>String(j.name||"").startsWith(namePrefixes[e.id]))||null;
+        const jobStatus=String(job?.status||"not_started");
+        const conclusion=typeof job?.conclusion==="string"?job.conclusion:null;
+        return {...e,ci_status:jobStatus,ci_conclusion:conclusion,
+          ci_verified:jobStatus==="completed"&&conclusion==="success",
+          runtime:"not_deployed"};
+      });
+      return reply({ok:true,available:true,checked_at:new Date().toISOString(),
+        run:{id:runId,status:String(run.status||"unknown"),conclusion:run.conclusion||null,
+          url:"https://github.com/mzo77/DEELA-V2/actions/runs/"+runId},
+        engines:engineStatuses,host_runtime:"not_deployed",scope:"offline-local-health-only",
+        note:"الاختبارات تنفذ في خوادم GitHub المؤقتة ولا تعني أن المحركات تعمل باستمرار داخل DEELA. لم يتم فحص حسابات خارجية."});
+    }catch{
+      return reply({ok:false,available:false,error:"تعذر التحقق من فحوص GitHub حاليًا"},502);
+    }
+  }
   if(req.method==="GET"&&(path==="/engines"||path==="/status"||path==="/"))
     return reply({ok:true,mode:"simulation_only",engines,lab:{ready:true,kind:"synthetic_auth_simulation"},warning:"المشاريع الثلاثة غير مثبّتة أو متصلة بخادم حي. لا توجد أدوات تخمين كلمات المرور أو تجاوز 2FA."});
   if(req.method==="POST"&&path==="/lab/simulate"){
