@@ -42,6 +42,32 @@ jobs:
           cd upstream
           uv sync --no-dev
           uv run pentestgpt-legacy --help
+      - name: Compile upstream Python source where present
+        run: |
+          set -euo pipefail
+          cd upstream
+          python3 - <<'PY'
+          import ast, pathlib, sys
+          files = [p for p in pathlib.Path('.').rglob('*.py') if not any(x in p.parts for x in ('.git', '.venv', 'venv', 'node_modules'))]
+          failures = []
+          for p in files:
+              try:
+                  ast.parse(p.read_text(encoding='utf-8-sig'), filename=str(p))
+              except (SyntaxError, UnicodeError) as exc:
+                  failures.append(f'{p}: {exc}')
+          print(f'Parsed {len(files)} real upstream Python files')
+          if failures:
+              print('\\n'.join(failures[:20]))
+              sys.exit(1)
+          PY
+      - name: Invoke PentestGPT installed version and available models
+        if: matrix.engine == 'pentestgpt'
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.local/bin:$PATH"
+          cd upstream
+          uv run pentestgpt-legacy --version
+          uv run pentestgpt-legacy --list-models
       - name: Report truthful scope
         run: |
           echo "Real upstream checkout checked. This is NOT a persistent running AI model."
