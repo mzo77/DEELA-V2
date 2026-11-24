@@ -310,6 +310,29 @@ private class OwnerToolBridge(
         web.post { onSave(filename, content) }
     }
 
+    /**
+     * Opens only the official Snapchat account portal or security help.
+     * Session management and My Data selection happen on Snapchat's own website;
+     * no Snapchat password, OTP, recovery code or session token enters DEELA.
+     */
+    @JavascriptInterface
+    fun openSnapchatSecurityPage(kind: String) {
+        val target = when (kind) {
+            "account", "sessions", "mydata" -> "https://accounts.snapchat.com/"
+            else -> return
+        }
+        val uri = Uri.parse(target)
+        web.post {
+            runCatching {
+                context.startActivity(Intent(Intent.ACTION_VIEW, uri).apply {
+                    addCategory(Intent.CATEGORY_BROWSABLE)
+                })
+            }.onFailure {
+                Toast.makeText(context, "تعذر فتح بوابة Snapchat الرسمية في المتصفح", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     @JavascriptInterface
     fun openGithub(url: String) {
         val uri = runCatching { Uri.parse(url) }.getOrNull() ?: return
