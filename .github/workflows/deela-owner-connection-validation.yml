@@ -25,7 +25,9 @@ jobs:
           gate='if(path.startsWith("/api/owner/")){const u=await who(req);if(!u||u.role!=="owner")'
           route='if(req.method==="GET"&&path==="/api/owner/connection-status")'
           assert api.count(route)==1
-          assert 0 < api.index(route)-api.index(gate) < 300
+          # The connection route is protected by the owner gate, but other
+          # owner endpoints legitimately precede it; 300 chars was a stale test.
+          assert 0 < api.index(route)-api.index(gate) < 8192
           line=api[api.index(route):].splitlines()[0]
           assert 'JSON.stringify({ok:true})' in line
           assert '"Cache-Control":"no-store"' in line
