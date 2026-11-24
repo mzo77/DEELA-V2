@@ -6,6 +6,8 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.speech.RecognizerIntent
+import android.app.Activity
 import android.webkit.JavascriptInterface
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
@@ -58,6 +60,13 @@ fun DeelaOwnerToolkit(token: String) {
         filePicker?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(result.resultCode, result.data))
         filePicker = null
     }
+    val speechLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val recognized = if (result.resultCode == Activity.RESULT_OK)
+            result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull() else null
+        val callback = if (recognized.isNullOrBlank()) "deelaVoiceError" else "deelaVoiceText"
+        val safe = recognized?.take(1400) ?: "لم يتم التعرف على الكلام؛ تأكد من تفعيل خدمات الإملاء في جهازك."
+        web.evaluateJavascript("window.$callback(${JSONObject.quote(safe)})", null)
+    }
     val saveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
         if (uri != null) {
             val saved = pendingText
@@ -95,7 +104,22 @@ fun DeelaOwnerToolkit(token: String) {
             web.settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             web.settings.javaScriptCanOpenWindowsAutomatically = false
             web.addJavascriptInterface(
-                OwnerToolBridge(context, web, scope, token, onSave = { filename, content ->
+                OwnerToolBridge(context, web, scope, token, onSpeech = {
+                    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                        putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ar-SA")
+                        putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "ar-SA")
+                        putExtra(RecognizerIntent.EXTRA_PROMPT, "تكلم بالعربي، قل وش تبي ديلا يسوي")
+                        putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+                    }
+                    runCatching { speechLauncher.launch(intent) }
+                        .onFailure {
+                            web.evaluateJavascript(
+                                "window.deelaVoiceError(${JSONObject.quote("لا توجد خدمة تعرف على الكلام في الجهاز. تقدر تكتب الأمر أو تفعّل إملاء Google.")})",
+                                null,
+                            )
+                        }
+                }, onSave = { filename, content ->
                     pendingText = content
                     val safeName = filename.take(70).map { ch ->
                         if (ch.isLetterOrDigit() || ch == '.' || ch == '-' || ch == '_') ch else '_'
@@ -150,6 +174,7 @@ private class OwnerToolBridge(
     private val web: WebView,
     private val scope: CoroutineScope,
     private val token: String,
+    private val onSpeech: () -> Unit,
     private val onSave: (String, String) -> Unit,
 ) {
     private val client = OkHttpClient.Builder()
@@ -201,6 +226,35 @@ private class OwnerToolBridge(
                 }
             }.getOrElse { JSONObject().put("error", it.message ?: "تعذر الاتصال بخادم الذكاء الاصطناعي") }
             deliver("deelaOwnerAIResult", response)
+        }
+    }
+
+    @JavascriptInterface
+    fun requestSpeech() {
+        web.post { onSpeech() }
+    }
+
+    @JavascriptInterface
+    fun openAgentIssue(prompt: String) {
+        val task = prompt.trim()
+        if (task.length !in 10..1400) return
+        // Owner explicitly confirms in GitHub before any workflow can execute.
+        val title = "[DEELA AGENT] " + task.take(55).replace('\\n', ' ')
+        val body = "## طلب المالك باللغة العربية\\n\\n" + task +
+            "\\n\\n## ضوابط التنفيذ\\n- العمل على نسخة التطوير فقط.\\n- يمنع تعديل أسرار المشروع أو نشر APK للمشتركين.\\n- اعرض التغييرات ونتيجة الاختبارات للمراجعة."
+        val url = Uri.Builder()
+            .scheme("https")
+            .authority("github.com")
+            .appendPath("mzo77")
+            .appendPath("DEELA-V2")
+            .appendPath("issues")
+            .appendPath("new")
+            .appendQueryParameter("title", title)
+            .appendQueryParameter("body", body)
+            .build()
+        web.post {
+            runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, url)) }
+                .onFailure { Toast.makeText(context, "تعذر فتح GitHub. تحقق من المتصفح.", Toast.LENGTH_LONG).show() }
         }
     }
 
