@@ -163,7 +163,7 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
             ) {
-                listOf("الرئيسية", "الطلبات", "المشتركون", "التحديثات", "القوة الغاشمة ⚡", "مركز الذكاء 🤖", "الرسائل", "السجل").forEach { tab ->
+                listOf("الرئيسية", "الطلبات", "المشتركون", "التحديثات", "القوة الغاشمة ⚡", "مركز الذكاء 🤖", "مختبر الأمان 🛡️", "الرسائل", "السجل").forEach { tab ->
                     FilterChip(
                         selected = page == tab,
                         onClick = { page = tab },
@@ -354,6 +354,9 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                     }
                     "مركز الذكاء 🤖" -> Box(Modifier.weight(1f)) {
                         DeelaPentagiScreen(session.token, openOriginalToolkit = { page = "القوة الغاشمة ⚡" })
+                    }
+                    "مختبر الأمان 🛡️" -> Box(Modifier.weight(1f)) {
+                        DeelaSecurityLabScreen(session.token, openAiCenter = { page = "مركز الذكاء 🤖" })
                     }
                     "الرسائل" -> Box(Modifier.weight(1f)) {
                         DeelaOwnerEmailScreen(session.token, current.members.associate { it.id to it.email }, current.email)
