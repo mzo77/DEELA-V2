@@ -9,13 +9,20 @@
 .member-email{font-size:15px;font-weight:800;overflow-wrap:anywhere;word-break:break-word;margin:4px 0 12px;line-height:1.6}.member-info{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;color:#cbb6c3}.member-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px}.member-actions button{min-width:0;background:#653a58;border:1px solid #865973;padding:10px 7px;font-size:12px;border-radius:10px;line-height:1.6}.member-actions button.trial-action{background:#40334d;border-color:#76638a}.member-actions button.danger-action{background:#492632;border-color:#845163}.member-actions button:disabled{opacity:.4}.member-empty{grid-column:1/-1;padding:26px 15px;border:1px dashed #684355;border-radius:14px;text-align:center;color:#cbb2c0;line-height:1.8}#memberSummary{margin:10px 0 0;font-size:13px}body{overflow-x:hidden}
 @media(max-width:640px){main{width:100%;padding:10px;max-width:100%}.member-cards{grid-template-columns:1fr}.member-platforms{gap:5px}.platform-tab{font-size:12px;padding:11px 3px}.member-toolbar{grid-template-columns:1fr 122px;gap:8px}.member-card{padding:15px}.card{padding:14px}.invite-row{gap:8px}.invite-row button{flex:1}.invite-row .search-label{flex-basis:100%}}
 @media(max-width:350px){.member-toolbar{grid-template-columns:1fr}.member-platforms{grid-template-columns:1fr 1fr}.member-platforms .platform-tab:last-child{grid-column:1/-1}}
+.owner-catalog-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:10px;margin:14px 0}
+.owner-app-card{background:#211823;border:1px solid #6b3f58;border-radius:14px;padding:13px;min-width:0}
+.owner-app-card.hidden-app{border-style:dashed;opacity:.8}.owner-app-card h3{font-size:15px;margin:0 0 5px;overflow-wrap:anywhere}
+.owner-app-card p{margin:0 0 10px;color:#c3adbb;font-size:12px}
+.owner-app-buttons{display:flex;gap:6px;flex-wrap:wrap}.owner-app-buttons button{font-size:12px;padding:9px}
+#catalogRefresh,#catalogMore{align-self:end;min-height:44px;margin-bottom:1px}
+@media(max-width:550px){#catalogPlatformTabs{grid-template-columns:1fr 1fr}#catalogApps{grid-template-columns:1fr}#catalogRefresh{width:100%}}
 </style></head><body><header><strong>✦ تطبيقات ديلا <span style="color:#ff234f">👑</span></strong><button id="logout" class="secondary hidden">تسجيل الخروج</button></header><main><div id="msg"></div>
 <section id="login" class="card login"><h1>تسجيل دخول المالك</h1><p class="muted">بعد تسجيل الدخول يمكنك اختيار اسم المستخدم وتغيير كلمة المرور.</p><form id="lf">
 <label>اسم المستخدم أو البريد الإلكتروني<input name="username" id="loginName" autocomplete="username" required></label>
 <label>كلمة المرور</label><div class="row"><input id="loginPass" name="password" type="password" autocomplete="current-password" required><button id="eye" class="secondary" type="button" aria-label="إظهار كلمة المرور">👁</button></div>
 <label><input id="remember" type="checkbox" style="width:20px"> تذكر اسم المستخدم</label>
 <p><button id="loginBtn" type="submit">دخول لوحة المالك</button></p><small>حفظ كلمة المرور وتعبئتها تلقائيًا يتم عبر مدير كلمات المرور في هاتفك، وليس في تخزين الموقع.</small></form></section>
-<section id="app" class="hidden"><h1>مركز تحكم المالك</h1><nav><button class="active" data-tab="home">الرئيسية</button><button data-tab="members">الاشتراكات</button><button data-tab="power">قوة غاشمة ⚡</button><button data-tab="account">الحساب والأمان</button></nav>
+<section id="app" class="hidden"><h1>مركز تحكم المالك</h1><nav><button class="active" data-tab="home">الرئيسية</button><button data-tab="members">الاشتراكات</button><button data-tab="apps">إدارة التطبيقات</button><button data-tab="power">قوة غاشمة ⚡</button><button data-tab="account">الحساب والأمان</button></nav>
 <div id="home" class="tab"><div class="grid"><div class="card"><small>مكتبة تطبيقات الآيفون</small><p class="metric" id="iosLibraryCount">—</p><p class="muted">Accretion · مكتبة مستقلة عن أندرويد</p><a href="https://mzo77.github.io/DEELA-V2/ios/" target="_blank" rel="noopener noreferrer">فتح متجر الآيفون والمكتبة</a></div><div class="card"><small>إجمالي المستخدمين</small><p class="metric" id="total">—</p></div><div class="card"><small>اشتراكات فعالة</small><p class="metric" id="active">—</p></div><div class="card"><small>اشتراكات موقوفة</small><p class="metric" id="suspended">—</p></div></div><div class="note">المالك يتحكم بالتجربة المجانية لمدة 24 ساعة وتجديد الاشتراكات وإلغائها. لا يمكن للمشترك دخول المتجر باشتراك منتهٍ.</div><div class="card"><h2>آخر العمليات</h2><div id="logs"></div></div></div>
 <div id="members" class="tab hidden">
  <section class="card">
@@ -38,12 +45,31 @@
   <div id="memberCards" class="member-cards" aria-live="polite"></div>
  </section>
 </div>
+<div id="apps" class="tab hidden">
+ <div class="card">
+  <h2>إدارة تطبيقات المتجر</h2>
+  <p class="muted">لوحة واحدة للمالك. إخفاء تطبيقات أندرويد مستقل عن الآيفون؛ والإخفاء لا يحذف الملفات.</p>
+  <div class="member-platforms" id="catalogPlatformTabs">
+   <button type="button" class="platform-tab active" data-catalog-platform="android">▣ تطبيقات أندرويد</button>
+   <button type="button" class="platform-tab" data-catalog-platform="ios">◉ تطبيقات الآيفون</button>
+  </div>
+  <div class="member-toolbar">
+   <label class="search-label" for="catalogSearch">بحث باسم التطبيق أو المعرف
+    <input id="catalogSearch" type="search" autocomplete="off" placeholder="ابحث في التطبيقات...">
+   </label>
+   <button type="button" id="catalogRefresh" class="secondary">تحديث القائمة</button>
+  </div>
+  <p id="catalogStatus" class="muted" role="status">اختر النظام لعرض التطبيقات.</p>
+  <div id="catalogApps" class="owner-catalog-grid"></div>
+  <button type="button" id="catalogMore" class="secondary hidden">عرض المزيد</button>
+ </div>
+</div>
 <div id="power" class="tab hidden"><div class="card"><h2>⚡ قوة غاشمة — خاص بالمالك</h2><p class="muted">نقلت تنظيم أدوات مركز الأوامر من مشروعك الأول. الوصول للروابط يعمل الآن؛ تشغيل أدوات المختبر المحلية كاملة يحتاج نقلها في مرحلة مستقلة.</p><div class="grid"><div class="card"><h3>⌘ دليل الأوامر</h3><a href="https://github.com/mzo77/DEELA-APPS/blob/main/app/src/main/assets/index.html" target="_blank" rel="noopener">فتح الكود القديم</a></div><div class="card"><h3>⌨ مختبر البرمجة</h3><a href="https://github.com/mzo77/DEELA-APPS" target="_blank" rel="noopener">المشروع الأول</a></div><div class="card"><h3>⚙ أدوات المطور</h3><a href="https://github.com/mzo77/DEELA-V2/actions" target="_blank" rel="noopener">بناء تطبيقات ديلا</a></div><div class="card"><h3>🎮 مختبر ملفات الألعاب</h3><a href="https://github.com/mzo77/DEELA-APPS" target="_blank" rel="noopener">المصدر الأصلي</a></div><div class="card"><h3>◇ مركز الأمان</h3><a href="https://supabase.com/dashboard/project/rxlynynjetajtsqlhkrq" target="_blank" rel="noopener">إعدادات الخادم</a></div></div></div></div>
 <div id="account" class="tab hidden"><div class="card"><h2>اسم المستخدم الخاص بك</h2><form id="uf"><label>اختر اسم المستخدم<input id="newUsername" autocomplete="off" minlength="3" maxlength="32" pattern="[A-Za-z][A-Za-z0-9_.-]{2,31}" placeholder="Mzo" required></label><button>حفظ اسم المستخدم</button></form></div>
 <div class="card"><h2>تغيير كلمة المرور</h2><form id="pf"><label>كلمة المرور الحالية<input type="password" autocomplete="current-password" id="current" required></label><label>كلمة مرور جديدة (12 رمزًا على الأقل)<input type="password" autocomplete="new-password" id="next" minlength="12" required></label><button>تغيير كلمة المرور</button></form></div></div></section></main>
 <script>
 (function(){'use strict';const $=id=>document.getElementById(id),base='https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-control';let token=sessionStorage.getItem('deela-token')||'',membersCache=[],platformFilter='ios',memberBusy=false;
-function say(s){$('msg').textContent=s;$('msg').style.display='block'}function go(tab){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('hidden',x.id!==tab));document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));}
+function say(s){$('msg').textContent=s;$('msg').style.display='block'}function go(tab){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('hidden',x.id!==tab));document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));if(tab==='apps'&&token)loadOwnerApps(true).catch(e=>say(e.message));}
 async function call(path,method,body){let r=await fetch(base+path,{method:method||'GET',cache:'no-store',headers:{'Content-Type':'application/json',...(token?{'Authorization':'Bearer '+token}:{})},body:body?JSON.stringify(body):undefined}),j=await r.json();if(!r.ok)throw Error(j.error||'تعذرت العملية');return j}
 function authed(){ $('login').classList.add('hidden');$('app').classList.remove('hidden');$('logout').classList.remove('hidden')}
 function out(){token='';sessionStorage.removeItem('deela-token');$('app').classList.add('hidden');$('login').classList.remove('hidden');$('logout').classList.add('hidden');$('loginPass').value=''}
@@ -122,6 +148,84 @@ async function act(m,action){
  }catch(e){say(e.message)}
  finally{memberBusy=false;renderMembers()}
 }
+
+let appPlatform='android',appOffset=0,appCache=[],appHasMore=false,appBusy=false;
+async function appApi(path,method='GET',payload=null){
+ const baseUrl=appPlatform==='ios'?'https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-ios-web':base;
+ const res=await fetch(baseUrl+path,{method,cache:'no-store',headers:{
+  'Authorization':'Bearer '+token,...(payload?{'Content-Type':'application/json'}:{})
+ },body:payload?JSON.stringify(payload):undefined});
+ let result={};try{result=await res.json()}catch{}
+ if(!res.ok)throw Error(result.error||'تعذر الوصول إلى قائمة التطبيقات');
+ return result;
+}
+function renderOwnerApps(){
+ const box=$('catalogApps');box.replaceChildren();
+ const frag=document.createDocumentFragment();
+ for(const app of appCache){
+  const card=element('article','owner-app-card'+(app.is_hidden?' hidden-app':''));
+  card.append(element('h3','',app.title||'تطبيق'));
+  card.append(element('p','',String(app.category||'')+' · '+(app.is_hidden?'مخفي عن المشتركين':'ظاهر للمشتركين')));
+  const buttons=element('div','owner-app-buttons');
+  const toggle=element('button',app.is_hidden?'secondary':'',app.is_hidden?'إظهار':'إخفاء');
+  toggle.type='button';toggle.disabled=appBusy;
+  toggle.onclick=async()=>{
+   if(appBusy)return;
+   appBusy=true;toggle.disabled=true;
+   try{
+    const payload={catalog_key:app.catalog_key,is_hidden:!app.is_hidden};
+    if(appPlatform==='ios')payload.is_featured=Boolean(app.is_featured);
+    await appApi(appPlatform==='ios'?'/api/owner/catalog-rules':'/api/owner/android-catalog','POST',payload);
+    app.is_hidden=!app.is_hidden;
+    renderOwnerApps();say('تم تحديث التطبيق: '+app.title);
+   }catch(e){say(e.message);toggle.disabled=false}
+   finally{appBusy=false}
+  };
+  buttons.append(toggle);
+  if(appPlatform==='ios'){
+   const feature=element('button','secondary',app.is_featured?'إلغاء التمييز':'تمييز');
+   feature.type='button';
+   feature.onclick=async()=>{
+    if(appBusy)return;appBusy=true;feature.disabled=true;
+    try{
+      await appApi('/api/owner/catalog-rules','POST',{catalog_key:app.catalog_key,is_hidden:Boolean(app.is_hidden),is_featured:!app.is_featured});
+      app.is_featured=!app.is_featured;renderOwnerApps();say('تم تعديل تمييز '+app.title);
+    }catch(e){say(e.message);feature.disabled=false}finally{appBusy=false}
+   };
+   buttons.append(feature);
+  }
+  card.append(buttons);frag.append(card);
+ }
+ box.append(frag);
+ if(!appCache.length)box.append(element('div','member-empty','لا توجد تطبيقات مطابقة.'));
+ $('catalogMore').classList.toggle('hidden',!appHasMore);
+ $('catalogStatus').textContent=appCache.length.toLocaleString('ar-SA')+' تطبيق ظاهر في الإدارة · '+(appPlatform==='ios'?'آيفون':'أندرويد');
+}
+async function loadOwnerApps(reset=false){
+ if(appBusy)return;
+ appBusy=true;
+ if(reset){appOffset=0;appCache=[];$('catalogApps').replaceChildren()}
+ $('catalogStatus').textContent='جارٍ جلب تطبيقات '+(appPlatform==='ios'?'الآيفون':'أندرويد')+'...';
+ try{
+  const query=$('catalogSearch').value.trim();
+  const url=appPlatform==='ios'?'/api/source?id=0&page='+(Math.floor(appOffset/40)+1)+'&limit=40&q='+encodeURIComponent(query):
+   '/api/owner/android-catalog?offset='+appOffset+'&limit=40&q='+encodeURIComponent(query);
+  const r=await appApi(url);
+  appCache=reset?(r.apps||[]):appCache.concat(r.apps||[]);
+  appHasMore=Boolean(r.has_more);renderOwnerApps();
+ }catch(e){$('catalogStatus').textContent=e.message;throw e}
+ finally{appBusy=false}
+}
+document.querySelectorAll('[data-catalog-platform]').forEach(b=>b.onclick=()=>{
+ appPlatform=b.dataset.catalogPlatform;appOffset=0;appCache=[];$('catalogSearch').value='';
+ document.querySelectorAll('[data-catalog-platform]').forEach(x=>x.classList.toggle('active',x===b));
+ loadOwnerApps(true).catch(e=>say(e.message));
+});
+let catalogSearchDebounce=null;
+$('catalogSearch').oninput=()=>{clearTimeout(catalogSearchDebounce);catalogSearchDebounce=setTimeout(()=>loadOwnerApps(true).catch(e=>say(e.message)),300)};
+$('catalogRefresh').onclick=()=>loadOwnerApps(true).catch(e=>say(e.message));
+$('catalogMore').onclick=()=>{appOffset+=40;loadOwnerApps().catch(e=>say(e.message))};
+
 $('lf').onsubmit=async e=>{e.preventDefault();const b=$('loginBtn');b.disabled=true;try{const name=$('loginName').value.trim(),r=await call('/api/v1/auth/login','POST',{email:name,password:$('loginPass').value,platform:'android'});token=r.access_token;sessionStorage.setItem('deela-token',token);await load();if($('remember').checked)localStorage.setItem('deela-username',name);else localStorage.removeItem('deela-username');say('تم الدخول بحساب المالك')}catch(x){out();say(x.message)}finally{b.disabled=false}};
 $('eye').onclick=()=>{const p=$('loginPass');p.type=p.type==='password'?'text':'password';$('eye').setAttribute('aria-label',p.type==='text'?'إخفاء كلمة المرور':'إظهار كلمة المرور')};
 $('logout').onclick=out;document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>go(b.dataset.tab));
