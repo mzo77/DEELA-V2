@@ -39,7 +39,7 @@ Deno.serve(async(req:Request)=>{
   const path=new URL(req.url).pathname.replace(/^.*?\/deela-security-hub/,"")||"/";
   if(req.method==="GET"&&path==="/audit/latest"){
     // GitHub Actions static source audit on DEELA's own public repository; no user-supplied URLs.
-    const url="https://api.github.com/repos/mzo77/DEELA-V2/actions/workflows/deela-security-audit.yml/runs?per_page=3&branch=feature/deela-pentagi-0910";
+    const url="https://api.github.com/repos/mzo77/DEELA-V2/actions/workflows/deela-security-audit.yml/runs?per_page=3&branch=feature/deela-owner-official-0911";
     try{
       const response=await fetch(url,{
         signal:AbortSignal.timeout(10000),
