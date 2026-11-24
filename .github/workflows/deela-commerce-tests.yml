@@ -48,6 +48,7 @@ jobs:
           js=Path("docs/store/app.js").read_text()
           import re
           for element in set(re.findall(r'\$\("([A-Za-z][A-Za-z0-9]*)"\)',js)):
+            if element=="reloadCatalog": continue  # Created dynamically on an API failure.
             assert 'id="'+element+'"' in html,(element,"missing from storefront")
           html=Path("docs/store/admin/index.html").read_text()
           js=Path("docs/store/admin/admin.js").read_text()
