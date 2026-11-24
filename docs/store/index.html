@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c1629">
+<meta name="description" content="متجر DEELA الرسمي للاشتراكات الرقمية وتطبيقات الآيفون والأندرويد، مع حسابك وطلباتك وإدارة اشتراكاتك في مكان واحد.">
+<meta name="robots" content="noindex,nofollow">
+<title>DEELA | متجر الاشتراكات الرقمية</title>
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="./style.css">
+<script defer src="./app.js"></script>
+</head>
+<body>
+<div class="announcement"><span class="announcement-star">✦</span> <span id="announcement">مرحبًا بك في متجر DEELA</span> <span class="announcement-star">✦</span></div>
+<header class="site-header">
+ <div class="header-inner">
+  <a class="brand" href="./" aria-label="DEELA الرئيسية"><span class="brand-mark">D</span><span class="brand-copy"><strong>DEELA</strong><small>DIGITAL STORE</small></span></a>
+  <div class="header-search"><span class="search-symbol">⌕</span><input id="headerSearch" type="search" placeholder="ابحث عن اشتراك أو خدمة..." aria-label="البحث في متجر ديلا"></div>
+  <div class="header-tools">
+   <button class="header-action" type="button" id="accountButton" aria-label="حسابي"><span class="action-icon">♙</span><span class="header-caption">حسابي</span></button>
+   <button class="header-action" type="button" id="ordersButton" aria-label="طلباتي"><span class="action-icon">▤</span><span class="header-caption">طلباتي</span></button>
+   <button class="header-action cart-trigger" type="button" id="cartButton" aria-label="سلة التسوق"><span class="action-icon">▣</span><span class="count-dot" id="cartBadge">0</span><span class="header-caption">السلة</span></button>
+  </div>
+ </div>
+ <nav class="catalog-nav" aria-label="التصنيفات">
+  <div class="nav-inner">
+   <button class="nav-link active" type="button" data-cat="all">الرئيسية</button>
+   <button class="nav-link" type="button" data-cat="ios">اشتراكات الآيفون</button>
+   <button class="nav-link" type="button" data-cat="android">اشتراكات الأندرويد</button>
+   <button class="nav-link" type="button" data-cat="both">الباقات الرقمية</button>
+   <button class="nav-link" type="button" id="navOffers">العروض</button>
+  </div>
+ </nav>
+</header>
+
+<main>
+<section id="homeView" data-view="home">
+ <div class="home-width">
+  <div class="hero">
+   <div class="hero-copy">
+    <span class="hero-label"><span class="live-dot"></span> DEELA DIGITAL EXPERIENCE</span>
+    <h1 id="heroTitle">عالم ديلا الرقمي <em>يبدأ من هنا</em></h1>
+    <p id="heroDescription">اشتراكات رقمية وتطبيقات منتقاة في مكان واحد، بإدارة عربية سهلة.</p>
+    <div class="hero-buttons"><a class="btn primary" href="#products">تسوق الاشتراكات <span>←</span></a><button type="button" class="btn ghost" id="heroHow">كيف يعمل المتجر؟</button></div>
+    <div class="hero-micro"><span>✓ إدارة عربية</span><span>✓ متابعة الطلبات</span><span>✓ لوحة مستخدم واحدة</span></div>
+   </div>
+   <div class="hero-art" aria-hidden="true">
+    <div class="glow-circle"></div><div class="hero-device">
+     <div class="device-notch"></div>
+     <div class="device-title"><span class="tiny-d">D</span><strong>DEELA</strong><small>YOUR DIGITAL SPACE</small></div>
+     <div class="device-app-grid"><span>◈</span><span>▤</span><span>✦</span><span>◉</span><span>♧</span><span>⬡</span></div>
+     <div class="device-banner">عضويتك، بطريقتك <span>✦</span></div>
+    </div>
+    <div class="float-bubble bubble-one">✦ <span>باقات متنوعة</span></div>
+    <div class="float-bubble bubble-two">◈ <span>DEELA STORE</span></div>
+   </div>
+  </div>
+  <div class="trust-strip"><div><span class="trust-icon">◆</span><span><strong>تجربة منظمة</strong><small>تصفح واضح وسريع</small></span></div><div><span class="trust-icon">◉</span><span><strong>حساب واحد</strong><small>طلباتي واشتراكاتي</small></span></div><div><span class="trust-icon">▣</span><span><strong>إدارة مرنة</strong><small>مدد وخيارات متعددة</small></span></div><div><span class="trust-icon">✧</span><span><strong>خدمة حقيقية</strong><small>تفعيل بعد مراجعة الطلب</small></span></div></div>
+ </div>
+ <section class="home-width section-space" id="products">
+  <div class="section-heading"><div><span class="eyebrow">OUR MEMBERSHIPS</span><h2>اشتراكات ديلا المميزة</h2><p>اختر الخطة المناسبة لجهازك وراجع تفاصيلها قبل إرسال الطلب.</p></div><span class="section-pill">متجر DEELA الرسمي</span></div>
+  <div class="category-chips" id="categoryChips"><button type="button" class="chip active" data-filter="all">الكل</button><button type="button" class="chip" data-filter="ios">آيفون</button><button type="button" class="chip" data-filter="android">أندرويد</button><button type="button" class="chip" data-filter="both">الكل والأجهزة</button></div>
+  <div id="productGrid" class="product-grid"><div class="loading-card">جارٍ تحميل المنتجات من DEELA…</div></div>
+  <p id="noProducts" class="no-results" hidden>لا توجد منتجات مطابقة. جرّب تصنيفًا آخر.</p>
+ </section>
+ <section class="home-width showcase">
+  <div class="showcase-art"><span class="showcase-orbit orbit-a"></span><span class="showcase-orbit orbit-b"></span><span class="showcase-logo">D</span><span class="showcase-spark">✧</span></div>
+  <div><span class="eyebrow">MADE FOR DEELA</span><h2>مكان واحد، لكل تفاصيل عضويتك.</h2><p>استعرض المنتجات، اختر المدة، تابع حالة الطلب، وعد لإدارة اشتراكك من حساب ديلا نفسه.</p><a class="btn primary" href="#products">استعرض الباقات ←</a></div>
+ </section>
+ <section class="home-width section-space">
+  <div class="section-heading"><div><span class="eyebrow">YOUR JOURNEY</span><h2>خطوات بسيطة وواضحة</h2></div></div>
+  <div class="steps-grid"><article><b>01</b><span>▦</span><h3>اختر العضوية</h3><p>قارن المزايا والمدة والسعر المعروض.</p></article><article><b>02</b><span>◉</span><h3>سجّل في ديلا</h3><p>استخدم حساب DEELA الحالي أو أنشئ حسابًا.</p></article><article><b>03</b><span>▤</span><h3>أرسل الطلب</h3><p>تستقبل لوحة المالك الطلب ويظهر في حسابك.</p></article><article><b>04</b><span>✦</span><h3>تابع حالته</h3><p>يتم التفعيل بعد التحقق والمراجعة، وليس تلقائيًا بالدفع.</p></article></div>
+ </section>
+ <section class="home-width section-space faq-home">
+  <div class="section-heading"><div><span class="eyebrow">HELP CENTER</span><h2>الأسئلة الشائعة</h2></div></div>
+  <div class="faq-list">
+   <details><summary>كيف أطلب اشتراكًا من متجر ديلا؟</summary><p>اختر الخطة، أضفها للسلة، وسجّل الدخول إلى حساب DEELA لإرسال الطلب.</p></details>
+   <details><summary>هل يمكنني استخدام حسابي الحالي؟</summary><p>نعم، استخدم بيانات حساب ديلا الحالية لمتابعة الطلبات.</p></details>
+   <details><summary>متى تتفعل عضويتي؟</summary><p>بعد مراجعة الطلب والتحقق من المتطلبات بواسطة المالك، وتظهر الحالة في صفحة طلباتي.</p></details>
+   <details><summary>هل يوجد دفع إلكتروني مباشر؟</summary><p>ليس بعد؛ المتجر حاليًا يستقبل الطلبات للمراجعة. لن يُطلب منك إدخال بيانات بطاقة بنكية.</p></details>
+  </div>
+ </section>
+</section>
+
+<section id="productView" data-view="product" hidden>
+ <div class="home-width">
+  <nav class="crumbs"><a href="./" data-go-home>الرئيسية</a><span>›</span><a href="./#products" data-go-home>الاشتراكات</a><span>›</span><span id="crumbTitle">المنتج</span></nav>
+  <div class="detail-layout">
+   <div class="detail-preview"><div class="product-visual large" id="detailVisual"><div class="visual-ring"></div><span class="visual-letter">D</span><small>DEELA MEMBERSHIP</small></div><div class="mini-previews"><div class="mini-selected">D</div><div>✦</div><div>◈</div></div></div>
+   <div class="detail-info"><span class="detail-category" id="detailCategory">اشتراكات</span><h1 id="detailTitle">عنوان المنتج</h1><p id="detailSubtitle">تفاصيل الاشتراك</p><div class="detail-tags"><span>✓ متابعة الطلب</span><span>✓ إدارة حساب</span></div><div class="price-block"><span class="price-caption">السعر</span><strong id="detailPrice">يحدد لاحقًا</strong><del id="detailWas" hidden></del><small>ريال سعودي · يتم تأكيد الطلب من المالك</small></div><div class="option-line"><span>مدة الاشتراك</span><strong id="detailDuration">—</strong></div><div class="option-line"><span>المنصة</span><strong id="detailPlatform">—</strong></div><div class="qty-row"><span>الكمية</span><div class="stepper"><button id="qtyMinus" type="button" aria-label="تقليل الكمية">−</button><span id="qtyValue">1</span><button id="qtyPlus" type="button" aria-label="زيادة الكمية">+</button></div></div><button type="button" class="btn primary wide" id="detailAdd">أضف للسلة <span>▣</span></button><p class="fulfillment-note">◈ إرسال الطلب لا يعني دفعًا أو تفعيلًا فوريًا؛ تتم المراجعة عبر لوحة المالك.</p></div>
+  </div>
+  <div class="content-layout"><article class="content-column"><section class="detail-section"><h2>عن هذا الاشتراك</h2><p id="detailDescription"></p></section><section class="detail-section"><h2>أهم مميزات العضوية</h2><div id="detailFeatures" class="feature-list"></div></section><section class="detail-section"><h2>الشروط والمعلومات المهمة</h2><div class="terms-box"><p>المنتجات الرقمية تتطلب تأكيدًا من المالك. الأسعار والمنتجات قابلة للتحديث. إمكانية توفر التطبيقات تختلف حسب المنصة والخدمة. راجع بيانات طلبك قبل الإرسال.</p></div></section><section class="detail-section"><h2>الأسئلة الشائعة عن الاشتراك</h2><div id="detailFaq" class="faq-list"></div></section><section class="detail-section"><div class="section-heading small"><div><h2>تقييمات العملاء</h2><p>تعليقات فعلية بعد الطلب والمراجعة فقط.</p></div><span id="reviewCount" class="section-pill">0 تقييم</span></div><div id="reviewList" class="review-list"></div><button id="reviewButton" class="btn ghost" type="button">اكتب تقييمًا بعد إكمال طلبك</button></section></article><aside class="detail-aside"><div class="support-card"><span>✧</span><h3>تحتاج مساعدة؟</h3><p>تابع الطلب أو تواصل عبر رابط الدعم الرسمي عندما يفعّله المالك.</p><button type="button" class="btn outline" id="detailHelp">معلومات الدعم</button></div></aside></div>
+ </div>
+ <div class="mobile-purchase"><strong id="stickyPrice">الاشتراك</strong><button id="stickyAdd" class="btn primary" type="button">أضف للسلة</button></div>
+</section>
+
+<section id="ordersView" data-view="orders" hidden>
+ <div class="home-width inner-page"><nav class="crumbs"><a href="./" data-go-home>الرئيسية</a><span>›</span><span>طلباتي</span></nav><div class="section-heading"><div><span class="eyebrow">MY DEELA</span><h1>طلباتي</h1><p>تابع الطلبات الحقيقية التي أنشأتها عبر حساب DEELA.</p></div></div><div id="ordersContent" class="orders-list"></div></div>
+</section>
+</main>
+
+<footer class="site-footer"><div class="home-width footer-grid"><div class="footer-brand"><span class="brand-mark">D</span><strong>DEELA</strong><p>متجرك الرقمي للاشتراكات والخدمات، بهوية عربية وتجربة مرتبة.</p></div><div><h3>روابط سريعة</h3><a href="./">الرئيسية</a><a href="#products">الاشتراكات</a><a href="#" id="footerOrders">طلباتي</a></div><div><h3>الحساب والمساعدة</h3><button type="button" id="footerAccount">حساب ديلا</button><a href="./admin/">لوحة المالك</a><span>خدمة الدعم حسب إعدادات المالك</span></div></div><div class="home-width footer-bottom"><span>© <span id="year">2026</span> DEELA. جميع الحقوق محفوظة.</span><span>لا يتم تحصيل دفعات داخل الموقع حاليًا.</span></div></footer>
+<nav class="mobile-bottom" aria-label="قائمة الجوال"><button type="button" id="mobileHome"><span>⌂</span>الرئيسية</button><button type="button" id="mobileProducts"><span>▦</span>المنتجات</button><button type="button" id="mobileCart"><span>▣</span>السلة</button><button type="button" id="mobileAccount"><span>♙</span>حسابي</button></nav>
+<div class="overlay" id="overlay" hidden></div>
+<aside class="drawer" id="cartDrawer" role="dialog" aria-modal="true" aria-labelledby="cartHeading" hidden><div class="drawer-head"><div><span class="eyebrow">YOUR CART</span><h2 id="cartHeading">سلة التسوق</h2></div><button type="button" class="close-btn" data-close aria-label="إغلاق">✕</button></div><div id="cartItems" class="drawer-scroll"></div><div class="drawer-footer"><div class="cart-total"><span>الإجمالي التقريبي</span><strong id="cartTotal">—</strong></div><small>المنتجات التي لا سعر لها تنتظر عرض سعر من المالك.</small><button id="checkoutButton" type="button" class="btn primary wide">متابعة الطلب ←</button></div></aside>
+<section class="modal" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authTitle" hidden><div class="modal-head"><span class="brand-mark small">D</span><button type="button" class="close-btn" data-close aria-label="إغلاق">✕</button></div><h2 id="authTitle">الدخول إلى حساب ديلا</h2><p class="modal-desc">نفس حساب DEELA الذي تستخدمه مع المتجر والتطبيق.</p><form id="authForm"><label>البريد الإلكتروني<input id="authEmail" type="email" autocomplete="email" required placeholder="example@email.com"></label><label>كلمة المرور<input id="authPassword" type="password" autocomplete="current-password" required minlength="8" placeholder="••••••••"></label><button id="authSubmit" class="btn primary wide" type="submit">تسجيل الدخول</button><p class="form-notice" id="authNotice" role="status"></p></form><button class="text-link" type="button" id="toggleAuth">ليس عندك حساب؟ أنشئ حساب ديلا</button><button class="text-link" type="button" id="logoutAuth" hidden>تسجيل الخروج</button></section>
+<section class="modal" id="checkoutModal" role="dialog" aria-modal="true" aria-labelledby="checkoutTitle" hidden><div class="modal-head"><span class="eyebrow">DEELA CHECKOUT</span><button class="close-btn" type="button" data-close>✕</button></div><h2 id="checkoutTitle">إتمام الطلب</h2><p class="modal-desc">الطلب للمراجعة، ولا يتطلب بيانات بنكية أو تحصيلًا الآن.</p><div id="checkoutSummary" class="checkout-summary"></div><form id="checkoutForm"><label>اسم العميل<input id="customerName" required minlength="2" maxlength="90" placeholder="اسمك"></label><label>رقم الجوال (اختياري)<input id="customerPhone" inputmode="tel" maxlength="25" placeholder="05xxxxxxxx"></label><label>ملاحظات (اختياري)<textarea id="customerNote" maxlength="500" placeholder="أي تفاصيل تساعد المالك في تجهيز طلبك"></textarea></label><button type="submit" class="btn primary wide" id="placeOrder">إرسال الطلب للمراجعة</button><p class="form-notice" id="checkoutNotice" role="status"></p></form></section>
+<section class="modal" id="reviewModal" role="dialog" aria-modal="true" aria-labelledby="reviewTitle" hidden><div class="modal-head"><span class="eyebrow">DEELA REVIEWS</span><button type="button" class="close-btn" data-close>✕</button></div><h2 id="reviewTitle">قيّم تجربتك</h2><p>يُقبل التقييم فقط لمن أكمل طلب هذا المنتج.</p><form id="reviewForm"><label>تقييمك<select id="reviewRating"><option value="5">★★★★★ — ممتاز</option><option value="4">★★★★ — جيد جدًا</option><option value="3">★★★ — جيد</option><option value="2">★★ — متوسط</option><option value="1">★ — ضعيف</option></select></label><label>رأيك<textarea id="reviewText" minlength="8" maxlength="800" required placeholder="اكتب تجربتك الفعلية"></textarea></label><button class="btn primary wide" type="submit">إرسال التقييم للمراجعة</button><p class="form-notice" id="reviewNotice" role="status"></p></form></section>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>
