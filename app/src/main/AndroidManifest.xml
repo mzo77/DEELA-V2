@@ -72,6 +72,12 @@
             </intent-filter>
         </activity>
 
+        <!-- Official DEELA commerce owner center, never launched from another app. -->
+        <activity
+            android:name=".auth.DeelaShopOwnerActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <service
             android:name=".download.DownloadService"
             android:exported="false"
