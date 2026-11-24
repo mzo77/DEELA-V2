@@ -74,7 +74,9 @@ jobs:
           set -euo pipefail
           cd upstream
           python3 -m venv /tmp/deela-hexstrike-env
-          /tmp/deela-hexstrike-env/bin/pip install -r requirements.txt
+          # Install the documented core HTTP/MCP dependencies first.
+          # angr is optional binary analysis and compiling it can exhaust CI time.
+          /tmp/deela-hexstrike-env/bin/pip install --only-binary=:all: 'flask>=2.3,<4' 'requests>=2.31,<3' 'psutil>=5.9,<6' 'fastmcp>=0.2,<1' 'beautifulsoup4>=4.12,<5' 'aiohttp>=3.8,<4' 'selenium>=4.15,<5' 'webdriver-manager>=4,<5'
           nohup /tmp/deela-hexstrike-env/bin/python hexstrike_server.py > /tmp/deela-hexstrike.log 2>&1 &
           echo $! > /tmp/deela-hexstrike.pid
           python3 - <<'PY'
