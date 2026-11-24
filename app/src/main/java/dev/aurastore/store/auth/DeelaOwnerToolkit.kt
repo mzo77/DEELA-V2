@@ -319,6 +319,7 @@ private class OwnerToolBridge(
     fun openSnapchatSecurityPage(kind: String) {
         val target = when (kind) {
             "account", "sessions", "mydata" -> "https://accounts.snapchat.com/"
+            "twofactor" -> "https://help.snapchat.com/hc/en-us/articles/7012345351700-How-do-I-set-up-Two-Factor-Authentication-2FA-on-Snapchat-with-an-authentication-app"
             else -> return
         }
         val uri = Uri.parse(target)
