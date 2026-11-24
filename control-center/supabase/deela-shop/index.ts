@@ -159,6 +159,18 @@ Deno.serve(async (req) => {
         if(!data)return err("الطلب غير موجود",404,req);
         return json({ok:true,order:data,subscription_activated:false},200,req);
       }
+      if(req.method==="POST"&&path==="/admin/activate-order"){
+        const body=await req.json(),id=clean(body.id,60);
+        if(!uid.test(id))return err("معرّف الطلب غير صحيح",400,req);
+        const {data,error}=await db.rpc("deela_shop_activate_order",{
+          p_order_id:id,p_owner_id:user.id
+        });
+        if(error){
+          console.error("deela-shop activation",error.code||"unavailable");
+          return err("تعذّر تفعيل العضوية. تأكد أن حالة الطلب «مدفوع» وأنه يحتوي على عضوية واحدة لم تُفعّل من قبل.",409,req);
+        }
+        return json({ok:true,activation:data},200,req);
+      }
       if(req.method==="POST"&&path==="/admin/settings"){
         const b=await req.json();
         if(b.support_url && !validHttpUrl(b.support_url))return err("رابط الدعم يجب أن يبدأ بـ HTTPS",400,req);
@@ -191,7 +203,7 @@ Deno.serve(async (req) => {
     if(!user)return err("سجّل الدخول بحساب ديلا لإرسال الطلب ومتابعته",401,req);
     if(req.method==="GET"&&path==="/orders/me"){
       const {data,error}=await db.from("deela_shop_orders")
-        .select("id,order_code,items,total_sar,status,created_at,owner_note,payment_method")
+        .select("id,order_code,items,total_sar,status,created_at,owner_note,payment_method,subscription_activated_at")
         .eq("customer_id",user.id).order("created_at",{ascending:false}).limit(40);
       if(error)throw error;
       return json({orders:data??[]},200,req);
