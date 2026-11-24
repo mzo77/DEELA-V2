@@ -156,6 +156,7 @@ fun DeelaOwnerToolkit(token: String) {
                 }
                 override fun onPageFinished(view: WebView?, url: String?) {
                     web.evaluateJavascript("window.DeelaToolsNative?.checkAI?.()", null)
+                    web.evaluateJavascript("window.DeelaToolsNative?.checkAgent?.()", null)
                 }
             }
             val html = context.assets.open("deela_owner_toolkit.html").bufferedReader().use { it.readText() }
@@ -183,6 +184,7 @@ private class OwnerToolBridge(
         .callTimeout(72, TimeUnit.SECONDS)
         .build()
     private val api = BuildConfig.DEELA_API_BASE_URL.replace("/deela-control", "/deela-owner-ai")
+    private val agentApi = BuildConfig.DEELA_API_BASE_URL.replace("/deela-control", "/deela-owner-agent")
 
     private fun deliver(callback: String, result: JSONObject) {
         web.post { web.evaluateJavascript("window.$callback(${JSONObject.quote(result.toString())})", null) }
@@ -235,25 +237,60 @@ private class OwnerToolBridge(
     }
 
     @JavascriptInterface
+    fun checkAgent() {
+        scope.launch(Dispatchers.IO) {
+            val status = runCatching {
+                val req = Request.Builder().url(agentApi)
+                    .header("Authorization", "Bearer " + token).get().build()
+                client.newCall(req).execute().use { res -> JSONObject(res.body.string()) }
+            }.getOrElse {
+                JSONObject().put("ready", false).put("error", "تحقق من اتصال الإنترنت؛ يمكنك التشغيل اليدوي")
+            }
+            deliver("deelaAgentStatusResult", status)
+        }
+    }
+
+    @JavascriptInterface
     fun openAgentIssue(prompt: String) {
         val task = prompt.trim()
-        if (task.length !in 10..1400) return
-        // GitHub Issues are disabled in this repository. Use the owner's workflow
-        // dispatch page rather than offering a broken issue-submission link.
-        // GitHub requires the owner to paste the task and explicitly run it.
-        val uri = Uri.parse(
-            "https://github.com/mzo77/DEELA-V2/actions/workflows/deela-arabic-coding-agent.yml",
-        )
-        web.post {
-            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            clipboard.setPrimaryClip(ClipData.newPlainText("مهمة وكيل ديلا العربي", task))
-            Toast.makeText(
-                context,
-                "نسخت أمرك. افتح Run workflow ثم الصق في خانة task واضغط تشغيل.",
-                Toast.LENGTH_LONG,
-            ).show()
-            runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri)) }
-                .onFailure { Toast.makeText(context, "تعذر فتح GitHub. يمكنك تشغيل وكيل البرمجة من Actions.", Toast.LENGTH_LONG).show() }
+        if (task.length !in 10..1400) {
+            deliver("deelaAgentDispatchResult", JSONObject().put("error", "اكتب مهمة من 10 إلى 1400 حرف"))
+            return
+        }
+        scope.launch(Dispatchers.IO) {
+            val result = runCatching {
+                val payload = JSONObject().put("task", task)
+                val req = Request.Builder().url(agentApi)
+                    .header("Authorization", "Bearer " + token)
+                    .post(payload.toString().toRequestBody("application/json; charset=utf-8".toMediaType()))
+                    .build()
+                client.newCall(req).execute().use { res ->
+                    JSONObject(res.body.string())
+                }
+            }.getOrElse {
+                JSONObject().put("error", "فشل الاتصال بوكيل ديلا. يمكنك التشغيل اليدوي.")
+                    .put("code", "manual_mode")
+            }
+            if (result.optString("code") == "manual_mode" ||
+                result.optString("code") == "github_auth" ||
+                result.optString("code") == "github_missing"
+            ) {
+                // Free fallback: clipboard + owner-authorized GitHub workflow dispatch.
+                val uri = Uri.parse(
+                    "https://github.com/mzo77/DEELA-V2/actions/workflows/deela-arabic-coding-agent.yml",
+                )
+                web.post {
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    clipboard.setPrimaryClip(ClipData.newPlainText("مهمة وكيل ديلا العربي", task))
+                    Toast.makeText(
+                        context, "تم نسخ أمرك. افتح Run workflow والصقه في task ثم اضغط التشغيل.",
+                        Toast.LENGTH_LONG,
+                    ).show()
+                    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri)) }
+                }
+                result.put("manual", true)
+            }
+            deliver("deelaAgentDispatchResult", result)
         }
     }
 
