@@ -72,6 +72,12 @@
             </intent-filter>
         </activity>
 
+        <!-- Embedded commerce admin is owner-only, never exported publicly. -->
+        <activity
+            android:name=".auth.DeelaShopOwnerActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <service
             android:name=".download.DownloadService"
             android:exported="false"
