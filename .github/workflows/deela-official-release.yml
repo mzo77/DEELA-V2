@@ -7,18 +7,19 @@ on:
     branches: [main]
     paths:
       - '.github/deela-release-request/official-0.9.12.txt'
+      - '.github/deela-release-request/official-0.9.13.txt'
   workflow_dispatch:
     inputs:
       source_ref:
         description: "Reviewed DEELA source branch or SHA to release"
         required: true
         type: string
-        default: feature/deela-apple-certificates-0912
+        default: release/deela-0913-source
       release_notes:
         description: "Short update notes shown to subscribers"
         required: false
         type: string
-        default: "إصدار ديلا 0.9.11 الرسمي: مركز ذكاء المالك، مختبر أمان تجريبي، وتحسينات إدارة التطبيقات مع الحفاظ على المتجر والاشتراكات."
+        default: "ديلا 0.9.13: عرض حالات الاتصال الفعلية للمحركات الأربعة داخل لوحة المالك، وفحوص GitHub للمصادر. المحركات ليست مستضافة دائمًا بعد."
 
 permissions:
   contents: write
@@ -50,7 +51,7 @@ jobs:
       - name: Check out the reviewed Android source
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_ref || '558a3dc1c8ec9db8af3ca14bd0b4ae9a0fb86981' }}
+          ref: ${{ inputs.source_ref || '2ec2af0966284c40ad9c4c35dccdc3d86647e827' }}
           persist-credentials: true
 
       - uses: actions/setup-java@v4
@@ -140,8 +141,8 @@ jobs:
           VERSION="$(sed -n 's/.*val appVersionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
           [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Unexpected Android version"; exit 1; }
           TAG="v$VERSION"
-          if [ "${{ github.event_name }}" = "push" ] && [ "$VERSION" != "0.9.12" ]; then
-            echo "::error::This official push request is pinned to DEELA 0.9.12 only."
+          if [ "${{ github.event_name }}" = "push" ] && [ "$VERSION" != "0.9.13" ]; then
+            echo "::error::This official push request is pinned to DEELA 0.9.13 only."
             exit 1
           fi
           if GH_TOKEN="${{ github.token }}" gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
@@ -179,7 +180,7 @@ jobs:
       - name: Publish public, stable GitHub Release for in-app update notifications
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_NOTES: "${{ inputs.release_notes || 'DEELA 0.9.12: إدارة شهادات Apple بشكل آمن، ربط أجهزة مشتركي iOS ومعرّف UDID، تسجيل الأجهزة عبر App Store Connect API عند إعداد المفاتيح. لا يوجد توقيع IPA أو تثبيت مباشر حتى ربط خدمة توزيع مصرح بها.' }}"
+          RELEASE_NOTES: "${{ inputs.release_notes || 'DEELA 0.9.13: تحسين لوحة المالك وعرض الحالة الحقيقية للمحركات الأمنية الأربعة. نجحت فحوص GitHub، لكن المحركات ليست مستضافة بصورة دائمة.' }}"
           TAG: ${{ steps.verify.outputs.tag }}
           APK: ${{ steps.verify.outputs.apk }}
         run: |
