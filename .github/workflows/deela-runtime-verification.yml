@@ -1,0 +1,174 @@
+name: DEELA Free Engine and AI Runtime Verification
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/deela-runtime-verification.yml']
+  workflow_dispatch:
+  schedule:
+    - cron: '23 3 * * *'
+permissions:
+  contents: read
+concurrency:
+  group: deela-free-runtime-verification
+  cancel-in-progress: false
+jobs:
+  upstream-engine-check:
+    name: Real upstream engine installation
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { engine: pentagi, repo: vxcontrol/pentagi }
+          - { engine: pentest-swarm, repo: Armur-Ai/Pentest-Swarm-AI }
+          - { engine: hexstrike, repo: 0x4m4/hexstrike-ai }
+          - { engine: pentestgpt, repo: GreyDGL/PentestGPT }
+    steps:
+      - name: Use Python 3.12 with maintained mitmproxy
+        if: matrix.engine == 'hexstrike'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Clone real upstream source
+        env:
+          ENGINE_REPO: ${{ matrix.repo }}
+        run: |
+          set -euo pipefail
+          git clone --depth 1 "https://github.com/$ENGINE_REPO.git" upstream
+          git -C upstream rev-parse HEAD
+      - name: Verify actual runtime manifest
+        run: |
+          set -euo pipefail
+          cd upstream
+          find . -maxdepth 3 -type f \( -name Dockerfile -o -name pyproject.toml -o -name requirements.txt -o -name package.json -o -name go.mod \) -print | head -30
+          find . -maxdepth 3 -type f \( -name Dockerfile -o -name pyproject.toml -o -name requirements.txt -o -name package.json -o -name go.mod \) | grep -q .
+      - name: Install and invoke real PentestGPT CLI
+        if: matrix.engine == 'pentestgpt'
+        run: |
+          set -euo pipefail
+          python3 -m pip install --user uv
+          export PATH="$HOME/.local/bin:$PATH"
+          cd upstream
+          uv sync --no-dev
+          uv run pentestgpt-legacy --help
+      - name: Compile upstream Python source where present
+        run: |
+          set -euo pipefail
+          cd upstream
+          python3 - <<'PY'
+          import ast, pathlib, sys
+          files = [p for p in pathlib.Path('.').rglob('*.py') if not any(x in p.parts for x in ('.git', '.venv', 'venv', 'node_modules'))]
+          failures = []
+          for p in files:
+              try:
+                  ast.parse(p.read_text(encoding='utf-8-sig'), filename=str(p))
+              except (SyntaxError, UnicodeError) as exc:
+                  failures.append(f'{p}: {exc}')
+          print(f'Parsed {len(files)} real upstream Python files')
+          if failures:
+              print('\\n'.join(failures[:20]))
+              sys.exit(1)
+          PY
+      - name: Invoke PentestGPT installed version and available models
+        if: matrix.engine == 'pentestgpt'
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.local/bin:$PATH"
+          cd upstream
+          uv run pentestgpt-legacy --version
+          uv run pentestgpt-legacy --list-models
+      - name: Start real HexStrike local HTTP service and check health
+        if: matrix.engine == 'hexstrike'
+        run: |
+          set -euo pipefail
+          cd upstream
+          python3 -m venv /tmp/deela-hexstrike-env
+          # The HexStrike HTTP server imports mitmproxy but NOT fastmcp.
+          # Installing fastmcp together with legacy mitmproxy pulled incompatible
+          # HTTP packages, and mitmproxy 10.x required removed pyperclip 1.9.0.
+          # Use maintained mitmproxy 12.3.1, which permits available pyperclip 1.11.0.
+          # Test HTTP API separately;
+          # the MCP adapter requires a separate environment/test.
+          # angr is optional binary analysis and is not needed for HTTP health.
+          /tmp/deela-hexstrike-env/bin/pip install --only-binary=:all: 'flask>=2.3,<4' 'requests>=2.31,<3' 'psutil>=5.9,<6' 'beautifulsoup4>=4.12,<5' 'aiohttp>=3.8,<4' 'selenium>=4.15,<5' 'webdriver-manager>=4,<5' 'mitmproxy==12.3.1'
+          /tmp/deela-hexstrike-env/bin/pip check
+          nohup /tmp/deela-hexstrike-env/bin/python hexstrike_server.py > /tmp/deela-hexstrike.log 2>&1 &
+          echo $! > /tmp/deela-hexstrike.pid
+          python3 - <<'PY'
+          import time, urllib.request, urllib.error
+          for attempt in range(30):
+              try:
+                  with urllib.request.urlopen('http://127.0.0.1:8888/api/process/health-check', timeout=3) as response:
+                      import json
+                      payload = json.load(response)
+                      assert response.status == 200 and payload.get('success') is True, f'Unexpected health response: {payload}'
+                      print('Real HexStrike HTTP health responded:',response.status, payload.get('health_report', {}).get('overall_status'))
+                      break
+              except urllib.error.HTTPError as exc:
+                  print('HexStrike HTTP error:',exc.code)
+                  time.sleep(2)
+              except Exception:
+                  time.sleep(2)
+          else:
+              print(open('/tmp/deela-hexstrike.log').read()[-5000:])
+              raise SystemExit('HexStrike local server did not respond')
+          PY
+      - name: Build real PentAGI Go backend package
+        if: matrix.engine == 'pentagi'
+        run: |
+          set -euo pipefail
+          cd upstream/backend
+          go version
+          go build ./...
+      - name: Build real Pentest Swarm Go packages
+        if: matrix.engine == 'pentest-swarm'
+        run: |
+          set -euo pipefail
+          cd upstream
+          go version
+          go build ./...
+      - name: Report truthful scope
+        run: |
+          echo "Real upstream checkout checked. This is NOT a persistent running AI model."
+          echo "No external targets or subscriber devices were scanned."
+
+  run-real-model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Install Ollama on temporary runner
+        run: |
+          set -euo pipefail
+          curl -fsSL https://ollama.com/install.sh | sh
+          ollama --version
+      - name: Start inference server and pull a small real model
+        run: |
+          set -euo pipefail
+          nohup ollama serve > /tmp/ollama.log 2>&1 &
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null; then break; fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:11434/api/tags >/dev/null
+          ollama pull qwen2.5:0.5b
+      - name: Prove a real model produced a response
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, urllib.request
+          data = json.dumps({'model':'qwen2.5:0.5b','prompt':'Reply with the word READY only.','stream':False,'options':{'num_predict':20}}).encode()
+          req = urllib.request.Request('http://127.0.0.1:11434/api/generate',data=data,headers={'Content-Type':'application/json'})
+          with urllib.request.urlopen(req,timeout=180) as response:
+              result=json.load(response)
+          assert result.get('done') is True, 'Model inference did not complete'
+          assert result.get('model','').startswith('qwen2.5'), 'Wrong model'
+          assert result.get('response','').strip(), 'Empty AI response'
+          print('REAL LOCAL INFERENCE SUCCESS')
+          print('model:',result['model'])
+          print('response:',result['response'][:300])
+          PY
+      - name: Clarify lifecycle
+        run: |
+          echo 'This is a real temporary AI model inference, not a permanent hosted engine or live DEELA endpoint.'
+          echo 'No subscriber data or external security targets were accessed.'
