@@ -98,6 +98,13 @@ Deno.serve(async (req) => {
   }});
   if(req.method==="GET" && path==="/health") return json({ok:true,service:"deela-shop",payments_live:false},200,req);
   try {
+    // PRIVATE MODE: The owner has not launched the shop to the public.
+    // Block catalog, product pages, order creation and all customer routes
+    // for every unauthenticated or non-owner visitor, including direct API calls.
+    const privateVisitor=await auth(req);
+    if(!privateVisitor || !(await isOwner(privateVisitor.id))){
+      return err("متجر ديلا في مرحلة خاصة بالمالك ولم يُفتح للعامة",403,req);
+    }
     if(req.method==="GET" && path==="/catalog"){
       return json(await listPublic(),200,req);
     }
