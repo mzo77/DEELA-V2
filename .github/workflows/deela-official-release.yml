@@ -50,7 +50,7 @@ jobs:
       - name: Check out the reviewed Android source
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_ref || '09a94edec953febcbd05042d80c94054b2679db9' }}
+          ref: ${{ inputs.source_ref || '869c0b3db93dda6a5402ca39282b37a436e2db9f' }}
           persist-credentials: true
 
       - uses: actions/setup-java@v4
