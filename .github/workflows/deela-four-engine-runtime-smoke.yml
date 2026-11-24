@@ -20,11 +20,11 @@ jobs:
           - { engine: hexstrike, repo: 0x4m4/hexstrike-ai }
           - { engine: pentestgpt, repo: GreyDGL/PentestGPT }
     steps:
-      - name: Use Python 3.11 for legacy mitmproxy dependencies
+      - name: Use Python 3.12 with maintained mitmproxy
         if: matrix.engine == 'hexstrike'
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
       - name: Clone real upstream source
         env:
           ENGINE_REPO: ${{ matrix.repo }}
@@ -80,11 +80,13 @@ jobs:
           cd upstream
           python3 -m venv /tmp/deela-hexstrike-env
           # The HexStrike HTTP server imports mitmproxy but NOT fastmcp.
-          # Installing fastmcp together with legacy mitmproxy pulls incompatible
-          # HTTP protocol packages (httpcore/h11). Test HTTP API separately;
+          # Installing fastmcp together with legacy mitmproxy pulled incompatible
+          # HTTP packages, and mitmproxy 10.x required removed pyperclip 1.9.0.
+          # Use maintained mitmproxy 12.3.1, which permits available pyperclip 1.11.0.
+          # Test HTTP API separately;
           # the MCP adapter requires a separate environment/test.
           # angr is optional binary analysis and is not needed for HTTP health.
-          /tmp/deela-hexstrike-env/bin/pip install --only-binary=:all: 'flask>=2.3,<4' 'requests>=2.31,<3' 'psutil>=5.9,<6' 'beautifulsoup4>=4.12,<5' 'aiohttp>=3.8,<4' 'selenium>=4.15,<5' 'webdriver-manager>=4,<5' 'mitmproxy==10.4.2'
+          /tmp/deela-hexstrike-env/bin/pip install --only-binary=:all: 'flask>=2.3,<4' 'requests>=2.31,<3' 'psutil>=5.9,<6' 'beautifulsoup4>=4.12,<5' 'aiohttp>=3.8,<4' 'selenium>=4.15,<5' 'webdriver-manager>=4,<5' 'mitmproxy==12.3.1'
           /tmp/deela-hexstrike-env/bin/pip check
           nohup /tmp/deela-hexstrike-env/bin/python hexstrike_server.py > /tmp/deela-hexstrike.log 2>&1 &
           echo $! > /tmp/deela-hexstrike.pid
