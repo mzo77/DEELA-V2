@@ -77,6 +77,38 @@ Deno.serve(async(req:Request)=>{
  const segment="/deela-private-store";
  const pos=pathname.indexOf(segment);
  const path=pos<0?"/":(pathname.slice(pos+segment.length)||"/");
+
+ const PORTAL="https://mzo77.github.io/DEELA-V2/private-store/";
+ const WEB_ORIGIN="https://mzo77.github.io";
+ const isProtected=path.startsWith("/protected/");
+ if(req.method==="OPTIONS"&&isProtected){
+   return new Response(null,{status:204,headers:{
+     ...COMMON,"Access-Control-Allow-Origin":WEB_ORIGIN,
+     "Access-Control-Allow-Headers":"authorization,content-type,apikey",
+     "Access-Control-Allow-Methods":"GET,OPTIONS","Vary":"Origin"
+   }});
+ }
+ if(req.method==="GET"&&isProtected){
+   const token=req.headers.get("authorization")?.match(/^Bearer (.+)$/i)?.[1]??"";
+   if(!(await verifiedOwner(token))){
+     return textResponse(JSON.stringify({error:"DEELA owner authorization required"}),403,
+       "application/json; charset=utf-8",{"Access-Control-Allow-Origin":WEB_ORIGIN,"Vary":"Origin"});
+   }
+   const asset=path.slice("/protected/".length);
+   // Every asset in this bundle is owner-only; nothing is stored in public Pages.
+   if(!Object.prototype.hasOwnProperty.call(STORAGE,asset)){
+     return textResponse(JSON.stringify({error:"Not found"}),404,"application/json; charset=utf-8",
+       {"Access-Control-Allow-Origin":WEB_ORIGIN,"Vary":"Origin"});
+   }
+   return textResponse(JSON.stringify({content:STORAGE[asset]}),200,"application/json; charset=utf-8",
+     {"Access-Control-Allow-Origin":WEB_ORIGIN,"Vary":"Origin","Cache-Control":"private, no-store"});
+ }
+ // Browser rendering of HTML at supabase.co is unsupported. Redirect to
+ // a real HTTPS HTML host with a public login shell and owner-protected assets.
+ if(req.method==="GET"&&(path==="/"||path==="/index.html"||path==="/admin/index.html"||path==="/help.html")){
+   const target=path==="/admin/index.html"?PORTAL+"?page=admin":path==="/help.html"?PORTAL+"?page=help":PORTAL;
+   return new Response(null,{status:302,headers:{...COMMON,Location:target}});
+ }
  if(req.method==="GET"&&path==="/health")
    return textResponse(JSON.stringify({ok:true,owner_only:true,published_publicly:false}),200,"application/json");
  if(req.method==="POST"&&path==="/login"){
