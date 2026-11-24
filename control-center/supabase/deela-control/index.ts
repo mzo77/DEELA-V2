@@ -154,6 +154,8 @@ if(req.method==="GET"&&path==="/api/v1/source/updates"){
  if(error)throw error;return j({updates:data||[]});
 }
 if(path.startsWith("/api/owner/")){const u=await who(req);if(!u||u.role!=="owner")return fail("صلاحية المالك مطلوبة",403);
+if(req.method==="GET"&&path==="/api/owner/connection-status")return new Response(JSON.stringify({ok:true}),{headers:{...headers,"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"}});
+
 
 if(path==="/api/owner/apple/certificates"&&req.method==="GET"){
  const [groups,enrollments]=await Promise.all([
