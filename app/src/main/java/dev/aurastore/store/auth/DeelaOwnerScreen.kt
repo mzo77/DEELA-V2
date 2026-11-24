@@ -225,7 +225,7 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
             ) {
-                listOf("الرئيسية", "الطلبات", "المشتركون", "التطبيقات", "التحديثات", "القوة الغاشمة ⚡", "مركز الذكاء 🤖", "مختبر الأمان 🛡️", "الرسائل", "السجل").forEach { tab ->
+                listOf("الرئيسية", "الطلبات", "المشتركون", "التطبيقات", "شهادات Apple", "التحديثات", "القوة الغاشمة ⚡", "مركز الذكاء 🤖", "مختبر الأمان 🛡️", "الرسائل", "السجل").forEach { tab ->
                     FilterChip(
                         selected = page == tab,
                         onClick = { page = tab },
@@ -451,6 +451,7 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                             }
                         }
                     }
+                    "شهادات Apple" -> Box(Modifier.weight(1f)) { DeelaOwnerAppleScreen(session.token) }
                     "التحديثات" -> Box(Modifier.weight(1f)) { DeelaOwnerSources(session.token) }
                     "القوة الغاشمة ⚡" -> Box(Modifier.weight(1f)) { DeelaOwnerToolkit(session.token) }
                     "مركز الذكاء 🤖" -> Box(Modifier.weight(1f)) {
