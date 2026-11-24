@@ -1,0 +1,45 @@
+{
+  "schema": "deela.security.engines/v1",
+  "mode": "source-integrated-runtime-unconfigured",
+  "automation_enabled": false,
+  "engines": [
+    {
+      "id": "pentest-swarm",
+      "name": "Pentest Swarm AI",
+      "source": "https://github.com/Armur-Ai/Pentest-Swarm-AI",
+      "interface": "CLI / web dashboard",
+      "requires": [
+        "runtime host",
+        "LLM provider",
+        "explicitly authorized test scope"
+      ],
+      "installed": false
+    },
+    {
+      "id": "hexstrike",
+      "name": "HexStrike AI",
+      "source": "https://github.com/0x4m4/hexstrike-ai",
+      "interface": "MCP server with local security tools",
+      "requires": [
+        "runtime host",
+        "tool dependencies",
+        "AI MCP client",
+        "authorized test scope"
+      ],
+      "installed": false
+    },
+    {
+      "id": "pentestgpt",
+      "name": "PentestGPT",
+      "source": "https://github.com/GreyDGL/PentestGPT",
+      "interface": "interactive CLI / local Ollama",
+      "requires": [
+        "runtime host",
+        "LLM model",
+        "authorized test scope"
+      ],
+      "installed": false
+    }
+  ],
+  "note": "No engines run in Supabase Edge Functions; the published owner-only synthetic login/2FA lab runs safely without them."
+}
