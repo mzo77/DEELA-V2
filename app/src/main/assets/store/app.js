@@ -25,7 +25,7 @@ function priceTotal(){
 }
 async function api(path,{method="GET",data,auth=false}={}){
  const headers={"Content-Type":"application/json"};
- if(auth&&token)headers.Authorization="Bearer "+token;
+ if(token)headers.Authorization="Bearer "+token; // Private owner-only catalog also requires owner JWT.
  let resp;
  try{resp=await fetch(API+path,{method,headers,body:data===undefined?undefined:JSON.stringify(data),credentials:"omit",cache:"no-store",signal:AbortSignal.timeout(22000)})}
  catch(e){throw Error(e?.name==="TimeoutError"?"انتهت مهلة الاتصال":"تعذّر الاتصال بخادم ديلا")}
