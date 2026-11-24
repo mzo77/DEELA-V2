@@ -88,31 +88,58 @@ button,.nav button{border-radius:12px}.nav button.active,.tabs .active{backgroun
 <div class="card" id="universalEngine" style="margin-top:18px;border-color:#85506a"><h2>⚡ DEELA-APPS | محرك البحث الشامل</h2><p class="muted">يقبل أي امتداد ويحلل الملفات المتاحة محليًا، ويتعرف على توقيعات الصيغ ويبحث في الأسماء والنصوص والبايتات القابلة للقراءة. لا يضمن فك تشفير أو تحليل كل صيغة.</p><label for="universalSection">القسم المستهدف</label><select id="universalSection" class="search"><option>دليل المصدر APK</option><option>البيانات الداخلية</option><option>البيانات المحمية بالجهاز</option><option>البيانات الخارجية</option><option>مكتبات JNI</option><option>البايتات الداخلية</option><option>موارد اللعبة</option><option value="all">جميع الأقسام المرفوعة</option></select><label for="universalFiles">رفع الملفات بأي امتداد</label><input id="universalFiles" class="search" type="file" multiple><p class="muted" id="universalStatus">لم تُضف ملفات لهذا المحرك بعد.</p><label for="universalQuery">وش تبحث عنه بالضبط؟</label><input id="universalQuery" class="search" placeholder="مثال: ملف الكوينز أو player balance"><div class="actions"><button id="universalRun">🔎 تحليل وبحث شامل</button><button id="universalExport">⬇ تصدير التقرير TXT</button><button id="universalClear">مسح ملفات القسم</button></div><pre id="universalOutput" style="white-space:pre-wrap;overflow-wrap:anywhere;background:#08070a;padding:15px;border-radius:12px;max-height:450px;overflow:auto;line-height:1.8">النتائج ستظهر هنا.</pre></div><section class="section" id="github"><div class="card"><h2>⌁ DEELA-APPS | GitHub Explorer</h2><p class="muted">بحث مباشر في المستودعات العامة على GitHub عبر الواجهة الرسمية العامة. يحتاج إنترنت، ولا يحتاج حسابًا للبحث الأساسي. لا يتصل بالمستودعات الخاصة أو يعدّلها.</p><label for="ghQuery">وش تبحث عنه بالضبط؟</label><input class="search" id="ghQuery" placeholder="مثال: unity save editor أو android file analyzer"><label for="ghSort">ترتيب النتائج</label><select class="search" id="ghSort"><option value="best">الأكثر صلة</option><option value="stars">الأكثر نجومًا</option><option value="updated">الأحدث تحديثًا</option></select><div class="actions"><button id="ghSearch">🔎 البحث في GitHub</button><button id="ghMyRepo">📁 فتح مستودع بالاسم</button></div><p class="muted">للدخول المباشر اكتب owner/repository، مثل octocat/Hello-World. تنزيل ملفات ZIP يتم من GitHub مباشرة. افحص تراخيص المشاريع قبل إعادة استخدامها.</p><div id="ghResults" class="toolgrid" aria-live="polite"><div class="note">اكتب مصطلحًا واضغط بحث.</div></div></div></section>
 <section class="section" id="tools"><div class="card"><h2>أدوات المطور</h2><div class="toolgrid" id="toolgrid"></div><div class="note">اختر أداة لفتح طلب جاهز داخل مختبر البرمجة.</div></div></section>
 <section class="section" id="security"><div class="card"><h2>مركز الأمان</h2><div class="toolgrid"><div class="tool"><strong>البرمجة الآمنة</strong><p class="muted">تطبيق مبدأ أقل الصلاحيات وممارسات الحماية</p></div><div class="tool"><strong>مراجعة الصلاحيات</strong><p class="muted">فحص متطلبات الوصول والأذونات</p></div><div class="tool"><strong>التحقق من المدخلات</strong><p class="muted">تقليل مخاطر معالجة المدخلات غير الآمنة</p></div><div class="tool"><strong>تدقيق الاعتماديات</strong><p class="muted">مراجعة مخاطر الحزم والمكتبات الخارجية</p></div><div class="tool"><strong>حماية الخصوصية</strong><p class="muted">تقليل جمع البيانات الحساسة</p></div><div class="tool"><strong>الاختبار الأمني المصرح به</strong><p class="muted">اختبر فقط الأنظمة التي تملكها أو لديك إذن بفحصها</p></div></div></div></section>
-<section class="section" id="snapReal">
- <div class="card" style="border:1px solid #527c92">
-  <h2>👻 مركز أمان Snapchat الحقيقي — حسابك</h2>
-  <p class="muted">فحص مبني على سجل الدخول الحقيقي الذي تصدّره من حساب Snapchat. لا توجد محاكاة ولا تخمين كلمة مرور ولا تجاوز للتحقق بخطوتين. تحليل الملف يتم على جهازك فقط، دون رفعه إلى DEELA أو أي خادم.</p>
-  <div class="actions">
-   <button type="button" id="snapOpenAccount">🔐 حساب Snapchat الرسمي</button>
-   <button type="button" id="snapOpenSessions">📱 إدارة جلسات الدخول الرسمية</button>
-   <button type="button" id="snapOpenData">📥 شرح تنزيل سجل الدخول</button>
+<section class="section" id="snapReal" aria-label="مركز حماية سناب شات">
+<style>
+#snapReal{padding:0 2px}
+#snapReal .snap-shell{margin:0 auto;max-width:780px;overflow:hidden;border:1px solid #5b5265;border-radius:24px;background:linear-gradient(158deg,#272338 0%,#13131e 54%,#161720 100%);box-shadow:0 18px 46px #0005}
+#snapReal .snap-hero{padding:26px 22px 20px;position:relative;background:radial-gradient(ellipse at 0% 0%,#5b556b55,transparent 62%)}
+#snapReal .snap-topline{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+#snapReal .snap-brand{display:flex;align-items:center;gap:12px;min-width:0}
+#snapReal .snap-logo{display:grid;place-items:center;flex-shrink:0;width:53px;height:53px;border-radius:17px;background:#fffc00;color:#151515;font-size:29px;box-shadow:0 6px 28px #fffc0028}
+#snapReal .snap-overline{display:block;color:#c3b9cc;font-size:12px;letter-spacing:.3px;margin-bottom:5px}
+#snapReal .snap-title{font-size:25px;margin:0;line-height:1.35;color:#fff;font-weight:750}
+#snapReal .snap-state{display:inline-flex;align-items:center;gap:6px;background:#ffffff0b;border:1px solid #ffffff25;border-radius:30px;padding:8px 11px;font-size:12px;color:#d6d2db}
+#snapReal .snap-state:before{content:"";width:8px;height:8px;background:#c0bbc7;border-radius:50%;flex-shrink:0}
+#snapReal .snap-subtitle{color:#d5cbd8;font-size:14px;line-height:1.85;margin:18px 0 0}
+#snapReal .snap-content{padding:20px 22px 24px}
+#snapReal .snap-label{font-size:12px;color:#bcb4c4;letter-spacing:.2px;margin:0 0 12px}
+#snapReal .snap-main{width:100%;padding:17px 16px;border:1px solid #fffc00;background:#fffc00;color:#191721;font-weight:800;font-size:16px;border-radius:16px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer}
+#snapReal .snap-main:active{transform:scale(.995)}
+#snapReal .snap-actions{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:12px}
+#snapReal .snap-btn{min-height:89px;border-radius:15px;border:1px solid #504b59;background:#272431;color:#f5eef7;padding:14px 11px;text-align:right;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:9px;cursor:pointer;font-size:14px;font-weight:650}
+#snapReal .snap-btn .snap-ico{font-size:20px}
+#snapReal .snap-btn:active{background:#373243}
+#snapReal .snap-divider{height:1px;background:#ffffff18;margin:24px 0 17px}
+#snapReal .snap-clarity{display:flex;gap:12px;align-items:flex-start;color:#c9c1ce;font-size:13px;line-height:1.85}
+#snapReal .snap-clarity .snap-shield{font-size:21px;flex-shrink:0}
+#snapReal .snap-clarity strong{display:block;color:#f3e8f5;font-size:14px;margin-bottom:3px}
+#snapReal .snap-foot{border-top:1px solid #ffffff13;color:#a9a4b1;padding:14px 22px;font-size:12px;line-height:1.7}
+#snapReal button:focus-visible{outline:3px solid #b4dcff;outline-offset:3px}
+@media(max-width:460px){#snapReal .snap-topline{align-items:flex-start}#snapReal .snap-title{font-size:21px}#snapReal .snap-hero{padding:23px 16px 17px}#snapReal .snap-content{padding:17px 15px 20px}#snapReal .snap-actions{gap:8px}#snapReal .snap-btn{font-size:12px;min-height:84px;padding:12px 10px}#snapReal .snap-foot{padding:13px 16px}}
+</style>
+<div class="snap-shell" dir="rtl">
+  <div class="snap-hero">
+    <div class="snap-topline">
+      <div class="snap-brand">
+        <span class="snap-logo" aria-hidden="true">👻</span>
+        <div><span class="snap-overline">DEELA / مساحة حسابك</span><h2 class="snap-title">مركز حماية سناب شات</h2></div>
+      </div>
+      <span class="snap-state">الإدارة عبر Snapchat</span>
+    </div>
+    <p class="snap-subtitle">وصول سريع لإعدادات أمان حسابك من المصدر الرسمي. بدون رفع ملفات، أو إدخال بيانات شخصية في ديلا، أو نتائج فحص مزيفة.</p>
   </div>
-  <label for="snapHandleReal">اسم مستخدم حسابك (اختياري للتقرير — لا يشترط test_)</label>
-  <input id="snapHandleReal" class="search" maxlength="64" placeholder="اكتب اسم حسابك الحقيقي" autocomplete="off">
-  <label for="snapExpectedCountry">البلد المعتاد (اختياري للمقارنة)</label>
-  <input id="snapExpectedCountry" class="search" maxlength="55" placeholder="مثال: Saudi Arabia">
-  <label for="snapExpectedDevice">اسم جهازك المعتاد (اختياري للمقارنة)</label>
-  <input id="snapExpectedDevice" class="search" maxlength="70" placeholder="مثال: Samsung">
-  <label for="snapEvidenceNative">اختر ملف سجل الدخول أو الجلسات من أرشيف «بياناتي» (JSON / CSV / HTML / TXT)</label>
-  <input id="snapEvidenceNative" class="search" type="file" accept=".json,.csv,.html,.htm,.txt">
-  <div class="actions">
-   <button type="button" id="snapRunReal">🔎 تحليل الوقائع الحقيقية من الملف</button>
-   <button type="button" id="snapSaveReal">⬇ حفظ التقرير على جهازك</button>
-   <button type="button" id="snapClearReal">مسح الملف والتقرير</button>
+  <div class="snap-content">
+    <p class="snap-label">إجراءات الحساب</p>
+    <button class="snap-main" type="button" id="snapGoAccount"><span>🔐 فتح حسابي الرسمي</span><span aria-hidden="true">‹</span></button>
+    <div class="snap-actions">
+      <button class="snap-btn" type="button" id="snapGoSessions"><span class="snap-ico" aria-hidden="true">📱</span><span>الأجهزة والجلسات المتصلة</span></button>
+      <button class="snap-btn" type="button" id="snapGo2fa"><span class="snap-ico" aria-hidden="true">🛡️</span><span>التحقق بخطوتين</span></button>
+    </div>
+    <div class="snap-divider"></div>
+    <div class="snap-clarity"><span class="snap-shield" aria-hidden="true">✓</span><div><strong>معلومات حقيقية، بدون ادعاءات</strong>ديلا لا يقرأ حالة جلسات Snapchat أو كلمة مرورك تلقائيًا. مراجعة الأجهزة وتغيير إعدادات الدخول تتم داخل Snapchat؛ لا يوجد ربط حساب مباشر مفعل هنا.</div></div>
   </div>
-  <pre id="snapReportReal" role="status" dir="auto" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:460px;overflow:auto;border:1px solid #42627b;background:#080e16;border-radius:12px;padding:14px;line-height:1.7">لا توجد بيانات محللة بعد. اختر سجل دخول حقيقي لبدء الفحص.</pre>
-  <div class="note">الأسرار تبقى في Snapchat: لا تضع كلمة المرور أو رمز OTP أو رموز الاستعادة هنا. إن ظهرت أجهزة أو مواقع غير مألوفة، راجعها داخل Snapchat وسجّل خروج الأجهزة غير المعروفة. لن نحكم بأن حسابك مخترق لمجرد اختلاف اسم جهاز أو مكان.</div>
- </div>
+  <div class="snap-foot">لا تحتاج لإدخال كلمة مرور أو رمز تحقق هنا. ستفتح الروابط الرسمية في متصفح جهازك.</div>
+</div>
 </section>
 <section class="section" id="terms"><div class="card"><h2>شروط الاستخدام</h2><ul><li>استخدم الأدوات والشيفرة ضمن الأنظمة المصرح لك بالعمل عليها.</li><li>احمِ البيانات الشخصية واحترم الخصوصية.</li><li>التزم بحقوق النشر وتراخيص البرمجيات والملكية الفكرية.</li><li>راجع الشيفرة واختبرها قبل نشرها.</li><li>أنت مسؤول عن كيفية استخدام الطلبات والملفات التي تصدرها.</li></ul></div></section>
 <section class="section" id="settings"><div class="card"><h2>الإعدادات</h2><p class="muted">المظهر: أسود وأحمر قرمزي · الواجهة: متجاوبة · التخزين الدائم: غير مستخدم</p><div class="actions"><button id="reset">إعادة ضبط الاختيارات</button><button id="glow">تبديل تأثير النيون</button></div></div></section>
@@ -369,141 +396,23 @@ document.getElementById('ghSearch').addEventListener('click',search);q.addEventL
 <script>
 (function(){
 'use strict';
-const el=id=>document.getElementById(id);
-let currentReport='';
-const maxRecords=600;
-const allowed=/\.(json|csv|html?|txt)$/i;
-const keys=/(?:login|sign.in|logged|session|time|date|timestamp|device|ip.address|ip\b|country|city|location|browser|platform|client|status|last.active)/i;
-const sensitive=/(?:password|passcode|otp|secret|token|verification|recovery|authorization|cookie|api.key|access.key|private.key|2fa|mfa|code\b)/i;
-function cleanText(value){return String(value==null?'':value).replace(/[\u0000-\u001f\u007f]/g,' ').trim().slice(0,160)}
-function collect(raw,filename){
- const records=[];
- const put=(obj,section)=>{
-  if(records.length>=maxRecords||!obj||typeof obj!=='object'||Array.isArray(obj))return;
-  const kv=Object.entries(obj).filter(([k,v])=>keys.test(k)&&!sensitive.test(k)&&['string','number','boolean'].includes(typeof v))
-    .map(([k,v])=>[cleanText(k),cleanText(v)]).filter(([k,v])=>k&&v).slice(0,12);
-  if(kv.length) records.push({section,fields:Object.fromEntries(kv)});
- };
- const name=filename.toLowerCase();
- if(!/(?:login|log.in|account.history|session|device|history|activity|تسجيل|دخول)/i.test(name))
-   throw Error('اختر ملف سجل الدخول أو جلسات الحساب من أرشيف Snapchat، وليس الرسائل أو الصور.');
- if(/\.json$/i.test(name)){
-   let json;
-   try{json=JSON.parse(raw)}catch{throw Error('ملف JSON غير صالح')}
-   let inspected=0;
-   function visit(v,path,level){
-     if(level>14||inspected++>35000||records.length>=maxRecords)return;
-     if(Array.isArray(v)){
-       if(/login|log.in|account.history|session|device|activity/i.test(path)){
-         for(const item of v.slice(0,maxRecords)) {
-           if(item&&typeof item==='object'&&!Array.isArray(item))put(item,path);
-           else if(item&&typeof item==='object')visit(item,path,level+1);
-         }
-       }else for(const item of v.slice(0,1500))visit(item,path,level+1);
-     }else if(v&&typeof v==='object'){
-       if(/login|log.in|account.history|session|device|activity/i.test(path))put(v,path);
-       for(const [key,val] of Object.entries(v))if(!sensitive.test(key))visit(val,path?path+'.'+key:key,level+1);
-     }
-   }
-   visit(json,'',0);
- }else if(/\.csv$/i.test(name)){
-   const lines=raw.split(/\r?\n/).filter(x=>x.trim());
-   if(lines.length<2)throw Error('ملف CSV لا يحتوي على صفوف بيانات');
-   function csv(line){
-     const parts=[];let cell='',quote=false;
-     for(let i=0;i<line.length;i++){const ch=line[i];
-       if(ch==='"'){if(quote&&line[i+1]==='"'){cell+='"';i++}else quote=!quote}
-       else if(ch===','&&!quote){parts.push(cell);cell=''}else cell+=ch;
-     }
-     parts.push(cell);return parts;
-   }
-   const header=csv(lines[0]);
-   if(!header.some(h=>keys.test(h)&&!sensitive.test(h)))throw Error('أعمدة سجل الدخول المطلوبة غير موجودة في CSV');
-   for(const line of lines.slice(1,maxRecords+1)){
-     const v=csv(line),obj={};
-     header.forEach((h,i)=>{if(keys.test(h)&&!sensitive.test(h))obj[h]=v[i]||''});
-     put(obj,'CSV');
-   }
- }else if(/\.html?$/i.test(name)){
-   const doc=new DOMParser().parseFromString(raw,'text/html');
-   for(const table of [...doc.querySelectorAll('table')].slice(0,30)){
-     const rows=[...table.querySelectorAll('tr')];
-     if(!rows.length)continue;
-     const header=[...rows[0].querySelectorAll('th,td')].map(x=>x.textContent||'');
-     if(!header.some(x=>keys.test(x)&&!sensitive.test(x)))continue;
-     for(const row of rows.slice(1,601)){
-       const cols=[...row.querySelectorAll('th,td')],obj={};
-       header.forEach((h,i)=>{if(keys.test(h)&&!sensitive.test(h))obj[h]=cols[i]?.textContent||''});
-       put(obj,'HTML');
-     }
-   }
- }else if(/\.txt$/i.test(name)){
-   for(const line of raw.split(/\r?\n/).slice(0,3000)){
-     if(keys.test(line)&&!sensitive.test(line)&&records.length<maxRecords)
-       records.push({section:'TXT',fields:{'سطر':cleanText(line)}});
-   }
- }else throw Error('صيغة الملف غير مدعومة');
- return records;
-}
-function analyze(records,filename){
- const user=el('snapHandleReal').value.trim().slice(0,64);
- const country=el('snapExpectedCountry').value.trim().toLocaleLowerCase();
- const device=el('snapExpectedDevice').value.trim().toLocaleLowerCase();
- const lines=['👻 تقرير مراجعة سجل Snapchat الحقيقي',
-  'الملف المقروء: '+filename,'حساب مرجعي مدخل: '+(user||'غير محدد'),
-  'عدد الوقائع المستخرجة: '+records.length,
-  'مصدر النتائج: الملف المحلي المختار، بدون طلبات تسجيل دخول إلى Snapchat',
-  ''];
- if(!records.length){
-   lines.push('لا توجد حقول قابلة للفهم في هذا الملف؛ لا يمكن استنتاج سلامة الحساب من ذلك.');
-   return lines.join('\n');
- }
- const review=[];
- for(const [i,event] of records.entries()){
-   for(const [key,value] of Object.entries(event.fields)){
-     const low=key.toLowerCase();
-     if(country&&/(?:country|location|city|بلد|مدينة)/i.test(low)&&!value.toLocaleLowerCase().includes(country))
-       review.push('السجل '+(i+1)+' — مكان مختلف عن المعتاد: '+value);
-     if(device&&/(?:device|platform|client|جهاز)/i.test(low)&&!value.toLocaleLowerCase().includes(device))
-       review.push('السجل '+(i+1)+' — جهاز مختلف عن المعتاد: '+value);
-   }
- }
- lines.push('الوقائع المقروءة (حتى 40):');
- for(const [i,e] of records.slice(0,40).entries()) lines.push((i+1)+'. '+Object.entries(e.fields).map(([k,v])=>k+'='+v).join(' | '));
- if(records.length>40)lines.push('وقائع إضافية لم تُعرض: '+(records.length-40));
- lines.push('','مؤشرات للمراجعة وفق البلد/الجهاز اللذين حددتهما: '+review.length);
- for(const line of review.slice(0,25))lines.push('⚠ '+line);
- if(review.length>25)lines.push('... ملاحظات أخرى: '+(review.length-25));
- lines.push('','هذه مقارنة محلية بالبيانات المدخلة، وليست حكمًا باختراق الحساب. تأكد من الجلسات النشطة مباشرة داخل Snapchat.');
- return lines.join('\n');
-}
-function show(text){currentReport=String(text);el('snapReportReal').textContent=currentReport;}
-function official(kind){
- if(!window.DeelaToolsNative?.openSnapchatSecurityPage){show('افتح التطبيق الرسمي على هاتفك، أو بوابة accounts.snapchat.com مباشرةً في المتصفح.');return;}
- window.DeelaToolsNative.openSnapchatSecurityPage(kind);
-}
-el('snapOpenAccount').onclick=()=>official('account');
-el('snapOpenSessions').onclick=()=>official('sessions');
-el('snapOpenData').onclick=()=>official('mydata');
-el('snapRunReal').onclick=async()=>{
- const file=el('snapEvidenceNative').files?.[0];
- if(!file){show('لم يتم اختيار ملف حقيقي. اطلب بياناتك من Snapchat واختر ملف سجل الدخول.');return;}
- if(file.size>5*1024*1024){show('الحد الأقصى 5MB لهذا الفحص المحلي. اختر ملف سجل الدخول فقط.');return;}
- if(!allowed.test(file.name)){show('اختر ملف JSON أو CSV أو HTML أو TXT.');return;}
- try{
-   show('جارٍ قراءة ملفك على الجهاز...');const records=collect(await file.text(),file.name);
-   show(analyze(records,file.name));
- }catch(e){show('تعذر تحليل الملف: '+String(e.message||e))}
+const activate=(id,kind)=>{
+  const button=document.getElementById(id);
+  if(!button)return;
+  button.addEventListener('click',()=>{
+    if(window.DeelaToolsNative&&typeof window.DeelaToolsNative.openSnapchatSecurityPage==='function'){
+      window.DeelaToolsNative.openSnapchatSecurityPage(kind);
+    }else{
+      const link=kind==='twofactor'
+        ? 'https://help.snapchat.com/hc/en-us/articles/7012304746644-What-steps-can-I-take-to-help-protect-my-security-and-safety-on-Snapchat'
+        : 'https://accounts.snapchat.com/';
+      window.open(link,'_blank','noopener,noreferrer');
+    }
+  });
 };
-el('snapSaveReal').onclick=()=>{
- if(!currentReport||currentReport.includes('لم يتم اختيار ملف')){show('لا يوجد تقرير فحص حقيقي لحفظه بعد.');return;}
- if(window.DeelaToolsNative?.saveTextReport)window.DeelaToolsNative.saveTextReport('DEELA-Snapchat-Account-Audit.txt',currentReport);
- else show('حفظ الملف متاح داخل تطبيق المالك؛ انسخ التقرير يدويًا.');
-};
-el('snapClearReal').onclick=()=>{
- el('snapEvidenceNative').value='';el('snapHandleReal').value='';el('snapExpectedCountry').value='';el('snapExpectedDevice').value='';
- show('تم مسح بيانات هذا الفحص من الواجهة.');currentReport='';
-};
+activate('snapGoAccount','account');
+activate('snapGoSessions','sessions');
+activate('snapGo2fa','twofactor');
 })();
 </script>
 </body></html>
