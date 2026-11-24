@@ -95,7 +95,7 @@ async function render(token){
   .replace(/<link\s+rel="stylesheet"\s+href="\.\/admin\.css">/g,"")
   .replace("</head>",css+"</head>");
  if(script){
-  const pattern=page==="admin"?'<script defer src="./admin.js"></script>':'<script defer src="./app.js"></script>';
+  const pattern=page==="admin"?'<script defer src="./admin.js"><\/script>':'<script defer src="./app.js"><\/script>';
   if(!html.includes(pattern))throw Error("تعذّر تحميل برنامج المتجر");
   const safe=javascript.replace(/<\/script/gi,"<\\/script");
   html=html.replace(pattern,'<script type="module">'+safe+"<\/script>");
