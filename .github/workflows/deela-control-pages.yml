@@ -27,6 +27,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Never deploy private DEELA commerce to public GitHub Pages
+        run: |
+          set -euo pipefail
+          test ! -d docs/store-preview || { echo "::error::Private commerce preview must not exist in public docs"; exit 1; }
+          test ! -d docs/store || { echo "::error::Private commerce storefront must not exist in public docs"; exit 1; }
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
