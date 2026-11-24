@@ -33,6 +33,7 @@ jobs:
           print("Login returned HTML bytes:",len(s))
           print("Login contains heading:",'معاينة متجر DEELA' in s)
           print("Header names:",[x.partition(':')[0] for x in h.splitlines() if ':' in x])
+          print("Security headers:",[x for x in h.splitlines() if x.lower().startswith(("cache-control:","x-frame-options:","content-type:"))])
           PY
           grep -q 'معاينة متجر DEELA' /tmp/private-login.html
           grep -qi 'x-frame-options: DENY' /tmp/login-headers
