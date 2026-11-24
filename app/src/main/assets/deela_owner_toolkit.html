@@ -59,7 +59,7 @@ button,.nav button{border-radius:12px}.nav button.active,.tabs .active{backgroun
 <section class="section" id="agent">
 <div class="card" style="background:linear-gradient(135deg,#312334,#1d1623);border:1px solid #8b5772;border-radius:22px">
   <h2 style="color:#f0c1d4">🤖 وكيل ديلا البرمجي — أوامر بالعربي</h2>
-  <p class="muted">تكلم باللهجة السعودية أو اكتب المطلوب. بعد موافقتك يُنسخ طلبك ويُفتح GitHub Actions؛ الصقه في خانة task واضغط Run workflow. يعالج OpenCode المهمة في فرع مراجعة دون نشر نسخة للمشتركين. الحصة المجانية محدودة.</p>
+  <p class="muted">تكلم باللهجة السعودية أو اكتب المطلوب. أرسل أمرًا بالعربية إلى وكيل OpenCode بنقرة واحدة إذا كان GitHub مربوطًا بخادم ديلا. وإذا لم يُربط، يُنسخ الطلب وتُفتح صفحة Run workflow للتشغيل اليدوي. يُراجع الكود في فرع مستقل دون تحديث المشتركين.</p>
   <div style="padding:12px;border-radius:13px;background:#1a1420;border:1px solid #63465a;margin:12px 0">
     <strong>🎙️ تحدث بالعربي</strong>
     <p class="muted">اضغط الميكروفون وتكلم طبيعيًا. التعرف على الصوت يعتمد على خدمة الإملاء الموجودة في جهازك وقد يحتاج اتصالًا بالإنترنت.</p>
@@ -68,8 +68,8 @@ button,.nav button{border-radius:12px}.nav button.active,.tabs .active{backgroun
   <label for="deelaAgentPrompt">وش تبي الوكيل يسوي في مشروع ديلا؟</label>
   <textarea id="deelaAgentPrompt" spellcheck="true" dir="auto" maxlength="1400" style="width:100%;min-height:180px;background:#100d16;color:#fff4f7;border:1px solid #8b5772;border-radius:14px;padding:14px;line-height:1.8;resize:vertical" placeholder="مثال: يا ديلا، أصلح أزرار لوحة المالك، وخل القوائم كلها عربية، واختبر التغييرات بدون نشرها للمشتركين."></textarea>
   <label style="display:flex;align-items:flex-start;gap:8px;margin:14px 0;color:#e0c5d3"><input type="checkbox" id="deelaAgentPublicConfirm" style="margin-top:4px">أوافق على إرسال وصف المهمة إلى GitHub Actions في مستودع عام، وأتعهد بألا أكتب أي كلمات مرور أو بيانات مشتركين أو مفاتيح سرية.</label>
-  <div class="actions"><button id="deelaAgentSubmit" type="button">📋 نسخ المهمة وفتح GitHub Actions</button><button id="deelaAgentCopy" type="button">📋 نسخ الطلب</button></div>
-  <div id="deelaAgentStatus" class="note" role="status">جاهز لاستقبال الأوامر بالعربية. بعد الضغط سيُنسخ أمرك، وتُفتح صفحة GitHub Actions لتلصقه وتضغط Run workflow. التنفيذ لا يبدأ تلقائيًا.</div>
+  <div class="actions"><button id="deelaAgentSubmit" type="button">🚀 أرسل الأمر لوكيل ديلا</button><button id="deelaAgentCopy" type="button">📋 نسخ الطلب</button></div>
+  <div id="deelaAgentStatus" class="note" role="status">جاهز لاستقبال الأوامر بالعربية. بعد الضغط سيُرسل الأمر تلقائيًا إذا اكتمل ربط GitHub، وإلا تُفتح صفحة التشغيل اليدوي. لن يُدمج الكود أو يُنشر للمشتركين تلقائيًا.</div>
   <div class="note">🛡️ لا حذف جماعي، ولا نشر إصدار للمشتركين، ولا التعامل مع أسرار الحساب تلقائيًا. يحصل المالك على مراجعة ونتيجة اختبارات، ويختار اعتماد التغييرات بنفسه. النماذج المجانية قد تتوقف أو تصل لحد الاستخدام.</div>
 </div></section>
 <section class="section" id="commands"><div class="card"><h2>دليل الأوامر</h2><input class="search" id="search" placeholder="ابحث عن أمر، مثل /build" aria-label="البحث في الأوامر"><div class="cmdlist" id="cmdlist"></div><div class="note">اضغط «نسخ» لإرسال الأمر إلى مساعد البرمجة الذي تستخدمه. تُحفظ صيغ الأوامر الإنجليزية للتوافق.</div></div></section>
@@ -102,6 +102,26 @@ function toast(t){$('toast').textContent=t;$('toast').style.display='block';clea
 function go(id){document.querySelectorAll('.section').forEach(e=>e.classList.toggle('active',e.id===id));document.querySelectorAll('.nav button').forEach(e=>e.classList.toggle('active',e.dataset.go===id));$('heading').textContent=sections.find(s=>s[0]===id)[1].replace(/^[^ ]+ /,'');window.scrollTo({top:0,behavior:'smooth'})}
 sections.forEach(([id,name])=>{const b=document.createElement('button');b.textContent=name;b.dataset.go=id;b.onclick=()=>go(id);$('nav').appendChild(b)});document.querySelectorAll('.quick [data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
 async function copy(s){if(window.DeelaToolsNative){DeelaToolsNative.copyText(String(s));toast('تم النسخ إلى الحافظة');return}try{if(!navigator.clipboard?.writeText)throw Error('fallback');await navigator.clipboard.writeText(s);toast('تم النسخ إلى الحافظة')}catch(e){const ta=document.createElement('textarea');ta.value=s;ta.style.position='fixed';ta.style.opacity='0';document.body.append(ta);ta.select();try{const ok=document.execCommand('copy');toast(ok?'تم النسخ إلى الحافظة':'تعذر النسخ، استخدم التحديد اليدوي')}catch{toast('تعذر النسخ، استخدم التحديد اليدوي')}ta.remove()}}
+window.deelaAgentStatusResult=function(raw){
+  try {
+    const data=JSON.parse(raw);
+    $('deelaAgentStatus').textContent=data.ready
+      ? '🟢 وكيل ديلا مربوط بخادم GitHub. اكتب أو أمِل أمرك واضغط إرسال؛ لن ينشر تحديثًا للمشتركين.'
+      : '🟡 الوكيل جاهز للوضع اليدوي المجاني. اكتب أمرك ثم اضغط إرسال؛ سيُنسخ النص وتُفتح GitHub Actions.';
+  }catch { $('deelaAgentStatus').textContent='يمكنك كتابة الأمر وإرساله عبر GitHub Actions يدويًا.'; }
+};
+window.deelaAgentDispatchResult=function(raw){
+  try {
+    const data=JSON.parse(raw);
+    if(data.queued){
+      $('deelaAgentStatus').textContent='✅ تم إرسال أمرك إلى GitHub Actions. العمل على فرع مراجعة فقط؛ افتح صفحة الوكيل لمتابعة النتائج.';
+    } else if(data.manual) {
+      $('deelaAgentStatus').textContent='📋 تم نسخ الأمر وفتح GitHub. اضغط Run workflow، الصقه في خانة task ثم اضغط Run workflow مرة ثانية.';
+    } else {
+      $('deelaAgentStatus').textContent=data.error||'تعذر تشغيل الوكيل. افتح صفحة GitHub Actions للمحاولة يدويًا.';
+    }
+  } catch { $('deelaAgentStatus').textContent='تعذر قراءة رد وكيل ديلا.'; }
+};
 window.deelaVoiceText=function(value){
  const el=$('deelaAgentPrompt');if(!el)return;
  const text=String(value||'').trim(); if(!text)return;
@@ -125,7 +145,7 @@ $('deelaAgentSubmit').onclick=()=>{
  if(prompt.length<10||prompt.length>1400){$('deelaAgentStatus').textContent='اكتب أمرًا واضحًا من 10 إلى 1400 حرف.';return;}
  if(!$('deelaAgentPublicConfirm').checked){$('deelaAgentStatus').textContent='لازم توافق أولًا على رفع وصف المهمة إلى سجل GitHub Actions العام.';return;}
  if(!window.DeelaToolsNative){$('deelaAgentStatus').textContent='افتح وكيل البرمجة داخل تطبيق المالك لتجهيز المهمة.';return;}
- $('deelaAgentStatus').textContent='تم تجهيز المهمة. يُفتح GitHub Actions؛ اضغط Run workflow، الصق النص في خانة task، ثم اضغط Run workflow للتشغيل.';
+ $('deelaAgentStatus').textContent='جارٍ إرسال المهمة لوكيل ديلا بأمان. إذا لم يُجهّز ربط GitHub سيتم نسخ الأمر وفتح صفحة التشغيل اليدوي.';
  DeelaToolsNative.openAgentIssue(prompt);
 };
 
