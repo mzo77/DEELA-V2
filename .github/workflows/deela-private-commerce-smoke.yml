@@ -35,8 +35,12 @@ jobs:
           curl -sS -D /tmp/owner-login-headers -o /dev/null "$BASE/deela-private-store/"
           echo '== Private login response headers =='
           grep -iE '^(HTTP/|content-type:|x-content-type-options:|content-encoding:|content-disposition:|cache-control:)' /tmp/owner-login-headers || true
-          # Browser must receive HTML, not a plaintext source dump.
-          grep -qiE '^content-type: text/html' /tmp/owner-login-headers
+          # Supabase's shared-domain proxy forces HTML to text/plain.
+          grep -qiE '^content-type: text/plain' /tmp/owner-login-headers
+          curl -sS -D /tmp/xhtml-headers -o /dev/null "$BASE/deela-private-store/xhtml-probe"
+          echo '== XHTML probe response headers =='
+          grep -iE '^(HTTP/|content-type:|x-content-type-options:)' /tmp/xhtml-headers || true
+          grep -qiE '^content-type: application/xhtml[+]xml' /tmp/xhtml-headers
           for p in style.css app.js admin/index.html admin/admin.js api/shop/catalog api/shop/admin/orders; do
             code="$(curl -sS -o /tmp/result -w '%{http_code}' "$BASE/deela-private-store/$p")"
             test "$code" = "403" || { echo "::error::Private endpoint $p exposed HTTP $code"; exit 1; }
