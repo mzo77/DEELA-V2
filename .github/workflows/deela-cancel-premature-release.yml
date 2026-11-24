@@ -1,0 +1,29 @@
+name: DEELA Cancel Premature Official Release
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/deela-cancel-premature-release.yml'
+permissions:
+  actions: write
+  contents: read
+jobs:
+  cancel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Cancel build started before engine runtime verification
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          RUN_ID=45331741875
+          echo "Owner requested no APK builds until permanent runtime is verified."
+          STATE="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" --jq '.status')"
+          if [ "$STATE" = "completed" ]; then
+            echo "Prior release run already finished; no further cancellation is possible."
+          else
+            gh api -X POST "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/cancel" --silent
+            echo "Cancellation requested for official release workflow $RUN_ID."
+          fi
