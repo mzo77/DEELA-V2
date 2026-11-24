@@ -1,0 +1,6 @@
+DEELA v0.9.12 official signed release requested.
+Validated source SHA: 558a3dc1c8ec9db8af3ca14bd0b4ae9a0fb86981
+Verified build: https://github.com/mzo77/DEELA-V2/actions/runs/45321229238
+Scope: Apple certificate group manager, owner-only secure P12/profile file vault, iOS device UDID assignment and optional Apple API registration.
+No IPA signing, subscriber OTA installation, or unlicensed Apple distribution enabled.
+Use existing permanent Android signing certificate. Do not replace v0.9.11 in place.
