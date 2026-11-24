@@ -30,6 +30,8 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs
+      - name: Wait for GitHub artifact registration
+        run: sleep 20
       - id: deployment
         uses: actions/deploy-pages@v4
       - name: Verify working recovery URLs on GitHub Pages
