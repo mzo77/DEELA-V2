@@ -207,9 +207,16 @@ jobs:
           if [ -n "${ISSUE_NUMBER:-}" ]; then BODY="$BODY
 
           Related to #$ISSUE_NUMBER"; fi
-          gh pr create \
-            --base feature/admin-source-updates-and-signup-requests \
-            --head "$REVIEW_BRANCH" --title "$TITLE" --body "$BODY"
+          if gh pr create \
+              --base feature/admin-source-updates-and-signup-requests \
+              --head "$REVIEW_BRANCH" --title "$TITLE" --body "$BODY"; then
+            echo "✅ Pull Request generated for review; no subscriber release." >> "$GITHUB_STEP_SUMMARY"
+          else
+            REVIEW_URL="https://github.com/${GITHUB_REPOSITORY}/pull/new/$REVIEW_BRANCH"
+            echo "⚠️ GitHub Actions may not be allowed to create pull requests in repository settings." >> "$GITHUB_STEP_SUMMARY"
+            echo "Review branch pushed successfully. Open this link to create PR manually: $REVIEW_URL" >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::Review branch created, but GitHub refused automated PR creation. Use the link in job summary."
+          fi
 
       - name: Reply on the owner task with verified result
         if: ${{ always() && github.event_name == 'issues' }}
