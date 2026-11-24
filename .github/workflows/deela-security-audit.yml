@@ -87,3 +87,34 @@ jobs:
           path: security-reports/semgrep.json
           if-no-files-found: warn
           retention-days: 7
+
+  live-auth-guard:
+    name: Verify deployed Security Hub rejects anonymous access
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Deny unauthenticated operations (real Supabase HTTPS endpoint)
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-security-hub"
+          for path in /engines /status /audit/latest; do
+            code="$(curl --silent --show-error --max-time 20 \
+              --output /dev/null --write-out '%{http_code}' \
+              "$url$path")"
+            if [ "$code" != "403" ]; then
+              echo "SECURITY FAILURE: anonymous GET $path returned HTTP $code (expected 403)"
+              exit 1
+            fi
+            echo "PASS: anonymous GET $path denied"
+          done
+          code="$(curl --silent --show-error --max-time 20 \
+            --output /dev/null --write-out '%{http_code}' \
+            --request POST --header 'content-type: application/json' \
+            --data '{"platform":"deela-demo","test_username":"test_deela"}' \
+            "$url/lab/simulate")"
+          if [ "$code" != "403" ]; then
+            echo "SECURITY FAILURE: anonymous POST returned HTTP $code (expected 403)"
+            exit 1
+          fi
+          echo "PASS: anonymous lab POST denied. No credentials or model calls were used."
