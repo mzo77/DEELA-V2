@@ -42,7 +42,16 @@ jobs:
           done
           code="$(curl -sS -o /tmp/result -w '%{http_code}' "$BASE/deela-shop-preview/")"
           test "$code" = "403"
-          echo "Private site, assets, catalog, and merchant actions deny anonymous visitors"
+          # Exercise the real login endpoint using a deliberately invalid account
+          # without using or exposing the real owner's credentials.
+          code="$(curl -sS -o /tmp/invalid-login -w '%{http_code}' \
+            -X POST "$BASE/deela-private-store/login" \
+            -H 'Content-Type: application/x-www-form-urlencoded' \
+            --data-urlencode 'email=unknown@example.invalid' \
+            --data-urlencode 'password=deliberately-invalid-secret')"
+          test "$code" = "401" || { echo "::error::Unexpected private-login response: HTTP $code"; exit 1; }
+          grep -Fq 'لم يتم تسجيل الدخول' /tmp/invalid-login
+          echo "Private site, assets, catalog, login, and merchant actions are correctly restricted"
       - name: Verify no public storefront is shipped in GitHub Pages
         run: |
           set -euo pipefail
