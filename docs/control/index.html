@@ -16,7 +16,7 @@
 <label><input id="remember" type="checkbox" style="width:20px"> تذكر اسم المستخدم</label>
 <p><button id="loginBtn" type="submit">دخول لوحة المالك</button></p><small>حفظ كلمة المرور وتعبئتها تلقائيًا يتم عبر مدير كلمات المرور في هاتفك، وليس في تخزين الموقع.</small></form></section>
 <section id="app" class="hidden"><h1>مركز تحكم المالك</h1><nav><button class="active" data-tab="home">الرئيسية</button><button data-tab="members">الاشتراكات</button><button data-tab="power">قوة غاشمة ⚡</button><button data-tab="account">الحساب والأمان</button></nav>
-<div id="home" class="tab"><div class="grid"><div class="card"><small>إجمالي المستخدمين</small><p class="metric" id="total">—</p></div><div class="card"><small>اشتراكات فعالة</small><p class="metric" id="active">—</p></div><div class="card"><small>اشتراكات موقوفة</small><p class="metric" id="suspended">—</p></div></div><div class="note">المالك يتحكم بالتجربة المجانية لمدة 24 ساعة وتجديد الاشتراكات وإلغائها. لا يمكن للمشترك دخول المتجر باشتراك منتهٍ.</div><div class="card"><h2>آخر العمليات</h2><div id="logs"></div></div></div>
+<div id="home" class="tab"><div class="grid"><div class="card"><small>مكتبة تطبيقات الآيفون</small><p class="metric" id="iosLibraryCount">—</p><p class="muted">Accretion · مكتبة مستقلة عن أندرويد</p><a href="https://mzo77.github.io/DEELA-V2/ios/" target="_blank" rel="noopener noreferrer">فتح متجر الآيفون والمكتبة</a></div><div class="card"><small>إجمالي المستخدمين</small><p class="metric" id="total">—</p></div><div class="card"><small>اشتراكات فعالة</small><p class="metric" id="active">—</p></div><div class="card"><small>اشتراكات موقوفة</small><p class="metric" id="suspended">—</p></div></div><div class="note">المالك يتحكم بالتجربة المجانية لمدة 24 ساعة وتجديد الاشتراكات وإلغائها. لا يمكن للمشترك دخول المتجر باشتراك منتهٍ.</div><div class="card"><h2>آخر العمليات</h2><div id="logs"></div></div></div>
 <div id="members" class="tab hidden">
  <section class="card">
   <h2>إدارة المشتركين</h2>
@@ -131,6 +131,11 @@ $('memberSearch').addEventListener('input',renderMembers);
 $('invite').onclick=async()=>{try{await call('/api/owner/invite','POST',{email:$('inviteEmail').value.trim()});say('تم إرسال الدعوة');await load()}catch(e){say(e.message)}};
 $('uf').onsubmit=async e=>{e.preventDefault();try{const x=await call('/api/owner/username','POST',{username:$('newUsername').value});say('تم اعتماد اسم المستخدم: '+x.username)}catch(x){say(x.message)}};
 $('pf').onsubmit=async e=>{e.preventDefault();try{await call('/api/owner/password','POST',{current_password:$('current').value,new_password:$('next').value});out();say('تم تغيير كلمة المرور، ادخل مجددًا.')}catch(x){say(x.message)}finally{$('current').value='';$('next').value=''}};
+// Read-only public aggregate count; never expose subscriber credentials or IPA download links.
+fetch("https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-ios-web/api/catalog-stats",{cache:"no-store"})
+ .then(r=>r.ok?r.json():Promise.reject(Error("stats")))
+ .then(data=>{const n=document.getElementById("iosLibraryCount");if(n)n.textContent=Number(data.apps||0).toLocaleString("ar-SA");})
+ .catch(()=>{const n=document.getElementById("iosLibraryCount");if(n)n.textContent="غير متاح";});
 const name=localStorage.getItem('deela-username');if(name){$('loginName').value=name;$('remember').checked=true}if(token)load().catch(()=>out());
 })();
 </script></body></html>
