@@ -1,0 +1,98 @@
+name: Build DEELA iOS 1.0.3 - Free Public Runner
+on:
+  push:
+    paths:
+      - 'ios-public-build/**'
+      - '.github/workflows/deela-ios-public-release.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: deela-ios-public-build
+  cancel-in-progress: false
+jobs:
+  ios:
+    name: Build iPhone IPA on free public macOS runner
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout public DEELA overlay
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Fetch original open-source Feather project
+        run: |
+          set -euo pipefail
+          git clone --depth=1 --recurse-submodules https://github.com/claration/Feather.git "$RUNNER_TEMP/feather"
+      - name: Apply public DEELA-specific source overlay
+        run: |
+          set -euo pipefail
+          test -f ios-public-build/overlay/Feather/FeatherApp.swift
+          test -f ios-public-build/overlay/Feather/DeelaArabicText.swift
+          cp -R ios-public-build/overlay/. "$RUNNER_TEMP/feather/"
+          cd "$RUNNER_TEMP/feather"
+          grep -Fqx 'FEATHER_PROJECT_VERSION=1.0.3' Feather.xcconfig
+          grep -Fqx 'FEATHER_PRODUCT_BUNDLE_IDENTIFIER=com.mzo77.deela.ios' Feather.xcconfig
+          grep -Fq 'if deelaSession.isOwner' Feather/FeatherApp.swift
+          grep -Fq 'private func restore() async' Feather/FeatherApp.swift
+          grep -Fq 'sessionRefreshInProgress' Feather/FeatherApp.swift
+          grep -Fq 'DeelaSavedLogin' Feather/FeatherApp.swift
+          grep -Fq 'DeelaArabicDescription' Feather/DeelaPreviewHome.swift
+          swiftc -frontend -parse Feather/FeatherApp.swift Feather/DeelaPreviewHome.swift Feather/DeelaOwnerPanel.swift Feather/DeelaArabicText.swift
+          plutil -lint Feather/Resources/Info.plist
+      - name: Generate DEELA app icon
+        run: |
+          cd "$RUNNER_TEMP/feather"
+          swift scripts/ios-distribution/generate-deela-app-icon.swift
+      - name: Compile DEELA iOS 1.0.3 unsigned release
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/feather"
+          xcodebuild -project Feather.xcodeproj \
+            -scheme Feather -configuration Release -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/deela-ios-public-build" \
+            -skipPackagePluginValidation \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            DEVELOPMENT_TEAM= build
+      - name: Verify DEELA identity and package IPA
+        run: |
+          set -euo pipefail
+          APP="$RUNNER_TEMP/deela-ios-public-build/Build/Products/Release-iphoneos/Feather.app"
+          test -d "$APP"
+          BUNDLE="$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$APP/Info.plist")"
+          DISPLAY="$(/usr/libexec/PlistBuddy -c 'Print CFBundleDisplayName' "$APP/Info.plist")"
+          VERSION="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Info.plist")"
+          test "$BUNDLE" = "com.mzo77.deela.ios"
+          test "$DISPLAY" = "DEELA iOS"
+          test "$VERSION" = "1.0.3"
+          mkdir -p "dist/Payload"
+          ditto "$APP" "dist/Payload/DEELA.app"
+          (cd dist && ditto -c -k --keepParent Payload DEELA-iOS-1.0.3.ipa)
+          unzip -tq dist/DEELA-iOS-1.0.3.ipa >/dev/null
+          (cd dist && shasum -a 256 DEELA-iOS-1.0.3.ipa > DEELA-iOS-1.0.3.ipa.sha256)
+      - name: Upload verified IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: DEELA-iOS-1.0.3-IPA-PUBLIC
+          path: |
+            dist/DEELA-iOS-1.0.3.ipa
+            dist/DEELA-iOS-1.0.3.ipa.sha256
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish iPhone release without replacing Android latest
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view 'ios-v1.0.3' --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "iOS 1.0.3 release already exists. Avoid overwriting."
+            exit 0
+          fi
+          gh release create 'ios-v1.0.3' \
+            dist/DEELA-iOS-1.0.3.ipa dist/DEELA-iOS-1.0.3.ipa.sha256 \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "DEELA iOS v1.0.3 - Arabic and persistent login" \
+            --notes "Stable DEELA iPhone app from public macOS build. This IPA is NOT Apple-signed: sign on your own PC to install. Android official releases are unchanged." \
+            --latest=false
