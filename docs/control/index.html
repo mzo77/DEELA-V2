@@ -357,7 +357,6 @@ function renderApplePanel(){
  if(!appleDevices.length)list.append(element('div','member-empty','لم تضف أجهزة مشتركين بعد.'));
 }
 async function loadApplePanel(){
- if(appleBusy)return;
  const result=await call('/api/owner/apple/certificates');
  appleGroups=result.certificates||[];appleDevices=result.devices||[];
  appleApiConnected=Boolean(result.apple_api_configured);
