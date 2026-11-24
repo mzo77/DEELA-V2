@@ -11,6 +11,9 @@ on:
       - "gradlew"
       - "settings.gradle.kts"
   workflow_dispatch:
+concurrency:
+  group: deela-commerce-${d}{{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
