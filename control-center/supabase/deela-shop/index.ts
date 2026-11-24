@@ -1,8 +1,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2.95.0";
 
-const URL = Deno.env.get("SUPABASE_URL") ?? "";
+const SUPABASE_ENDPOINT = Deno.env.get("SUPABASE_URL") ?? "";
 const KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-const db = createClient(URL, KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+const db = createClient(SUPABASE_ENDPOINT, KEY, { auth: { persistSession: false, autoRefreshToken: false } });
 const ORIGINS = new Set([
   "https://mzo77.github.io",
   "https://appassets.androidplatform.net",
