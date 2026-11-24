@@ -1,0 +1,120 @@
+name: DEELA Security Lab — Free Source Audit
+
+on:
+  push:
+    branches:
+      - feature/deela-owner-official-0911
+    paths:
+      - 'services/deela-security-hub/**'
+      - 'tests/security-hub.test.ts'
+      - 'app/src/main/java/dev/aurastore/store/auth/**'
+      - '.github/workflows/deela-security-audit.yml'
+  pull_request:
+    branches:
+      - feature/admin-source-updates-and-signup-requests
+    paths:
+      - 'services/deela-security-hub/**'
+      - 'tests/security-hub.test.ts'
+      - 'app/src/main/java/dev/aurastore/store/auth/**'
+      - '.github/workflows/deela-security-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deela-security-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  demo-lab-tests:
+    name: Test owner-only synthetic login / 2FA logic
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type check synthetic lab logic
+        run: deno check services/deela-security-hub/simulation.ts
+      - name: Run offline simulation tests (no actual network targets)
+        run: deno test --no-remote tests/security-hub.test.ts
+
+  source-audit:
+    name: Audit DEELA app source with open-source Semgrep
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install open-source static analysis CLI
+        run: python -m pip install --disable-pip-version-check semgrep
+      - name: Analyze owner Android Kotlin and owner backend (local files only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p security-reports
+          semgrep scan \
+            --config p/security-audit \
+            --metrics=off \
+            --json \
+            --output security-reports/semgrep.json \
+            --timeout 5 \
+            app/src/main/java/dev/aurastore/store/auth \
+            services/deela-security-hub
+          python - <<'PY'
+          import json
+          p="security-reports/semgrep.json"
+          with open(p,encoding="utf8") as f:
+              data=json.load(f)
+          findings=data.get("results",[])
+          errors=data.get("errors",[])
+          print("DEELA security scan completed.")
+          print("Findings:",len(findings))
+          print("Scanner warnings/errors:",len(errors))
+          if errors:
+              for e in errors[:8]:
+                  print("SCAN_WARNING:",str(e.get("message","unknown"))[:300])
+          PY
+      - name: Upload security audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deela-security-audit-report
+          path: security-reports/semgrep.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  live-auth-guard:
+    name: Verify deployed Security Hub rejects anonymous access
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Deny unauthenticated operations (real Supabase HTTPS endpoint)
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-security-hub"
+          for path in /engines /status /audit/latest; do
+            code="$(curl --silent --show-error --max-time 20 \
+              --output /dev/null --write-out '%{http_code}' \
+              "$url$path")"
+            if [ "$code" != "403" ]; then
+              echo "SECURITY FAILURE: anonymous GET $path returned HTTP $code (expected 403)"
+              exit 1
+            fi
+            echo "PASS: anonymous GET $path denied"
+          done
+          code="$(curl --silent --show-error --max-time 20 \
+            --output /dev/null --write-out '%{http_code}' \
+            --request POST --header 'content-type: application/json' \
+            --data '{"platform":"deela-demo","test_username":"test_deela"}' \
+            "$url/lab/simulate")"
+          if [ "$code" != "403" ]; then
+            echo "SECURITY FAILURE: anonymous POST returned HTTP $code (expected 403)"
+            exit 1
+          fi
+          echo "PASS: anonymous lab POST denied. No credentials or model calls were used."
