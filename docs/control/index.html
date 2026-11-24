@@ -16,13 +16,22 @@
 .owner-app-buttons{display:flex;gap:6px;flex-wrap:wrap}.owner-app-buttons button{font-size:12px;padding:9px}
 #catalogRefresh,#catalogMore{align-self:end;min-height:44px;margin-bottom:1px}
 @media(max-width:550px){#catalogPlatformTabs{grid-template-columns:1fr 1fr}#catalogApps{grid-template-columns:1fr}#catalogRefresh{width:100%}}
+
+.apple-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;align-items:end;margin:12px 0 20px}
+.apple-form label{font-size:13px;color:#dbc7d3;display:block;font-weight:650}
+.apple-form input,.apple-form select{display:block;width:100%;padding:12px;border-radius:10px;color:#fff;background:#100c12;border:1px solid #764c66;margin-top:6px;min-height:45px}
+.apple-form button{min-height:46px}.apple-certificate-grid,.apple-device-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.apple-certificate,.apple-device{padding:15px;border:1px solid #70485e;background:#211723;border-radius:15px;min-width:0}
+.apple-certificate h4,.apple-device h4{margin:0 0 8px}.apple-certificate p,.apple-device p{color:#dbc7d3;font-size:13px;margin:5px 0;overflow-wrap:anywhere}
+#apple code{display:inline-block;padding:5px 8px;background:#121016;color:#e7cced;border-radius:7px;font-size:11px;margin:4px 2px;word-break:break-all}
+@media(max-width:600px){.apple-form{grid-template-columns:1fr}.apple-certificate-grid,.apple-device-grid{grid-template-columns:1fr}}
 </style></head><body><header><strong>✦ تطبيقات ديلا <span style="color:#ff234f">👑</span></strong><button id="logout" class="secondary hidden">تسجيل الخروج</button></header><main><div id="msg"></div>
 <section id="login" class="card login"><h1>تسجيل دخول المالك</h1><p class="muted">بعد تسجيل الدخول يمكنك اختيار اسم المستخدم وتغيير كلمة المرور.</p><form id="lf">
 <label>اسم المستخدم أو البريد الإلكتروني<input name="username" id="loginName" autocomplete="username" required></label>
 <label>كلمة المرور</label><div class="row"><input id="loginPass" name="password" type="password" autocomplete="current-password" required><button id="eye" class="secondary" type="button" aria-label="إظهار كلمة المرور">👁</button></div>
 <label><input id="remember" type="checkbox" style="width:20px"> تذكر اسم المستخدم</label>
 <p><button id="loginBtn" type="submit">دخول لوحة المالك</button></p><small>حفظ كلمة المرور وتعبئتها تلقائيًا يتم عبر مدير كلمات المرور في هاتفك، وليس في تخزين الموقع.</small></form></section>
-<section id="app" class="hidden"><h1>مركز تحكم المالك</h1><nav><button class="active" data-tab="home">الرئيسية</button><button data-tab="members">الاشتراكات</button><button data-tab="apps">إدارة التطبيقات</button><button data-tab="power">قوة غاشمة ⚡</button><button data-tab="account">الحساب والأمان</button></nav>
+<section id="app" class="hidden"><h1>مركز تحكم المالك</h1><nav><button class="active" data-tab="home">الرئيسية</button><button data-tab="members">الاشتراكات</button><button data-tab="apps">إدارة التطبيقات</button><button data-tab="apple">شهادات Apple</button><button data-tab="power">قوة غاشمة ⚡</button><button data-tab="account">الحساب والأمان</button></nav>
 <div id="home" class="tab"><div class="grid"><div class="card"><small>مكتبة تطبيقات الآيفون</small><p class="metric" id="iosLibraryCount">—</p><p class="muted">Accretion · مكتبة مستقلة عن أندرويد</p><a href="https://mzo77.github.io/DEELA-V2/ios/" target="_blank" rel="noopener noreferrer">فتح متجر الآيفون والمكتبة</a></div><div class="card"><small>إجمالي المستخدمين</small><p class="metric" id="total">—</p></div><div class="card"><small>اشتراكات فعالة</small><p class="metric" id="active">—</p></div><div class="card"><small>اشتراكات موقوفة</small><p class="metric" id="suspended">—</p></div></div><div class="note">المالك يتحكم بالتجربة المجانية لمدة 24 ساعة وتجديد الاشتراكات وإلغائها. لا يمكن للمشترك دخول المتجر باشتراك منتهٍ.</div><div class="card"><h2>آخر العمليات</h2><div id="logs"></div></div></div>
 <div id="members" class="tab hidden">
  <section class="card">
@@ -65,11 +74,61 @@
  </div>
 </div>
 <div id="power" class="tab hidden"><div class="card"><h2>⚡ قوة غاشمة — خاص بالمالك</h2><p class="muted">نقلت تنظيم أدوات مركز الأوامر من مشروعك الأول. الوصول للروابط يعمل الآن؛ تشغيل أدوات المختبر المحلية كاملة يحتاج نقلها في مرحلة مستقلة.</p><div class="grid"><div class="card"><h3>⌘ دليل الأوامر</h3><a href="https://github.com/mzo77/DEELA-APPS/blob/main/app/src/main/assets/index.html" target="_blank" rel="noopener">فتح الكود القديم</a></div><div class="card"><h3>⌨ مختبر البرمجة</h3><a href="https://github.com/mzo77/DEELA-APPS" target="_blank" rel="noopener">المشروع الأول</a></div><div class="card"><h3>⚙ أدوات المطور</h3><a href="https://github.com/mzo77/DEELA-V2/actions" target="_blank" rel="noopener">بناء تطبيقات ديلا</a></div><div class="card"><h3>🎮 مختبر ملفات الألعاب</h3><a href="https://github.com/mzo77/DEELA-APPS" target="_blank" rel="noopener">المصدر الأصلي</a></div><div class="card"><h3>◇ مركز الأمان</h3><a href="https://supabase.com/dashboard/project/rxlynynjetajtsqlhkrq" target="_blank" rel="noopener">إعدادات الخادم</a></div></div></div></div>
+
+<div id="apple" class="tab hidden">
+ <section class="card">
+  <h2>شهادات Apple وتفعيل أجهزة المشتركين</h2>
+  <p class="muted">إنشاء سجل شهادة، حفظ ملفات P12 وmobileprovision في مساحة خاصة، وربط UDID بالمشترك. لا تتحول حالة الجهاز إلى «مسجل لدى Apple» إلا بعد نجاح طلب Apple الرسمي. توقيع وتثبيت IPA يحتاجان إعدادًا منفصلًا.</p>
+  <div class="note">تنبيه: Ad Hoc مخصص للتطوير والاختبار على أجهزة مسجلة، وليس توزيعًا تجاريًا غير محدود. حد Apple هو 100 جهاز آيفون لكل سنة عضوية، وليس 100 جهاز جديد لكل شهادة. خدمة Enterprise ليست للمشتركين الخارجيين.</div>
+  <p id="appleApiStatus" class="muted" role="status">جارٍ فحص ربط Apple...</p>
+  <h3>1. إضافة شهادة أو مزود توقيع</h3>
+  <form id="appleCertificateForm" class="apple-form">
+   <label>اسم الشهادة أو المجموعة<input name="title" required minlength="2" maxlength="100" placeholder="شهادة ديلا الأولى"></label>
+   <label>النوع<select name="method" id="appleMethod"><option value="ad_hoc">حساب Apple Developer — Ad Hoc</option><option value="licensed_provider">مزود توقيع مرخّص (بدون ربط تلقائي حتى توفير API)</option></select></label>
+   <label>اسم المزود<input name="provider_name" maxlength="100" value="Apple Developer" placeholder="Apple Developer"></label>
+   <label>Team ID من Apple<input name="team_id" id="appleTeamId" maxlength="32" autocomplete="off" placeholder="AB12CD34EF"></label>
+   <label>رقم الشهادة (اختياري)<input name="certificate_serial" maxlength="120" autocomplete="off" placeholder="Serial / Certificate ID"></label>
+   <label>تاريخ انتهاء الشهادة (اختياري)<input name="certificate_expires_at" type="date"></label>
+   <label>عدد الأجهزة المحلي (1–100)<input name="device_limit" type="number" min="1" max="100" value="100"></label>
+   <button type="submit">حفظ الشهادة</button>
+  </form>
+  <div id="appleCertificates" class="apple-certificate-grid"></div>
+ </section>
+ <section class="card">
+  <h3>2. إدارة ملفات الشهادة الخاصة</h3>
+  <p class="muted">يمكنك رفع P12 وملف mobileprovision إلى مساحة تخزين خاصة؛ لا يظهر محتواهما ولا رابط تحميلهما للمشتركين. لا تُدخل كلمة مرور P12 هنا؛ ستُطلب لاحقًا في خطوة توقيع آمنة عند توفير محرك توقيع.</p>
+  <form id="appleFileForm" class="apple-form">
+    <label>الشهادة<select id="appleFileGroup" required></select></label>
+    <label>نوع الملف<select id="appleFileType"><option value="p12">شهادة .p12</option><option value="profile">ملف توزيع .mobileprovision</option></select></label>
+    <label>الملف<input type="file" id="appleFile" accept=".p12,.mobileprovision" required></label>
+    <button type="submit">رفع الملف بصورة خاصة</button>
+  </form>
+ </section>
+ <section class="card">
+  <h3>3. إضافة جهاز مشترك إلى شهادة</h3>
+  <form id="appleDeviceForm" class="apple-form">
+    <label>الشهادة<select id="appleDeviceGroup" required></select></label>
+    <label>المشترك (آيفون فقط)<select id="appleSubscriber" required></select></label>
+    <label>اسم الجهاز<input id="appleDeviceName" maxlength="100" placeholder="iPhone 16 Pro" required></label>
+    <label>UDID الخاص بالجهاز<input id="appleDeviceUdid" maxlength="45" autocomplete="off" spellcheck="false" placeholder="00008110-0012345678901234" required></label>
+    <button type="submit">إضافة إلى قائمة الأجهزة</button>
+  </form>
+  <p class="muted">بعد الإضافة تظهر حالة «بانتظار التسجيل». عندما تجهّز مفتاح App Store Connect API في أسرار Supabase يمكن إرسال تسجيل الجهاز إلى Apple من زر منفصل؛ ويشترط اشتراك آيفون ساريًا.</p>
+  <div id="appleDevices" class="apple-device-grid"></div>
+ </section>
+ <section class="card">
+  <h3>4. تجهيز التفعيل الفعلي</h3>
+  <p>لتشغيل تسجيل الأجهزة مباشرة باستخدام حساب Apple Developer الخاص بك، أضف في <a href="https://supabase.com/dashboard/project/rxlynynjetajtsqlhkrq/functions" target="_blank" rel="noopener">Supabase Edge Functions → Secrets</a> ثلاثة أسرار خادم فقط:</p>
+  <code>DEELA_APPLE_ISSUER_ID</code> · <code>DEELA_APPLE_KEY_ID</code> · <code>DEELA_APPLE_API_PRIVATE_KEY_P8</code>
+  <p class="muted">هذه مفاتيح واجهة App Store Connect API، وليست كلمة مرور حساب Apple. لا ترسل ملف .p8 أو كلمة مرور Apple في دردشة ولا تضعها في كود GitHub أو صفحات الويب.</p>
+  <p class="muted">نجاح تسجيل UDID لا يثبت صلاحية ملف mobileprovision أو توقيع IPA أو تثبيته. ستظل هذه العمليات غير مفعّلة إلى أن يتوفر توقيع صحيح وتوزيع مسموح به.</p>
+ </section>
+</div>
 <div id="account" class="tab hidden"><div class="card"><h2>اسم المستخدم الخاص بك</h2><form id="uf"><label>اختر اسم المستخدم<input id="newUsername" autocomplete="off" minlength="3" maxlength="32" pattern="[A-Za-z][A-Za-z0-9_.-]{2,31}" placeholder="Mzo" required></label><button>حفظ اسم المستخدم</button></form></div>
 <div class="card"><h2>تغيير كلمة المرور</h2><form id="pf"><label>كلمة المرور الحالية<input type="password" autocomplete="current-password" id="current" required></label><label>كلمة مرور جديدة (12 رمزًا على الأقل)<input type="password" autocomplete="new-password" id="next" minlength="12" required></label><button>تغيير كلمة المرور</button></form></div></div></section></main>
 <script>
 (function(){'use strict';const $=id=>document.getElementById(id),base='https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-control';let token=sessionStorage.getItem('deela-token')||'',membersCache=[],platformFilter='ios',memberBusy=false;
-function say(s){$('msg').textContent=s;$('msg').style.display='block'}function go(tab){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('hidden',x.id!==tab));document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));if(tab==='apps'&&token)loadOwnerApps(true).catch(e=>say(e.message));}
+function say(s){$('msg').textContent=s;$('msg').style.display='block'}function go(tab){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('hidden',x.id!==tab));document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));if(tab==='apps'&&token)loadOwnerApps(true).catch(e=>say(e.message));if(tab==='apple'&&token)loadApplePanel().catch(e=>say(e.message));}
 async function call(path,method,body){let r=await fetch(base+path,{method:method||'GET',cache:'no-store',headers:{'Content-Type':'application/json',...(token?{'Authorization':'Bearer '+token}:{})},body:body?JSON.stringify(body):undefined}),j=await r.json();if(!r.ok)throw Error(j.error||'تعذرت العملية');return j}
 function authed(){ $('login').classList.add('hidden');$('app').classList.remove('hidden');$('logout').classList.remove('hidden')}
 function out(){token='';sessionStorage.removeItem('deela-token');$('app').classList.add('hidden');$('login').classList.remove('hidden');$('logout').classList.add('hidden');$('loginPass').value=''}
@@ -225,6 +284,131 @@ let catalogSearchDebounce=null;
 $('catalogSearch').oninput=()=>{clearTimeout(catalogSearchDebounce);catalogSearchDebounce=setTimeout(()=>loadOwnerApps(true).catch(e=>say(e.message)),300)};
 $('catalogRefresh').onclick=()=>loadOwnerApps(true).catch(e=>say(e.message));
 $('catalogMore').onclick=()=>{appOffset+=40;loadOwnerApps().catch(e=>say(e.message))};
+
+
+let appleGroups=[],appleDevices=[],appleApiConnected=false,appleBusy=false;
+function appleSelectItems(id,first){
+ const node=$(id),saved=node.value;node.replaceChildren();
+ const empty=element('option','',first);empty.value='';node.append(empty);
+ for(const g of appleGroups){const option=element('option','',g.title+' · '+(g.method==='ad_hoc'?'Apple':'مزود'));option.value=g.id;node.append(option)}
+ if(appleGroups.some(g=>g.id===saved))node.value=saved;
+}
+function appleUserList(){
+ const target=$('appleSubscriber'),saved=target.value;target.replaceChildren();
+ const empty=element('option','','اختر حساب آيفون');empty.value='';target.append(empty);
+ for(const member of membersCache.filter(m=>m.platform==='ios')){
+  const option=element('option','',member.email||member.display_name||member.id);
+  option.value=member.id;target.append(option);
+ }
+ if(membersCache.some(m=>m.id===saved&&m.platform==='ios'))target.value=saved;
+}
+function renderApplePanel(){
+ $('appleApiStatus').textContent=appleApiConnected?
+  'اتصال Apple API مهيأ على الخادم. التسجيل الحقيقي يتم عند طلبك وبشرط قبول Apple.' :
+  'مفاتيح Apple API غير موصولة بعد؛ يمكنك الآن إضافة الشهادات والمشتركين وملفاتهم، وستبقى حالة الجهاز بانتظار التسجيل.';
+ appleSelectItems('appleFileGroup','اختر الشهادة');
+ appleSelectItems('appleDeviceGroup','اختر الشهادة');
+ appleUserList();
+ const certs=$('appleCertificates');certs.replaceChildren();
+ for(const g of appleGroups){
+  const count=appleDevices.filter(d=>d.signing_group_id===g.id).length;
+  const registered=appleDevices.filter(d=>d.signing_group_id===g.id&&d.state==='apple_registered').length;
+  const card=element('article','apple-certificate');
+  card.append(element('h4','',g.title));
+  card.append(element('p','',g.method==='ad_hoc'?'Apple Developer — Ad Hoc':'مزود توقيع خارجي'));
+  card.append(element('p','','المزود: '+g.provider_name+' · Team: '+(g.team_id||'غير محدد')));
+  card.append(element('p','','أجهزة مضافة: '+count+'/'+g.device_limit+' · أكدتها Apple: '+registered));
+  card.append(element('p','','P12: '+(g.has_p12?'محفوظة بصورة خاصة':'لم تُرفع')+' · ملف التوزيع: '+(g.has_profile?'مرفوع غير متحقق':'لم يُرفع')));
+  card.append(element('p','','انتهاء الصلاحية: '+date(g.certificate_expires_at)));
+  const choose=element('button','secondary','استخدام هذه الشهادة');
+  choose.onclick=()=>{$('appleFileGroup').value=g.id;$('appleDeviceGroup').value=g.id;document.getElementById('appleDeviceForm').scrollIntoView({behavior:'smooth',block:'start'})};
+  card.append(choose);certs.append(card);
+ }
+ if(!appleGroups.length)certs.append(element('div','member-empty','لم تُضف أي شهادة بعد. ابدأ بالنموذج أعلاه.'));
+ const list=$('appleDevices');list.replaceChildren();
+ for(const device of appleDevices){
+  const group=appleGroups.find(g=>g.id===device.signing_group_id);
+  const sub=membersCache.find(m=>m.id===device.user_id);
+  const card=element('article','apple-device');
+  const label=device.state==='apple_registered'?'مسجل لدى Apple (بدون توقيع IPA)':
+              device.state==='registration_failed'?'فشل التسجيل لدى Apple':'بانتظار Apple';
+  card.append(element('h4','',device.device_name));
+  card.append(element('p','',sub?.email||sub?.display_name||'مشترك '+device.user_id.slice(0,8)));
+  card.append(element('p','','الشهادة: '+(group?.title||'غير معروفة')));
+  card.append(element('p','','UDID: ••••'+String(device.udid||'').slice(-7)));
+  card.append(element('p','','الحالة: '+label));
+  if(device.last_error)card.append(element('p','',String(device.last_error).slice(0,120)));
+  if(device.state!=='apple_registered'&&group?.method==='ad_hoc'){
+   const action=element('button','secondary','تسجيل الجهاز في Apple');
+   action.type='button';action.disabled=appleBusy||!appleApiConnected;
+   action.onclick=async()=>{
+    if(!confirm('سيرسل UDID إلى Apple Developer باستخدام حسابك، وسيستهلك موضع جهاز من حد Apple السنوي إذا نجح. متابعة؟'))return;
+    action.disabled=true;
+    try{
+      const result=await call('/api/owner/apple/devices/register','POST',{enrollment_id:device.id});
+      if(result.state==='apple_registered'||result.already_registered)say('أكدت Apple تسجيل الجهاز. التوقيع والتثبيت لم يبدآ بعد.');
+      await loadApplePanel();
+    }catch(e){say(e.message);await loadApplePanel()}finally{action.disabled=false}
+   };
+   card.append(action);
+  }
+  list.append(card);
+ }
+ if(!appleDevices.length)list.append(element('div','member-empty','لم تضف أجهزة مشتركين بعد.'));
+}
+async function loadApplePanel(){
+ if(appleBusy)return;
+ const result=await call('/api/owner/apple/certificates');
+ appleGroups=result.certificates||[];appleDevices=result.devices||[];
+ appleApiConnected=Boolean(result.apple_api_configured);
+ renderApplePanel();
+}
+$('appleCertificateForm').onsubmit=async event=>{
+ event.preventDefault();if(appleBusy)return;
+ const form=event.currentTarget,b=new FormData(form);
+ const data={title:b.get('title'),method:b.get('method'),provider_name:b.get('provider_name'),
+  team_id:b.get('team_id'),certificate_serial:b.get('certificate_serial'),
+  certificate_expires_at:b.get('certificate_expires_at'),device_limit:Number(b.get('device_limit')||100)};
+ appleBusy=true;
+ try{
+  const saved=await call('/api/owner/apple/certificates','POST',data);
+  say('تم حفظ سجل الشهادة. لم يتم تفعيلها أو تسجيل أجهزة بها بعد.');
+  form.reset();await loadApplePanel();
+  $('appleFileGroup').value=saved.certificate.id;$('appleDeviceGroup').value=saved.certificate.id;
+ }catch(e){say(e.message)}finally{appleBusy=false}
+};
+$('appleFileForm').onsubmit=async event=>{
+ event.preventDefault();if(appleBusy)return;
+ const group=$('appleFileGroup').value,kind=$('appleFileType').value,file=$('appleFile').files[0];
+ if(!group||!file){say('اختر الشهادة والملف أولاً');return}
+ if(file.size>4*1024*1024){say('الملف يتجاوز 4 ميجابايت');return}
+ const payload=new FormData();payload.append('certificate_id',group);payload.append('kind',kind);payload.append('file',file,file.name);
+ appleBusy=true;
+ try{
+  const response=await fetch(base+'/api/owner/apple/certificates/file',{
+   method:'POST',cache:'no-store',headers:{Authorization:'Bearer '+token},body:payload
+  });
+  let data={};try{data=await response.json()}catch{}
+  if(!response.ok)throw Error(data.error||'فشل رفع الملف');
+  say('تم حفظ ملف الشهادة في تخزين خاص. لا يزال التحقق من صلاحيته والتوقيع غير منفذين.');
+  $('appleFile').value='';await loadApplePanel();
+ }catch(e){say(e.message)}finally{appleBusy=false}
+};
+$('appleDeviceForm').onsubmit=async event=>{
+ event.preventDefault();if(appleBusy)return;
+ const payload={certificate_id:$('appleDeviceGroup').value,user_id:$('appleSubscriber').value,
+  device_name:$('appleDeviceName').value.trim(),udid:$('appleDeviceUdid').value.trim()};
+ if(!/^(?:[a-fA-F0-9]{40}|[a-fA-F0-9]{8}-[a-fA-F0-9]{16})$/.test(payload.udid)){
+  say('تحقق من UDID. يجب نقله من جهاز المشترك بدقة.');return;
+ }
+ appleBusy=true;
+ try{
+  await call('/api/owner/apple/devices','POST',payload);
+  say('تمت إضافة جهاز المشترك للقائمة، وحالته الآن بانتظار التسجيل لدى Apple.');
+  $('appleDeviceName').value='';$('appleDeviceUdid').value='';
+  await loadApplePanel();
+ }catch(e){say(e.message)}finally{appleBusy=false}
+};
 
 $('lf').onsubmit=async e=>{e.preventDefault();const b=$('loginBtn');b.disabled=true;try{const name=$('loginName').value.trim(),r=await call('/api/v1/auth/login','POST',{email:name,password:$('loginPass').value,platform:'android'});token=r.access_token;sessionStorage.setItem('deela-token',token);await load();if($('remember').checked)localStorage.setItem('deela-username',name);else localStorage.removeItem('deela-username');say('تم الدخول بحساب المالك')}catch(x){out();say(x.message)}finally{b.disabled=false}};
 $('eye').onclick=()=>{const p=$('loginPass');p.type=p.type==='password'?'text':'password';$('eye').setAttribute('aria-label',p.type==='text'?'إخفاء كلمة المرور':'إظهار كلمة المرور')};
