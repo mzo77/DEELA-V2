@@ -219,7 +219,26 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                 TextButton(onClick={reload++}) {Text("إعادة المحاولة")}
             }
             val current=data
-            if(current!=null) {
+            if(page=="حالة الاتصال") {
+                Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                    Text("مراقبة إدارة المالك",style=MaterialTheme.typography.titleMedium)
+                    Text(when(connectionStatus) {
+                        true -> "واجهة إدارة المالك تستجيب للحساب الحالي"
+                        false -> "تعذر التحقق من الاتصال أو الصلاحية"
+                        null -> "جارٍ التحقق"
+                    })
+                    checkedAt?.let { stamp ->
+                        Text("آخر فحص: "+java.text.DateFormat.getDateTimeInstance().format(java.util.Date(stamp)))
+                    }
+                    Text("يتكرر الفحص كل 30 ثانية أثناء عرض هذه الصفحة.",style=MaterialTheme.typography.bodySmall)
+                    HorizontalDivider()
+                    listOf("HexStrike AI","PentestGPT","PentAGI","Pentest Swarm").forEach { engine ->
+                        Text(engine,style=MaterialTheme.typography.titleSmall)
+                        Text("لا توجد بيانات تشغيل موثقة متصلة",style=MaterialTheme.typography.bodySmall)
+                    }
+                    Text("نجاح اتصال إدارة المالك لا يعني أن المحركات تعمل.",style=MaterialTheme.typography.bodySmall)
+                }
+            } else if(current!=null) {
                 when(page) {
                     "الرئيسية" -> {
                         val subscribers=current.members.filter {it.role!="owner"}
@@ -324,26 +343,6 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                                     Text("المزيد من التطبيقات")
                                 }
                             }
-                        }
-                    }
-                    "حالة الاتصال" -> {
-                        Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
-                            Text("مراقبة إدارة المالك",style=MaterialTheme.typography.titleMedium)
-                            Text(when(connectionStatus) {
-                                true -> "واجهة إدارة المالك تستجيب للحساب الحالي"
-                                false -> "تعذر التحقق من الاتصال أو الصلاحية"
-                                null -> "جارٍ التحقق"
-                            })
-                            checkedAt?.let { stamp ->
-                                Text("آخر فحص: "+java.text.DateFormat.getDateTimeInstance().format(java.util.Date(stamp)))
-                            }
-                            Text("يتكرر الفحص كل 30 ثانية أثناء عرض هذه الصفحة.",style=MaterialTheme.typography.bodySmall)
-                            HorizontalDivider()
-                            listOf("HexStrike AI","PentestGPT","PentAGI","Pentest Swarm").forEach { engine ->
-                                Text(engine,style=MaterialTheme.typography.titleSmall)
-                                Text("لا توجد بيانات تشغيل موثقة متصلة",style=MaterialTheme.typography.bodySmall)
-                            }
-                            Text("نجاح اتصال إدارة المالك لا يعني أن المحركات تعمل.",style=MaterialTheme.typography.bodySmall)
                         }
                     }
                     "السجل" -> LazyColumn(modifier=Modifier.weight(1f)) {
