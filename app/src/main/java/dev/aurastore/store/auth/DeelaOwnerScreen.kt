@@ -71,14 +71,14 @@ private object OwnerApi {
     private val client=OkHttpClient()
     private val base get()=BuildConfig.DEELA_API_BASE_URL.trimEnd('/')
     suspend fun checkOwnerConnection(token:String):Boolean=withContext(Dispatchers.IO) {
-        val request=Request.Builder().url(base+"/api/owner/dashboard")
-            .header("Authorization","Bearer "+token).get().build()
+        val request=Request.Builder().url(base+"/api/owner/connection-status")
+            .header("Authorization","Bearer "+token).header("Cache-Control","no-cache").get().build()
         client.newBuilder()
             .callTimeout(10,java.util.concurrent.TimeUnit.SECONDS)
             .followRedirects(false).followSslRedirects(false)
             .build().newCall(request).execute().use { response ->
                 response.isSuccessful && response.body?.string()?.let {
-                    JSONObject(it).optJSONObject("owner")!=null
+                    JSONObject(it).optBoolean("ok",false)
                 }==true
             }
     }
