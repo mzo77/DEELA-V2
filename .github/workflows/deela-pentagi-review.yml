@@ -1,0 +1,54 @@
+name: DEELA 0.9.10 PentAGI APK Build Verification
+
+on:
+  push:
+    branches:
+      - feature/deela-pentagi-0910
+    paths:
+      - 'app/**'
+      - '.github/workflows/deela-pentagi-review.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deela-pentagi-0910-build
+  cancel-in-progress: false
+
+jobs:
+  android-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - name: Check out latest DEELA 0.9.10 with isolated AI modifications
+        uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android SDK 37
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --channel=3 --install "platforms;android-37.0" "build-tools;36.1.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build latest owner-compatible 0.9.10 source with PentAGI UI
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'val appVersionName = "0.9.10"' app/build.gradle.kts
+          chmod +x gradlew
+          ./gradlew --no-daemon :app:assembleDebug :app:testDebugUnitTest --tests 'dev.aurastore.store.data.AppReleasesTest'
+          test -s app/build/outputs/apk/debug/app-debug.apk
+      - name: Upload verification APK (debug; NOT installable over original signed release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: DEELA-0.9.10-PENTAGI-DEBUG-VERIFICATION-NOT-OWNER-RELEASE
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+          if-no-files-found: error
