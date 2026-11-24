@@ -87,6 +87,9 @@ jobs:
           out.write_text(policy+"\n\nمهمة المالك:\n"+task,encoding="utf-8")
           print("Validated Arabic task length:",len(task),"characters")
           PY
+          # Save starting commit so local commits made by the model cannot hide
+          # changes from the later owner-review staging step.
+          git rev-parse HEAD > "$RUNNER_TEMP/deela-agent-base-sha"
 
       - name: Set up Node.js for OpenCode
         uses: actions/setup-node@v4
@@ -118,6 +121,9 @@ jobs:
                   {"action":"read","resource":"**/.env*","effect":"deny"},
                   {"action":"read","resource":"**/*.p12","effect":"deny"},
                   {"action":"read","resource":"**/*.key","effect":"deny"},
+                  {"action":"shell","resource":"git commit *","effect":"deny"},
+                  {"action":"shell","resource":"git reset *","effect":"deny"},
+                  {"action":"shell","resource":"git tag *","effect":"deny"},
                   {"action":"shell","resource":"git push *","effect":"deny"},
                   {"action":"shell","resource":"gh *","effect":"deny"},
                   {"action":"shell","resource":"rm -rf *","effect":"deny"}
@@ -150,7 +156,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          BASE_SHA="$(cat "$RUNNER_TEMP/deela-agent-base-sha")"
+          git cat-file -e "$BASE_SHA^{commit}"
+          if [ "$(git rev-parse HEAD)" != "$BASE_SHA" ]; then
+            # This is a local ephemeral checkout. Undo only the model's local
+            # commits, leaving the edits safely staged for review.
+            git reset --soft "$BASE_SHA"
+          fi
           git diff --check
+          git diff --cached --check
           for folder in app control-center docs website; do
             if [ -d "$folder" ]; then git add -A -- "$folder"; fi
           done
