@@ -1,5 +1,5 @@
 /* Cache only the public storefront shell. Never cache tokens, API responses or IPA files. */
-const CACHE="deela-ios-shell-v2";
+const CACHE="deela-ios-shell-v3";
 const BASE="/DEELA-V2/ios";
 const ASSETS=[BASE+"/",BASE+"/app.js",BASE+"/icon.svg",BASE+"/manifest.webmanifest"];
 self.addEventListener("install",event=>event.waitUntil(
