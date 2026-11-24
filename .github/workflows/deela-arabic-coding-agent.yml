@@ -1,6 +1,10 @@
 name: DEELA Arabic Coding Agent (Free Preview)
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/deela-release-request/arabic-agent-smoke-test.txt'
   issues:
     types: [opened]
   workflow_dispatch:
@@ -22,7 +26,7 @@ concurrency:
 jobs:
   create-review:
     if: >-
-      ${{ github.event_name == 'workflow_dispatch' ||
+      ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'push' ||
           (github.event.issue.user.login == github.repository_owner &&
           startsWith(github.event.issue.title, '[DEELA AGENT]')) }}
     runs-on: ubuntu-latest
@@ -51,6 +55,8 @@ jobs:
               if not title.startswith("[DEELA AGENT]"):sys.exit("Not an agent task")
               # Preserve Arabic natural language; reject empty or excessive requests.
               task=title.replace("[DEELA AGENT]","",1).strip()+"\n"+text
+          elif os.environ["GITHUB_EVENT_NAME"] == "push":
+              task="أنشئ ملف docs/DEELA_ARABIC_AGENT_TEST.md بعنوان نجاح اختبار الوكيل العربي، واكتب فيه أن العمل مقتصر على فرع مراجعة دون نشر APK. لا تغير أي ملف آخر."
           else:
               task=str(e.get("inputs",{}).get("task","")).strip()
           if not 10 <= len(task) <= 6000:sys.exit("Task must have 10–6000 characters")
@@ -84,19 +90,31 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # OpenCode V2 has an upstream bug ignoring OPENCODE_CONFIG; enforce
+          # restrictions using the system-level config, not a possibly ignored env var.
+          sudo mkdir -p /etc/opencode
           cat > "$RUNNER_TEMP/deela-opencode.json" <<'JSON'
           {
             "$schema": "https://opencode.ai/config.json",
-            "permissions": [
-              {"action":"external_directory","resource":"*","effect":"deny"},
-              {"action":"edit","resource":".github/**","effect":"deny"},
-              {"action":"read","resource":"**/.env*","effect":"deny"},
-              {"action":"shell","resource":"git push *","effect":"deny"},
-              {"action":"shell","resource":"gh *","effect":"deny"}
+            "policies": [
+              {
+                "permissions": [
+                  {"action":"external_directory","resource":"*","effect":"deny"},
+                  {"action":"edit","resource":".github/**","effect":"deny"},
+                  {"action":"edit","resource":"**/.github/**","effect":"deny"},
+                  {"action":"read","resource":"**/.env*","effect":"deny"},
+                  {"action":"read","resource":"**/*.p12","effect":"deny"},
+                  {"action":"read","resource":"**/*.key","effect":"deny"},
+                  {"action":"shell","resource":"git push *","effect":"deny"},
+                  {"action":"shell","resource":"gh *","effect":"deny"},
+                  {"action":"shell","resource":"rm -rf *","effect":"deny"}
+                ]
+              }
             ]
           }
           JSON
-          echo "OPENCODE_CONFIG=$RUNNER_TEMP/deela-opencode.json" >> "$GITHUB_ENV"
+          sudo install -m 644 "$RUNNER_TEMP/deela-opencode.json" /etc/opencode/opencode.json
+          python3 -m json.tool /etc/opencode/opencode.json >/dev/null
 
       - name: Run the Arabic coding agent with a free model (no paid API keys)
         id: agent
@@ -109,7 +127,7 @@ jobs:
           # No GH_TOKEN, OpenAI key, Supabase token, or write credential is exposed to OpenCode.
           # The checkout explicitly lacks persisted Git credentials.
           timeout --signal=INT --kill-after=15s 1000s \
-            opencode run --auto --agent build --model opencode/mimo-v2.6-flash-free \
+            opencode run --standalone --auto --agent build --model opencode/mimo-v2.6-flash-free \
             "$(cat "$RUNNER_TEMP/deela-agent-task.txt")" \
             > "$RUNNER_TEMP/deela-agent-result.log" 2>&1
           cat "$RUNNER_TEMP/deela-agent-result.log" | tail -n 80
