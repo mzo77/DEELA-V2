@@ -21,6 +21,24 @@ async function call(path,options={}){
  if(!r.ok){if(r.status===401||r.status===403){session="";sessionStorage.removeItem("deela-shop-owner-session")}throw Error(d.error||"تعذّر إكمال العملية")}
  return d;
 }
+let confirming=false;
+function ask(message){
+ if(confirming)return Promise.resolve(false);
+ confirming=true;
+ $("confirmMessage").textContent=message;
+ $("adminConfirm").hidden=false;
+ $("confirmAccept").focus();
+ return new Promise(resolve=>{
+  const yes=$("confirmAccept"),no=$("confirmCancel");
+  const finish=answer=>{
+   yes.onclick=null;no.onclick=null;
+   $("adminConfirm").hidden=true;confirming=false;
+   resolve(answer);
+  };
+  yes.onclick=()=>finish(true);
+  no.onclick=()=>finish(false);
+ });
+}
 async function login(ev){
  ev.preventDefault();const b=$("loginBtn");b.disabled=true;
  $("loginNotice").textContent="جارٍ التحقق من حساب المالك…";
@@ -112,26 +130,46 @@ async function submitProduct(ev){
 async function visibility(id){
  const p=products.find(x=>x.id===id);if(!p)return;
  const payload={...p,published:!p.published};
- if(!confirm(p.published?"هل تريد إخفاء هذا المنتج من المتجر؟":"هل تريد نشر هذا المنتج للزوار؟"))return;
+ if(!(await ask(p.published?"هل تريد إخفاء هذا المنتج من المتجر؟":"هل تريد نشر هذا المنتج للزوار؟")))return;
  try{await call("/admin/product",{method:"POST",data:payload});await loadPage("products");alertOwner("تم تعديل ظهور المنتج")}
  catch(e){alertOwner(e.message,true)}
 }
 function renderOrders(){
  $("ordersList").innerHTML=orders.map(o=>{
   const items=Array.isArray(o.items)?o.items:[];
+  const membership=items.length===1&&Number(items[0].quantity)===1&&
+    ["ios","android"].includes(items[0].platform)&&
+    Number.isInteger(Number(items[0].months))&&Number(items[0].months)>=1&&Number(items[0].months)<=36;
+  const activation=o.subscription_activated_at?'<span class="admin-chip">تم تفعيل العضوية</span>':
+    o.status==="paid"&&membership?
+     '<button class="btn outline" type="button" data-activate="'+esc(o.id)+'">تفعيل الاشتراك الآن</button>':"";
   const selectedStatus='<select aria-label="حالة الطلب" class="order-input" data-status="'+esc(o.id)+'">'+
     Object.entries(labels).map(([value,label])=>'<option value="'+value+'" '+(o.status===value?"selected":"")+'>'+esc(label)+'</option>').join("")+'</select>';
-  return '<article class="admin-card"><div class="admin-card-head"><div><strong>'+esc(o.order_code)+'</strong><small>'+esc(moment(o.created_at))+' · '+esc(o.customer_email)+'</small></div><span class="admin-chip">'+esc(labels[o.status]||o.status)+'</span></div><div class="order-details"><p>الاسم: '+esc(o.customer_name||"—")+' · الجوال: '+esc(o.phone||"—")+'</p>'+items.map(x=>'<p>'+esc(x.title)+' × '+Number(x.quantity)+' — '+esc(price(x.unit_price_sar))+'</p>').join("")+'<p>الإجمالي: '+esc(price(o.total_sar))+'</p>'+(o.customer_note?'<p>ملاحظة العميل: '+esc(o.customer_note)+'</p>':'')+'</div>'+selectedStatus+'<textarea data-note="'+esc(o.id)+'" class="order-input" rows="2" placeholder="ملاحظة تظهر في طلبات العميل">'+esc(o.owner_note||"")+'</textarea><div class="admin-card-actions"><button class="btn primary" type="button" data-save-order="'+esc(o.id)+'">حفظ حالة الطلب</button></div></article>';
+  return '<article class="admin-card"><div class="admin-card-head"><div><strong>'+esc(o.order_code)+'</strong><small>'+esc(moment(o.created_at))+' · '+esc(o.customer_email)+'</small></div><span class="admin-chip">'+esc(labels[o.status]||o.status)+'</span></div><div class="order-details"><p>الاسم: '+esc(o.customer_name||"—")+' · الجوال: '+esc(o.phone||"—")+'</p>'+items.map(x=>'<p>'+esc(x.title)+' × '+Number(x.quantity)+' — '+esc(price(x.unit_price_sar))+'</p>').join("")+'<p>الإجمالي: '+esc(price(o.total_sar))+'</p>'+(o.customer_note?'<p>ملاحظة العميل: '+esc(o.customer_note)+'</p>':'')+'</div>'+selectedStatus+'<textarea data-note="'+esc(o.id)+'" class="order-input" rows="2" placeholder="ملاحظة تظهر في طلبات العميل">'+esc(o.owner_note||"")+'</textarea><div class="admin-card-actions"><button class="btn primary" type="button" data-save-order="'+esc(o.id)+'">حفظ حالة الطلب</button>'+activation+'</div></article>';
  }).join("")||'<p class="empty">لا توجد طلبات حتى الآن.</p>';
 }
 async function updateOrder(id){
  const o=orders.find(x=>x.id===id);if(!o)return;
  const status=document.querySelector('[data-status="'+id+'"]').value;
  const note=document.querySelector('[data-note="'+id+'"]').value;
- if(!confirm("تأكيد تحديث الطلب "+o.order_code+" إلى «"+labels[status]+"»؟"))return;
+ if(!(await ask("تأكيد تحديث الطلب "+o.order_code+" إلى «"+labels[status]+"»؟")))return;
  try{
   await call("/admin/order-status",{method:"POST",data:{id,status,owner_note:note}});
   await loadPage("orders");alertOwner("تم حفظ حالة الطلب. هذا لا يفعّل اشتراك التطبيق تلقائيًا.");
+ }catch(e){alertOwner(e.message,true)}
+}
+async function activateOrder(id){
+ const order=orders.find(x=>x.id===id);
+ if(!order||order.status!=="paid"||order.subscription_activated_at)return;
+ const item=Array.isArray(order.items)?order.items[0]:null;
+ if(!item)return;
+ const message="هل تؤكد استلام الدفع فعليًا للطلب "+order.order_code+" وتفعيل عضوية "+
+  order.customer_email+" لمدة "+item.months+" شهر ("+item.platform+")؟ لا يمكن تنفيذ تفعيل الطلب نفسه مرتين.";
+ if(!(await ask(message)))return;
+ try{
+  const result=await call("/admin/activate-order",{method:"POST",data:{id}});
+  await Promise.all([loadPage("orders"),call("/admin/overview").then(d=>{$("pendingCount").textContent=d.pending})]);
+  alertOwner("تم تفعيل الاشتراك حتى "+new Date(result.activation.ends_at).toLocaleDateString("ar-SA"));
  }catch(e){alertOwner(e.message,true)}
 }
 function renderReviews(){
@@ -166,13 +204,14 @@ function events(){
  $("settingsForm").onsubmit=submitSettings;
  $("ordersRefresh").onclick=()=>loadPage("orders");
  document.addEventListener("click",e=>{
-  const el=e.target.closest("[data-page],[data-go],[data-edit],[data-visibility],[data-save-order],[data-review]");
+  const el=e.target.closest("[data-page],[data-go],[data-edit],[data-visibility],[data-save-order],[data-activate],[data-review]");
   if(!el)return;
   if(el.dataset.page)return page(el.dataset.page);
   if(el.dataset.go)return page(el.dataset.go);
   if(el.dataset.edit)return fillProduct(products.find(p=>p.id===el.dataset.edit));
   if(el.dataset.visibility)return visibility(el.dataset.visibility);
   if(el.dataset.saveOrder)return updateOrder(el.dataset.saveOrder);
+  if(el.dataset.activate)return activateOrder(el.dataset.activate);
   if(el.dataset.review)return reviewState(el.dataset.review,el.dataset.approved==="true");
  });
 }
