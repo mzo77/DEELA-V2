@@ -1,0 +1,1 @@
+Arabic agent free-model test for DEELA owner. Only write docs/DEELA_ARABIC_AGENT_TEST.md on isolated review branch. Must never create a release or deploy an APK.
