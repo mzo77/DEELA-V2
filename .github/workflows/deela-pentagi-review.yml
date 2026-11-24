@@ -7,6 +7,12 @@ on:
     paths:
       - 'app/**'
       - '.github/workflows/deela-pentagi-review.yml'
+  pull_request:
+    branches:
+      - feature/admin-source-updates-and-signup-requests
+    paths:
+      - 'app/**'
+      - '.github/workflows/deela-pentagi-review.yml'
   workflow_dispatch:
 
 permissions:
