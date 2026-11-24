@@ -56,6 +56,22 @@ button,.nav button{border-radius:12px}.nav button.active,.tabs .active{backgroun
 <div class="shell"><aside class="side"><div class="brand">DEELA<span>_ALHKAMi</span></div><div class="sub">القوة الغاشمة ⚡ | أدوات المشروع الأول 3.7</div><nav class="nav" id="nav" aria-label="التنقل الرئيسي"></nav><div class="bottom">● واجهة محلية<br>لا يوجد تنفيذ عن بُعد</div></aside>
 <main class="main"><div class="top"><div><div class="eyebrow">لوحة التحكم / إصدار محلي</div><h1 id="heading">لوحة المعلومات</h1></div><div class="status"><span class="dot"></span> الواجهة تعمل</div></div>
 <section class="section active" id="dashboard"><div class="grid"><div class="card"><div class="muted">حالة النظام</div><div class="metric">متصل</div><div class="muted">واجهة المتصفح جاهزة</div></div><div class="card"><div class="muted">الأوامر المتاحة</div><div class="metric">١٦</div><div class="muted">أوامر جاهزة للنسخ</div></div><div class="card"><div class="muted">الإصدار</div><div class="metric">3.7.0</div><div class="muted">نسخة HTML مستقلة</div></div><div class="card wide"><h2>الوصول السريع</h2><div class="quick"><button data-go="commands">⌘ دليل الأوامر</button><button data-go="lab">⌨ مختبر البرمجة</button><button data-go="tools">⚙ أدوات المطور</button><button data-go="gamefiles">🎮 مختبر ملفات الألعاب</button><button data-go="security">◇ مركز الأمان</button></div></div><div class="card"><h2>نظرة عامة</h2><div class="muted">لوحة تحكم تعمل محليًا داخل المتصفح، ولا تحتاج إلى خادم. لا يتضمن الملف نموذج ذكاء اصطناعي أو اتصالًا تلقائيًا به.</div></div></div></section>
+<section class="section" id="agent">
+<div class="card" style="background:linear-gradient(135deg,#312334,#1d1623);border:1px solid #8b5772;border-radius:22px">
+  <h2 style="color:#f0c1d4">🤖 وكيل ديلا البرمجي — أوامر بالعربي</h2>
+  <p class="muted">تكلم باللهجة السعودية أو اكتب المطلوب. عند إرسال المهمة ستفتح صفحة GitHub لتأكيد إنشاء طلب عام. بعدها يستطيع وكيل OpenCode المجاني العمل على نسخة تطوير منفصلة دون نشر تحديث للمشتركين.</p>
+  <div style="padding:12px;border-radius:13px;background:#1a1420;border:1px solid #63465a;margin:12px 0">
+    <strong>🎙️ تحدث بالعربي</strong>
+    <p class="muted">اضغط الميكروفون وتكلم طبيعيًا. التعرف على الصوت يعتمد على خدمة الإملاء الموجودة في جهازك وقد يحتاج اتصالًا بالإنترنت.</p>
+    <div class="actions"><button id="deelaAgentVoice" type="button">🎙️ إملاء صوتي بالعربي</button><button id="deelaAgentExample" type="button">✨ مثال لطلب برمجي</button></div>
+  </div>
+  <label for="deelaAgentPrompt">وش تبي الوكيل يسوي في مشروع ديلا؟</label>
+  <textarea id="deelaAgentPrompt" spellcheck="true" dir="auto" maxlength="1400" style="width:100%;min-height:180px;background:#100d16;color:#fff4f7;border:1px solid #8b5772;border-radius:14px;padding:14px;line-height:1.8;resize:vertical" placeholder="مثال: يا ديلا، أصلح أزرار لوحة المالك، وخل القوائم كلها عربية، واختبر التغييرات بدون نشرها للمشتركين."></textarea>
+  <label style="display:flex;align-items:flex-start;gap:8px;margin:14px 0;color:#e0c5d3"><input type="checkbox" id="deelaAgentPublicConfirm" style="margin-top:4px">أوافق على أن وصف المهمة سيُنشر علنًا في GitHub Issues. لن أكتب أي كلمات مرور أو بيانات مشتركين أو مفاتيح سرية.</label>
+  <div class="actions"><button id="deelaAgentSubmit" type="button">🚀 إنشاء مهمة للوكيل على GitHub</button><button id="deelaAgentCopy" type="button">📋 نسخ الطلب</button></div>
+  <div id="deelaAgentStatus" class="note" role="status">جاهز لاستقبال الأوامر بالعربية. تنفيذ الكود يتم على GitHub Actions بعد اعتماد إنشاء المهمة.</div>
+  <div class="note">🛡️ لا حذف جماعي، ولا نشر إصدار للمشتركين، ولا التعامل مع أسرار الحساب تلقائيًا. يحصل المالك على مراجعة ونتيجة اختبارات، ويختار اعتماد التغييرات بنفسه. النماذج المجانية قد تتوقف أو تصل لحد الاستخدام.</div>
+</div></section>
 <section class="section" id="commands"><div class="card"><h2>دليل الأوامر</h2><input class="search" id="search" placeholder="ابحث عن أمر، مثل /build" aria-label="البحث في الأوامر"><div class="cmdlist" id="cmdlist"></div><div class="note">اضغط «نسخ» لإرسال الأمر إلى مساعد البرمجة الذي تستخدمه. تُحفظ صيغ الأوامر الإنجليزية للتوافق.</div></div></section>
 <section class="section" id="lab"><div class="card"><h2>مختبر البرمجة</h2><div class="tabs" id="langs"></div><p class="muted" id="langinfo"></p><textarea class="editor" id="prompt" spellcheck="false" placeholder="صف المشروع أو التطبيق الذي تريد بناءه..."></textarea><div class="actions"><button id="copyPrompt">نسخ طلب البرمجة</button><button id="downloadPrompt">تصدير ملف TXT</button><button id="clearPrompt">مسح النص</button><button id="runAI" style="border-color:var(--red);color:#ddb7c7">✦ تنفيذ بالذكاء الاصطناعي</button></div><div class="note">الذكاء الاصطناعي يعمل عبر خادم ديلا للمالك فقط عند إضافة مفتاح OpenAI API في Supabase. لا يتم تشغيل الشيفرة الناتجة على الجهاز.<div style="margin-top:18px"><h2>نتيجة الذكاء الاصطناعي</h2><div id="aiStatus" class="muted" role="status">جاهز لفحص اتصال الذكاء الاصطناعي.</div><pre id="aiOutput" dir="auto" style="white-space:pre-wrap;overflow-wrap:anywhere;background:#070709;border:1px solid var(--line);border-radius:12px;padding:16px;min-height:110px;max-height:520px;overflow:auto;user-select:text"></pre><div class="actions"><button id="copyAI">نسخ النتيجة</button><button id="saveAI">حفظ النتيجة TXT</button></div></div></div></section>
 <section class="section" id="gamefiles"><div class="card"><h2>🎮 مختبر فحص ملفات الألعاب</h2><p class="muted">اختر ملف APK أو ZIP أو OBB أو ملف بيانات من جهازك. التحليل محلي داخل المتصفح، ولا يتم رفع الملف إلى خادم. لا يتم تشغيل اللعبة أو فك تشفير الملفات المحمية.</p><input id="gameFile" type="file" accept=".apk,.zip,.obb,.so,.dat,.bin,.json,.txt,.assets,.bundle,.unity3d,*/*" class="search" aria-label="اختر ملف اللعبة"><div id="gameSummary" class="note">لم يتم اختيار ملف بعد.</div><div class="note">📁 اختر القسم المطابق للمسار الظاهر في تطبيق معلومات اللعبة. عند الضغط على «اختيار ملف» يفتح منتقي ملفات أندرويد، ثم ينتقل المختبر إلى نتيجة ذلك القسم. بعض مجلدات النظام محمية ولا يستطيع المتصفح فتحها مباشرة.</div>
@@ -79,13 +95,40 @@ button,.nav button{border-radius:12px}.nav button.active,.tabs .active{backgroun
 <script>
 'use strict';
 const gameCommands=[['/game','تحليل فكرة لعبة'],['/mod','تطوير مود للعبة تسمح بالتعديل'],['/coins','تصميم نظام عملات للعبة خاصة'],['/unity','تطوير لعبة Unity'],['/save','فهم ملف حفظ محلي'],['/balance','موازنة اقتصاد اللعبة']];
-const sections=[['dashboard','◈ لوحة المعلومات'],['commands','⌘ دليل الأوامر'],['lab','⌨ مختبر البرمجة'],['gamefiles','🎮 مختبر ملفات الألعاب'],['github','⌁ مستودعات GitHub'],['tools','⚙ أدوات المطور'],['security','◇ مركز الأمان'],['terms','▤ شروط الاستخدام'],['settings','☷ الإعدادات'],['about','ⓘ حول البرنامج']];
+const sections=[['dashboard','◈ لوحة المعلومات'],['agent','🤖 وكيل البرمجة'],['commands','⌘ دليل الأوامر'],['lab','⌨ مختبر البرمجة'],['gamefiles','🎮 مختبر ملفات الألعاب'],['github','⌁ مستودعات GitHub'],['tools','⚙ أدوات المطور'],['security','◇ مركز الأمان'],['terms','▤ شروط الاستخدام'],['settings','☷ الإعدادات'],['about','ⓘ حول البرنامج']];
 const cmds=[['/help','عرض المساعدة المتاحة'],['/menu','فتح قائمة الأوامر'],['/code','إنشاء شيفرة برمجية'],['/debug','تشخيص الأخطاء البرمجية'],['/explain','شرح الشيفرة'],['/optimize','تحسين الأداء'],['/review','مراجعة الشيفرة المصدرية'],['/build','تخطيط مشروع أو بناؤه'],['/status','التحقق من حالة المشروع'],['/reset','إعادة ضبط السياق'],...gameCommands];
 const languages=['بايثون','جافاسكربت','HTML / CSS','سي شارب #C','يونيتي','تطوير أندرويد','تطوير واجهات API','هندسة المشاريع'];let language='بايثون',mode='بناء مشروع',glow=true;const $=id=>document.getElementById(id);let toastTimer;
 function toast(t){$('toast').textContent=t;$('toast').style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').style.display='none',1800)}
 function go(id){document.querySelectorAll('.section').forEach(e=>e.classList.toggle('active',e.id===id));document.querySelectorAll('.nav button').forEach(e=>e.classList.toggle('active',e.dataset.go===id));$('heading').textContent=sections.find(s=>s[0]===id)[1].replace(/^[^ ]+ /,'');window.scrollTo({top:0,behavior:'smooth'})}
 sections.forEach(([id,name])=>{const b=document.createElement('button');b.textContent=name;b.dataset.go=id;b.onclick=()=>go(id);$('nav').appendChild(b)});document.querySelectorAll('.quick [data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
 async function copy(s){if(window.DeelaToolsNative){DeelaToolsNative.copyText(String(s));toast('تم النسخ إلى الحافظة');return}try{if(!navigator.clipboard?.writeText)throw Error('fallback');await navigator.clipboard.writeText(s);toast('تم النسخ إلى الحافظة')}catch(e){const ta=document.createElement('textarea');ta.value=s;ta.style.position='fixed';ta.style.opacity='0';document.body.append(ta);ta.select();try{const ok=document.execCommand('copy');toast(ok?'تم النسخ إلى الحافظة':'تعذر النسخ، استخدم التحديد اليدوي')}catch{toast('تعذر النسخ، استخدم التحديد اليدوي')}ta.remove()}}
+window.deelaVoiceText=function(value){
+ const el=$('deelaAgentPrompt');if(!el)return;
+ const text=String(value||'').trim(); if(!text)return;
+ el.value=(el.value.trim()?el.value.trim()+' ':'')+text;
+ el.dispatchEvent(new Event('input'));
+ $('deelaAgentStatus').textContent='✓ تم تحويل الصوت إلى نص عربي. راجع النص قبل إرساله.';
+ go('agent');el.focus();
+};
+window.deelaVoiceError=function(value){ $('deelaAgentStatus').textContent='تعذر الإملاء الصوتي: '+String(value||'حاول الكتابة');go('agent'); };
+$('deelaAgentVoice').onclick=()=>{
+ if(!window.DeelaToolsNative){$('deelaAgentStatus').textContent='الإملاء الصوتي متاح في نسخة تطبيق ديلا للمالك فقط.';return;}
+ $('deelaAgentStatus').textContent='جارٍ فتح الميكروفون للإملاء بالعربية...';
+ DeelaToolsNative.requestSpeech();
+};
+$('deelaAgentExample').onclick=()=>{
+ $('deelaAgentPrompt').value='يا ديلا، راجع لوحة تحكم المالك في تطبيق ديلا وحسّن ترتيب الأزرار والرسائل العربية، ثم اكتب اختبارات للتغييرات. لا تعدل بيانات المشتركين ولا تنشر أي تحديث رسمي.';
+};
+$('deelaAgentCopy').onclick=()=>copy($('deelaAgentPrompt').value.trim());
+$('deelaAgentSubmit').onclick=()=>{
+ const prompt=$('deelaAgentPrompt').value.trim();
+ if(prompt.length<10||prompt.length>1400){$('deelaAgentStatus').textContent='اكتب أمرًا واضحًا من 10 إلى 1400 حرف.';return;}
+ if(!$('deelaAgentPublicConfirm').checked){$('deelaAgentStatus').textContent='فعّل موافقتك على نشر وصف المهمة علنًا في GitHub أولًا.';return;}
+ if(!window.DeelaToolsNative){$('deelaAgentStatus').textContent='افتح وكيل البرمجة داخل تطبيق المالك لتجهيز المهمة.';return;}
+ $('deelaAgentStatus').textContent='جارٍ فتح نموذج إنشاء المهمة في GitHub. راجع النص ثم اضغط Submit new issue لتبدأ.';
+ DeelaToolsNative.openAgentIssue(prompt);
+};
+
 function renderCmd(){const q=$('search').value.toLowerCase();$('cmdlist').replaceChildren();cmds.filter(c=>c.join(' ').toLowerCase().includes(q)).forEach(([cmd,desc])=>{const el=document.createElement('div');el.className='cmd';const content=document.createElement('div');const code=document.createElement('code');code.textContent=cmd;const detail=document.createElement('div');detail.className='muted';detail.textContent=desc;content.append(code,detail);const btn=document.createElement('button');btn.textContent='استخدام';btn.onclick=()=>{if(cmd==='/help'||cmd==='/menu'){go('commands');toast('اختر أمرًا من القائمة');return}if(cmd==='/reset'){$('prompt').value='';$('aiOutput').textContent='';toast('تم مسح الطلب والنتيجة');return}mode=cmd;$('prompt').value=cmd+'\n';renderLangs();go('lab');$('prompt').focus()};el.append(content,btn);$('cmdlist').append(el)})} $('search').addEventListener('input',renderCmd);renderCmd();
 function renderLangs(){$('langs').replaceChildren();languages.forEach(l=>{const b=document.createElement('button');b.textContent=l;b.className=l===language?'active':'';b.onclick=()=>{language=l;renderLangs()};$('langs').append(b)});$('langinfo').textContent=`التقنية المختارة: ${language} · نوع المهمة: ${mode}`};renderLangs();
 function buildRequest(){return `/build\nنوع المهمة: ${mode}\nالتقنية: ${language}\nالمتطلبات:\n${$('prompt').value.trim()||'[اكتب وصف المشروع هنا]'}\n\nقدّم هيكل المشروع، والشيفرة الكاملة، وخطوات الإعداد والاختبار، مع شرح واضح باللغة العربية.`}
