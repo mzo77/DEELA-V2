@@ -32,7 +32,28 @@ private data class OwnerCatalogEntry(
 )
 private data class OwnerCatalogPage(val apps:List<OwnerCatalogEntry>,val hasMore:Boolean)
 
+private data class OwnerServiceObservation(val status:String,val receivedAt:String?,val fresh:Boolean)
+
 private object OwnerApi {
+    suspend fun serviceObservations(token:String):Map<String,OwnerServiceObservation> = withContext(Dispatchers.IO) {
+        val request=Request.Builder().url(base+"/api/owner/service-observations")
+            .header("Authorization","Bearer "+token).header("Cache-Control","no-cache").get().build()
+        client.newBuilder().callTimeout(10,java.util.concurrent.TimeUnit.SECONDS)
+            .followRedirects(false).followSslRedirects(false).build().newCall(request).execute().use { response ->
+            if(!response.isSuccessful) error("تعذر قراءة تقارير الحالة")
+            val payload=JSONObject(response.body.string())
+            check(payload.optString("source")=="owner_reported")
+            val items=payload.getJSONArray("observations")
+            (0 until items.length()).associate { i ->
+                val item=items.getJSONObject(i)
+                item.getString("service_name") to OwnerServiceObservation(
+                    item.optString("reported_status","unknown"),
+                    if(item.isNull("received_at")) null else item.optString("received_at").takeIf { it.isNotBlank() },
+                    item.optBoolean("fresh",false)
+                )
+            }
+        }
+    }
     private const val IOS_BASE="https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-ios-web"
     private fun encode(value:String)=URLEncoder.encode(value,"UTF-8")
     suspend fun catalog(token:String,platform:String,query:String,offset:Int,limit:Int=40):OwnerCatalogPage=withContext(Dispatchers.IO){
@@ -126,15 +147,27 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
     var page by remember { mutableStateOf("الرئيسية") }
     var connectionStatus by remember(session.token) { mutableStateOf<Boolean?>(null) }
     var checkedAt by remember(session.token) { mutableStateOf<Long?>(null) }
+    var observations by remember(session.token) { mutableStateOf<Map<String,OwnerServiceObservation>>(emptyMap()) }
+    var reportsAvailable by remember(session.token) { mutableStateOf<Boolean?>(null) }
     LaunchedEffect(page,session.token) {
         if(page=="حالة الاتصال") {
             connectionStatus=null
             checkedAt=null
+            observations=emptyMap()
+            reportsAvailable=null
             while(true) {
                 connectionStatus=try {
                     OwnerApi.checkOwnerConnection(session.token)
                 } catch(e:CancellationException) { throw e }
                   catch(e:Exception) { false }
+                try {
+                    observations=OwnerApi.serviceObservations(session.token)
+                    reportsAvailable=true
+                } catch(e:CancellationException) { throw e }
+                  catch(e:Exception) {
+                      observations=emptyMap()
+                      reportsAvailable=false
+                  }
                 checkedAt=System.currentTimeMillis()
                 delay(30_000)
             }
@@ -232,11 +265,21 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                     }
                     Text("يتكرر الفحص كل 30 ثانية أثناء عرض هذه الصفحة.",style=MaterialTheme.typography.bodySmall)
                     HorizontalDivider()
-                    listOf("HexStrike AI","PentestGPT","PentAGI","Pentest Swarm").forEach { engine ->
+                    listOf("hexstrike" to "HexStrike AI","pentestgpt" to "PentestGPT","pentagi" to "PentAGI","pentest-swarm" to "Pentest Swarm").forEach { (key,engine) ->
+                        val report=observations[key]
                         Text(engine,style=MaterialTheme.typography.titleSmall)
-                        Text("لا توجد بيانات تشغيل موثقة متصلة",style=MaterialTheme.typography.bodySmall)
+                        Text(when {
+                            reportsAvailable==false -> "تعذر قراءة التقرير"
+                            reportsAvailable==null -> "جارٍ قراءة التقارير"
+                            report?.receivedAt==null -> "لم يصل تقرير"
+                            !report.fresh -> "التقرير قديم — الحالة الحالية غير مؤكدة"
+                            report.status=="responding" -> "آخر تقرير: يستجيب"
+                            report.status=="not_responding" -> "آخر تقرير: لا يستجيب"
+                            else -> "آخر تقرير: الحالة غير معروفة"
+                        },style=MaterialTheme.typography.bodySmall)
+                        report?.receivedAt?.let { Text("وقت الاستلام: "+it,style=MaterialTheme.typography.bodySmall) }
                     }
-                    Text("نجاح اتصال إدارة المالك لا يعني أن المحركات تعمل.",style=MaterialTheme.typography.bodySmall)
+                    Text("التقارير مرسلة من المالك ولا تثبت التشغيل المستمر بشكل مستقل.",style=MaterialTheme.typography.bodySmall)
                 }
             } else if(current!=null) {
                 when(page) {
