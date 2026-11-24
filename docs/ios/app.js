@@ -2,6 +2,7 @@
 (()=>{"use strict";
 const CONTROL="https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-control",BASE="https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-ios-web",STORE="deela.ios.refresh.v1",$=id=>document.getElementById(id);
 let access="",refresh="",current=null,sourceApps=[],myApps=[],allApps=[],sourcesLoaded=false,allSources=[],renderLimit=36,fetchGeneration=0,fetching=false;
+let ownerRules=new Map(),ownerRenderLimit=35;
 function show(id,yes){$(id).classList.toggle("hidden",!yes)}
 function flash(message){const e=$("flash");e.textContent=message;e.classList.add("visible");clearTimeout(flash.timer);flash.timer=setTimeout(()=>e.classList.remove("visible"),6500)}
 function notify(text,kind="neutral"){const e=$("heroStatus");e.textContent=text;e.className="status "+kind}
@@ -231,7 +232,7 @@ async function loadCatalog(force=false){
    flash(e.message);
   }
  }finally{
-  if(generation===fetchGeneration){fetching=false;renderCatalog();}
+  if(generation===fetchGeneration){fetching=false;renderCatalog();if(current?.owner)renderOwnerCatalog();}
  }
 }
 async function controlCall(path,body=null) {
@@ -245,8 +246,62 @@ async function controlCall(path,body=null) {
  };
  try{return await send()}catch(e){if(e.status===401&&refresh){await renew();return await send()}throw e}
 }
+
+function renderOwnerCatalog(){
+ if(!current?.owner)return;
+ const list=$("ownerCatalogList"),summary=$("ownerAppsSummary");
+ if(!list||!summary)return;
+ const query=value("ownerAppSearch").toLocaleLowerCase();
+ const filter=$("ownerStatusFilter").value;
+ const options=allApps.filter(a=>{
+  if(!a.catalog_key)return false;
+  const rule=ownerRules.get(a.catalog_key)||{};
+  const included=filter==="all"||(filter==="hidden"&&rule.is_hidden)||(filter==="featured"&&rule.is_featured);
+  return included&&(!query||[a.title,a.developer,a.bundle_id,a.catalog_key].some(x=>String(x||"").toLocaleLowerCase().includes(query)));
+ });
+ list.replaceChildren();
+ const frag=document.createDocumentFragment();
+ for(const app of options.slice(0,ownerRenderLimit)){
+  const rule=ownerRules.get(app.catalog_key)||{};
+  const row=el("div","owner-app-row"+(rule.is_hidden?" is-hidden":"")+(rule.is_featured?" is-featured":""));
+  const icon=safeURL(app.icon_url);
+  if(icon){const img=el("img","appicon");img.src=icon;img.alt="";img.loading="lazy";row.append(img)}
+  const info=el("div","owner-app-title");info.append(el("strong","",app.title),el("small","",app.bundle_id||app.category||""));
+  row.append(info);
+  const buttons=el("div","owner-app-actions");
+  const hidden=el("button","button small secondary",rule.is_hidden?"إظهار":"إخفاء");
+  const featured=el("button","button small secondary",rule.is_featured?"إلغاء التمييز":"تمييز");
+  const save=async(update)=>{
+   hidden.disabled=true;featured.disabled=true;
+   try {
+    const next={catalog_key:app.catalog_key,is_hidden:Boolean(rule.is_hidden),is_featured:Boolean(rule.is_featured),...update};
+    await call("/api/owner/catalog-rules",{method:"POST",body:next});
+    ownerRules.set(app.catalog_key,{is_hidden:next.is_hidden,is_featured:next.is_featured});
+    app.is_hidden=next.is_hidden;app.is_featured=next.is_featured;
+    flash("تم تحديث ظهور التطبيق: "+app.title);
+    renderOwnerCatalog();renderCatalog();
+   }catch(e){flash(e.message);hidden.disabled=false;featured.disabled=false}
+  };
+  hidden.onclick=()=>save({is_hidden:!rule.is_hidden});
+  featured.onclick=()=>save({is_featured:!rule.is_featured});
+  buttons.append(hidden,featured);row.append(buttons);frag.append(row);
+ }
+ list.append(frag);
+ if(!options.length)list.append(el("div","empty","لا توجد تطبيقات مطابقة."));
+ summary.textContent=options.length.toLocaleString("ar-SA")+" تطبيق مطابق • "+Array.from(ownerRules.values()).filter(r=>r.is_hidden).length+" مخفي";
+ show("ownerMoreApps",options.length>ownerRenderLimit);
+}
+async function loadOwnerCatalog(){
+ if(!current?.owner)return;
+ try{
+  const data=await call("/api/owner/catalog-rules");
+  ownerRules=new Map((data.rules||[]).map(r=>[r.catalog_key,r]));
+  renderOwnerCatalog();
+ }catch(e){$("ownerAppsSummary").textContent="تعذر تحميل إعدادات التطبيقات.";flash(e.message)}
+}
 async function loadOwnerRequests(){
  if(!current?.owner)return;
+ loadOwnerCatalog();
  const stats=$("ownerCatalogStats");
  if(stats)call("/api/catalog-stats").then(data=>{stats.textContent=
   (data.apps||0).toLocaleString("ar-SA")+" تطبيقًا • "+(data.sources||0)+" مصدرًا • آخر تحديث: "+(data.updated||"غير محدد");
@@ -277,6 +332,10 @@ async function loadOwnerRequests(){
 function setForm(tab){$("loginTab").classList.toggle("active",tab==="login");$("registerTab").classList.toggle("active",tab==="register");show("loginForm",tab==="login");show("registerForm",tab==="register")}
 $("refreshSubscription").onclick=async()=>{try{await enter();flash(current?.active?"تم تفعيل اشتراك الآيفون!":"الطلب ما زال قيد المراجعة.")}catch(e){flash(e.message)}};
 $("refreshOwner").onclick=loadOwnerRequests;
+$("ownerAppSearch").oninput=()=>{ownerRenderLimit=35;renderOwnerCatalog()};
+$("ownerStatusFilter").onchange=()=>{ownerRenderLimit=35;renderOwnerCatalog()};
+$("ownerMoreApps").onclick=()=>{ownerRenderLimit+=35;renderOwnerCatalog()};
+
 $("resendEmailBtn").onclick=async()=>{
  const email=value("loginEmail");
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
