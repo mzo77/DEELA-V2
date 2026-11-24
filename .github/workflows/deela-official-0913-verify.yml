@@ -1,0 +1,51 @@
+name: DEELA 0.9.13 Official Source Verification
+on:
+  push:
+    branches:
+      - feature/deela-official-0913-four-engines
+    paths:
+      - 'app/**'
+      - '.github/workflows/deela-official-0913-verify.yml'
+  pull_request:
+    paths:
+      - 'app/**'
+      - '.github/workflows/deela-official-0913-verify.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  official-source-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android 37
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --channel=3 --install "platforms;android-37.0" "build-tools;36.1.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Verify version, production package and four-engine integration
+        run: |
+          set -euo pipefail
+          grep -Fq 'val appVersionName = "0.9.13"' app/build.gradle.kts
+          grep -Fq 'applicationId = "com.deela.apps"' app/build.gradle.kts
+          grep -Fq 'fun checkEngines()' app/src/main/java/dev/aurastore/store/auth/DeelaOwnerToolkit.kt
+          grep -Fq '"/integrations"' app/src/main/java/dev/aurastore/store/auth/DeelaSecurityLabScreen.kt
+          grep -Fq 'deelaOwnerFourEnginesStatus' app/src/main/assets/deela_owner_toolkit.html
+      - name: Compile official unsigned release and run existing version tests
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon :app:assembleRelease :app:testDebugUnitTest --tests 'dev.aurastore.store.data.AppReleasesTest'
+          test -s app/build/outputs/apk/release/app-release-unsigned.apk
+      - name: Confirm no signing key was used for verification
+        run: |
+          test -s app/build/outputs/apk/release/app-release-unsigned.apk
+          echo 'Build verified. This artifact is unsigned and NOT an official installable update.'
