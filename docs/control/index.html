@@ -179,7 +179,7 @@ function renderOwnerApps(){
     app.is_hidden=!app.is_hidden;
     renderOwnerApps();say('تم تحديث التطبيق: '+app.title);
    }catch(e){say(e.message);toggle.disabled=false}
-   finally{appBusy=false}
+   finally{appBusy=false;renderOwnerApps()}
   };
   buttons.append(toggle);
   if(appPlatform==='ios'){
@@ -190,7 +190,7 @@ function renderOwnerApps(){
     try{
       await appApi('/api/owner/catalog-rules','POST',{catalog_key:app.catalog_key,is_hidden:Boolean(app.is_hidden),is_featured:!app.is_featured});
       app.is_featured=!app.is_featured;renderOwnerApps();say('تم تعديل تمييز '+app.title);
-    }catch(e){say(e.message);feature.disabled=false}finally{appBusy=false}
+    }catch(e){say(e.message);feature.disabled=false}finally{appBusy=false;renderOwnerApps()}
    };
    buttons.append(feature);
   }
