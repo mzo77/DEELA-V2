@@ -86,6 +86,29 @@ data class SourceAnswer(
  */
 object SourceHub {
 
+    /** Exact owner-requested exclusions; no other titles are affected. */
+    private val excludedTitles = setOf(
+        "idle 9 months",
+        "luv interactive game",
+        "road of kings",
+        "romance club stories i play",
+        "brainy escape quest",
+        "is it love stories",
+        "beauty match sexy 3d triple",
+    )
+
+    private fun normalizedTitle(value: String): String =
+        value.lowercase(java.util.Locale.ROOT)
+            .replace(Regex("[^\\p{L}\\p{N}]+"), " ")
+            .trim()
+            .replace(Regex("\\s+"), " ")
+
+    fun isExcluded(app: SourceApp): Boolean =
+        normalizedTitle(app.title) in excludedTitles
+
+    private fun visible(apps: List<SourceApp>): List<SourceApp> =
+        apps.filterNot(::isExcluded)
+
     /** How long a section stays usable. Long enough to be a cache, short enough to notice a new app. */
     private const val TTL_MS = 30L * 60 * 1000
 
@@ -111,7 +134,7 @@ object SourceHub {
         val section = withContext(Dispatchers.IO) {
             // The home page and the term tree are two requests, so they go together; the flat list is
             // the shelves joined, which is what the older callers of `apps` expect.
-            val shelves = runCatching { source.shelves() }.getOrDefault(emptyList())
+            val shelves = runCatching { source.shelves() }.getOrDefault(emptyList())\n                .map { it.copy(apps = visible(it.apps)) }
             val categories = runCatching { source.categories() }.getOrDefault(emptyList())
             val apps = shelves.flatMap { it.apps }.distinctBy { it.key }.ifEmpty {
                 runCatching { source.latest() }.getOrDefault(emptyList())
@@ -132,7 +155,7 @@ object SourceHub {
     suspend fun appsIn(source: SourceId, category: SourceCategory): List<SourceApp> {
         val adapter = Sources.all.firstOrNull { it.id == source } ?: return emptyList()
         return withContext(Dispatchers.IO) {
-            runCatching { adapter.appsIn(category) }.getOrDefault(emptyList())
+            visible(runCatching { adapter.appsIn(category) }.getOrDefault(emptyList()))
         }
     }
 
@@ -140,7 +163,7 @@ object SourceHub {
     suspend fun appsPage(source: SourceId, category: SourceCategory, page: Int): SourcePage {
         val adapter = Sources.all.firstOrNull { it.id == source } ?: return SourcePage(emptyList())
         return withContext(Dispatchers.IO) {
-            runCatching { adapter.appsPage(category, page) }.getOrDefault(SourcePage(emptyList()))
+            runCatching { adapter.appsPage(category, page) }.getOrDefault(SourcePage(emptyList()))\n                .let { it.copy(apps = visible(it.apps)) }
         }
     }
 
@@ -148,7 +171,7 @@ object SourceHub {
     suspend fun allAppsPage(source: SourceId, page: Int): SourcePage {
         val adapter = Sources.all.firstOrNull { it.id == source } ?: return SourcePage(emptyList())
         return withContext(Dispatchers.IO) {
-            runCatching { adapter.allAppsPage(page) }.getOrDefault(SourcePage(emptyList()))
+            runCatching { adapter.allAppsPage(page) }.getOrDefault(SourcePage(emptyList()))\n                .let { it.copy(apps = visible(it.apps)) }
         }
     }
 
@@ -185,7 +208,7 @@ object SourceHub {
         }
             .awaitAll()
             .mapNotNull { (source, apps) ->
-                if (apps.isEmpty()) null else SourceAnswer(source = source.id, apps = apps)
+                visible(apps).takeIf { it.isNotEmpty() }?.let { SourceAnswer(source = source.id, apps = it) }
             }
     }
 
@@ -212,7 +235,7 @@ object SourceHub {
      */
     suspend fun matchFor(source: Source, term: String): SourceMatch? = withContext(Dispatchers.IO) {
         val apps = runCatching { source.search(term) }.getOrDefault(emptyList())
-        if (apps.isEmpty()) return@withContext null
+        if (apps.isEmpty()) return@withContext null\n        val permitted = visible(apps)\n        if (permitted.isEmpty()) return@withContext null
         val app = apps.firstOrNull { candidate -> titleMatches(candidate.title, term) }
             ?: apps.firstOrNull { candidate -> candidate.subtitle?.let { titleMatches(it, term) } == true }
             ?: apps.firstOrNull()
