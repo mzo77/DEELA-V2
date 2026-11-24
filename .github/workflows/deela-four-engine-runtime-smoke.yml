@@ -20,6 +20,11 @@ jobs:
           - { engine: hexstrike, repo: 0x4m4/hexstrike-ai }
           - { engine: pentestgpt, repo: GreyDGL/PentestGPT }
     steps:
+      - name: Use Python 3.11 for legacy mitmproxy dependencies
+        if: matrix.engine == 'hexstrike'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - name: Clone real upstream source
         env:
           ENGINE_REPO: ${{ matrix.repo }}
