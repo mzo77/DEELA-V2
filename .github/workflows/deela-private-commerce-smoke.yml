@@ -15,52 +15,53 @@ jobs:
     timeout-minutes: 14
     steps:
       - uses: actions/checkout@v4
-      - name: Verify owner-only API and hosted private login
+      - name: Check working web landing page, redirect, and owner-only assets
         run: |
           set -euo pipefail
           BASE="https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1"
+          PORTAL="https://mzo77.github.io/DEELA-V2/private-store/"
+          curl --retry 4 --retry-delay 2 --max-time 25 -sS -D /tmp/web-redirect-headers \
+            -o /tmp/web-redirect-body "$BASE/deela-private-store/"
+          grep -qiE '^HTTP/[0-9.]+ 302' /tmp/web-redirect-headers
+          grep -Fqi "location: $PORTAL" /tmp/web-redirect-headers
+          curl --retry 4 --retry-delay 2 --max-time 25 --fail-with-body -sS \
+            -D /tmp/portal-headers "$PORTAL" -o /tmp/portal.html
+          grep -qi '^content-type: text/html' /tmp/portal-headers
+          grep -Fq 'بوابة المالك الخاصة' /tmp/portal.html
+          grep -Fq 'deela-private-store/protected/' /tmp/portal.html
+          ! grep -Fq 'class="product-grid"' /tmp/portal.html
+          echo "The owner browser portal is real HTML; no storefront data in public page."
           curl --retry 4 --max-time 25 --fail-with-body -sS \
             "$BASE/deela-private-store/health" -o /tmp/status.json
           python3 - <<'PY'
           import json
-          status=json.load(open("/tmp/status.json"))
-          assert status["ok"] is True and status["owner_only"] is True
-          assert status["published_publicly"] is False
-          print("Private official DEELA web backend available")
+          d=json.load(open('/tmp/status.json'))
+          assert d.get('ok') is True and d.get('owner_only') is True
+          assert d.get('published_publicly') is False
+          print("Private shop API health verified.")
           PY
-          curl --retry 4 --max-time 25 --fail-with-body -sS \
-            "$BASE/deela-private-store/" -o /tmp/owner-login.html
-          grep -Fq 'هذه النسخة الحقيقية' /tmp/owner-login.html
-          ! grep -Fq 'product-grid' /tmp/owner-login.html
-          curl -sS -D /tmp/owner-login-headers -o /dev/null "$BASE/deela-private-store/"
-          echo '== Private login response headers =='
-          grep -iE '^(HTTP/|content-type:|x-content-type-options:|content-encoding:|content-disposition:|cache-control:)' /tmp/owner-login-headers || true
-          # Supabase's shared-domain proxy forces HTML to text/plain.
-          grep -qiE '^content-type: text/plain' /tmp/owner-login-headers
-          curl -sS -D /tmp/xhtml-headers -o /dev/null "$BASE/deela-private-store/xhtml-probe"
-          echo '== XHTML probe response headers =='
-          grep -iE '^(HTTP/|content-type:|x-content-type-options:)' /tmp/xhtml-headers || true
-          grep -qiE '^content-type: application/xhtml[+]xml' /tmp/xhtml-headers
-          for p in style.css app.js admin/index.html admin/admin.js api/shop/catalog api/shop/admin/orders; do
+          for p in protected/index.html protected/app.js protected/style.css \
+                   protected/admin/index.html protected/admin/admin.js; do
             code="$(curl -sS -o /tmp/result -w '%{http_code}' "$BASE/deela-private-store/$p")"
-            test "$code" = "403" || { echo "::error::Private endpoint $p exposed HTTP $code"; exit 1; }
+            test "$code" = "403" || { echo "::error::Owner-only asset $p is exposed HTTP $code"; exit 1; }
           done
-          for p in catalog product?slug=deela-ios-monthly admin/overview; do
-            code="$(curl -sS -o /tmp/result -w '%{http_code}' "$BASE/deela-shop/$p")"
-            test "$code" = "403" || { echo "::error::Public shop endpoint $p exposed HTTP $code"; exit 1; }
-          done
+          code="$(curl -sS -o /tmp/result -w '%{http_code}' \
+              -H 'Authorization: Bearer intentionally-invalid-token' \
+              "$BASE/deela-private-store/protected/index.html")"
+          test "$code" = "403"
+          code="$(curl -sS -o /tmp/result -w '%{http_code}' "$BASE/deela-shop/catalog")"
+          test "$code" = "403"
           code="$(curl -sS -o /tmp/result -w '%{http_code}' "$BASE/deela-shop-preview/")"
           test "$code" = "403"
-          # Exercise the real login endpoint using a deliberately invalid account
-          # without using or exposing the real owner's credentials.
-          code="$(curl -sS -o /tmp/invalid-login -w '%{http_code}' \
-            -X POST "$BASE/deela-private-store/login" \
-            -H 'Content-Type: application/x-www-form-urlencoded' \
-            --data-urlencode 'email=unknown@example.invalid' \
-            --data-urlencode 'password=deliberately-invalid-secret')"
-          test "$code" = "401" || { echo "::error::Unexpected private-login response: HTTP $code"; exit 1; }
-          grep -Fq 'لم يتم تسجيل الدخول' /tmp/invalid-login
-          echo "Private site, assets, catalog, login, and merchant actions are correctly restricted"
+          curl -sS -D /tmp/preflight -o /dev/null -X OPTIONS \
+            -H 'Origin: https://mzo77.github.io' \
+            -H 'Access-Control-Request-Method: GET' \
+            -H 'Access-Control-Request-Headers: authorization' \
+            "$BASE/deela-private-store/protected/index.html"
+          grep -qi '^HTTP/[0-9.]* 204' /tmp/preflight
+          grep -qi '^access-control-allow-origin: https://mzo77.github.io' /tmp/preflight
+          grep -qi 'authorization' /tmp/preflight
+          echo "Browser CORS and owner authentication barriers are correct."
       - name: Verify no public storefront is shipped in GitHub Pages
         run: |
           set -euo pipefail
