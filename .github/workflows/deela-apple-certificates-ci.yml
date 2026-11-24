@@ -1,0 +1,42 @@
+name: Verify DEELA 0.9.12 Apple Certificate Manager
+on:
+  push:
+    branches: [feature/deela-apple-certificates-0912]
+    paths:
+      - 'app/**'
+      - '.github/workflows/deela-apple-certificates-ci.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare Android SDK
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --channel=3 --install "platforms;android-37.0" "build-tools;36.1.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Verify official version and compile both APK variants
+        run: |
+          set -euo pipefail
+          grep -Fq 'val appVersionName = "0.9.12"' app/build.gradle.kts
+          grep -Fq 'DeelaOwnerAppleScreen(session.token)' app/src/main/java/dev/aurastore/store/auth/DeelaOwnerScreen.kt
+          test -s app/src/main/java/dev/aurastore/store/auth/DeelaOwnerAppleScreen.kt
+          chmod +x gradlew
+          ./gradlew --no-daemon :app:assembleDebug :app:assembleRelease
+          test -s app/build/outputs/apk/release/app-release-unsigned.apk
+      - name: Verify existing official-release parsing
+        run: |
+          ./gradlew --no-daemon :app:testDebugUnitTest --tests 'dev.aurastore.store.data.AppReleasesTest'
+      - name: Production signing remains a separate step
+        run: |
+          echo "Source compiles, but this job does not sign or distribute any APK."
