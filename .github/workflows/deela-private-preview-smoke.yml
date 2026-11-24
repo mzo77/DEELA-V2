@@ -26,6 +26,14 @@ jobs:
           PY
           curl --fail-with-body -sSL --max-time 30 \
             "$BASE/" -D /tmp/login-headers -o /tmp/private-login.html
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('/tmp/private-login.html').read_text()
+          h=Path('/tmp/login-headers').read_text()
+          print("Login returned HTML bytes:",len(s))
+          print("Login contains heading:",'معاينة متجر DEELA' in s)
+          print("Header names:",[x.partition(':')[0] for x in h.splitlines() if ':' in x])
+          PY
           grep -q 'معاينة متجر DEELA' /tmp/private-login.html
           grep -qi 'x-frame-options: DENY' /tmp/login-headers
           grep -qi 'cache-control: private, no-store' /tmp/login-headers
