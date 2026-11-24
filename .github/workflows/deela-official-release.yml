@@ -2,12 +2,8 @@ name: DEELA Official Signed Release
 
 # The owner deliberately publishes a release after setting up a permanent signing key.
 # Never ship an unsigned or ephemeral debug-signed APK as an official update.
+# Release must be explicitly triggered after the owner confirms a persistent live runtime.
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/deela-release-request/official-0.9.12.txt'
-      - '.github/deela-release-request/official-0.9.13.txt'
   workflow_dispatch:
     inputs:
       source_ref:
