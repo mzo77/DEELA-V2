@@ -8,13 +8,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -23,228 +19,203 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.aurastore.store.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 /**
- * Owner-only safe security lab.
- * Never connects to Snapchat or tries usernames/passwords on real accounts.
- * All demo results are synthetic and explicitly labeled.
+ * Owner-only DEELA four-engine LIVE health dashboard.
+ *
+ * This screen does not run the upstream scanners and does not pretend that their
+ * GitHub repositories, local demos, or CI checks are deployed scanner services.
+ * All statuses come from the authenticated Supabase /integrations endpoint.
+ * Subscriber application accounts have no route to this UI or API.
  */
-private object DeelaSecurityHubApi {
+private object DeelaFourEngineApi {
     private val client = OkHttpClient.Builder()
         .connectTimeout(12, TimeUnit.SECONDS)
-        .readTimeout(20, TimeUnit.SECONDS)
-        .callTimeout(30, TimeUnit.SECONDS).build()
+        .readTimeout(34, TimeUnit.SECONDS)
+        .callTimeout(42, TimeUnit.SECONDS)
+        .build()
 
-    private val base get() = BuildConfig.DEELA_API_BASE_URL.trimEnd('/')
-        .replace("/deela-control", "/deela-security-hub")
+    private val base: String
+        get() = BuildConfig.DEELA_API_BASE_URL.trimEnd('/')
+            .replace("/deela-control", "/deela-security-hub")
 
-    suspend fun call(token: String, path: String, requestJson: JSONObject? = null): JSONObject =
-        withContext(Dispatchers.IO) {
-            val builder = Request.Builder()
-                .url(base + path)
-                .header("Authorization", "Bearer " + token)
-                .header("Accept", "application/json")
-                .apply {
-                    if (requestJson == null) get()
-                    else post(requestJson.toString().toRequestBody("application/json; charset=utf-8".toMediaType()))
-                }
-            client.newCall(builder.build()).execute().use { response ->
-                val result = runCatching { JSONObject(response.body?.string().orEmpty()) }
-                    .getOrElse { JSONObject().put("error", "رد غير مفهوم من الخدمة") }
-                if (!response.isSuccessful) {
-                    error(result.optString("error").ifBlank { "فشل طلب المختبر: " + response.code })
-                }
-                result
+    suspend fun get(token: String, path: String): JSONObject = withContext(Dispatchers.IO) {
+        val req = Request.Builder()
+            .url(base + path)
+            .header("Authorization", "Bearer " + token)
+            .header("Accept", "application/json")
+            .header("Cache-Control", "no-store")
+            .get()
+            .build()
+        client.newCall(req).execute().use { response ->
+            val payload = runCatching { JSONObject(response.body?.string().orEmpty()) }
+                .getOrElse { JSONObject().put("error", "استجابة الخادم غير صالحة") }
+            if (!response.isSuccessful) {
+                error(payload.optString("error").ifBlank { "رمز الاستجابة: " + response.code })
             }
+            payload
         }
-}
-
-@Composable
-private fun DeelaSecurityFlag(
-    title: String,
-    enabled: Boolean,
-    onChecked: (Boolean) -> Unit
-) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Checkbox(checked = enabled, onCheckedChange = onChecked)
-        Text(title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
     }
 }
+
+private data class DeelaEngineHealth(
+    val name: String,
+    val status: String,
+    val detail: String,
+    val isLive: Boolean,
+)
 
 @Composable
 fun DeelaSecurityLabScreen(token: String, openAiCenter: () -> Unit) {
     val scope = rememberCoroutineScope()
-    var catalog by remember { mutableStateOf("جارٍ فحص اتصال محركات الأمان...") }
-    var refreshBusy by remember { mutableStateOf(false) }
-    var auditStatus by remember { mutableStateOf("لم يُستعلم بعد عن آخر فحص للكود.") }
+    var loading by remember { mutableStateOf(false) }
+    var summary by remember { mutableStateOf("لم يبدأ اختبار الاتصال المباشر بعد.") }
+    var engines by remember { mutableStateOf<List<DeelaEngineHealth>>(emptyList()) }
+    var checkedAt by remember { mutableStateOf("") }
     var auditBusy by remember { mutableStateOf(false) }
-    var platform by remember { mutableStateOf("deela-demo") }
-    var username by remember { mutableStateOf("test_deela") }
-    var mfa by remember { mutableStateOf(false) }
-    var throttle by remember { mutableStateOf(false) }
-    var lockout by remember { mutableStateOf(false) }
-    var result by remember { mutableStateOf("المختبر جاهز لمحاكاة حماية تسجيل الدخول فقط.") }
-    var running by remember { mutableStateOf(false) }
+    var auditText by remember { mutableStateOf("لم يتم جلب فحوص المصدر بعد.") }
 
-    suspend fun fetchCatalog() {
-        refreshBusy = true
-        runCatching { DeelaSecurityHubApi.call(token, "/engines") }
-            .onSuccess { response ->
-                val list = response.optJSONArray("engines")
-                catalog = if (list == null || list.length() == 0) "تعذر قراءة قائمة المحركات."
-                else (0 until list.length()).joinToString("\n") { i ->
-                    val entry = list.getJSONObject(i)
-                    "● " + entry.optString("name") + " — " +
-                        if (entry.optString("runtime") == "not_deployed") "غير متصل؛ يحتاج خادم تشغيل" else entry.optString("runtime")
+    suspend fun refreshEngines() {
+        loading = true
+        summary = "جارٍ سؤال خوادم المحركات الحقيقية..."
+        runCatching { DeelaFourEngineApi.get(token, "/integrations") }
+            .onSuccess { data ->
+                val list = data.optJSONArray("engines")
+                if (!data.optBoolean("ok") || list == null || list.length() != 4) {
+                    engines = emptyList()
+                    summary = "لا يوجد رد مكتمل بأربع حالات حقيقية من خدمة المحركات."
+                } else {
+                    engines = (0 until list.length()).map { i ->
+                        val e = list.getJSONObject(i)
+                        val isLive = e.optBoolean("connected") &&
+                            e.optString("status") == "online" &&
+                            e.optString("runtime") == "live" &&
+                            e.optBoolean("model_connected") &&
+                            e.optBoolean("tools_ready")
+                        val code = e.optString("status")
+                        val label = when {
+                            isLive -> "متصل — وفق فحص الخدمة المباشر"
+                            code == "not_configured" -> "غير مهيأ: لا يوجد خادم ورمز اتصال"
+                            code == "offline" -> "غير متصل بالخادم"
+                            code == "degraded" -> "الخادم يستجيب، لكن النموذج أو الأدوات غير جاهزة"
+                            code == "invalid_configuration" -> "إعداد الخادم غير صالح"
+                            code == "unverified" -> "لم تثبت هوية المحرك"
+                            else -> "غير جاهز: " + code.take(50)
+                        }
+                        DeelaEngineHealth(
+                            name = e.optString("name", e.optString("id", "محرك غير معروف")),
+                            status = label,
+                            detail = e.optString("reason", ""),
+                            isLive = isLive,
+                        )
+                    }
+                    val live = engines.count { it.isLive }
+                    summary = "متصل فعليًا: $live من 4"
+                    checkedAt = data.optString("checked_at", "")
                 }
             }
-            .onFailure { catalog = "تعذر فحص حالة المحركات: " + (it.message ?: "خطأ اتصال") }
-        refreshBusy = false
+            .onFailure {
+                engines = emptyList()
+                summary = "فشل التحقق المباشر: " + (it.message ?: "تعذر الاتصال")
+            }
+        loading = false
     }
 
-    suspend fun fetchAudit() {
+    suspend fun refreshAudit() {
         auditBusy = true
-        runCatching { DeelaSecurityHubApi.call(token, "/audit/latest") }
-            .onSuccess { body ->
-                val runs = body.optJSONArray("runs")
-                auditStatus = if (runs == null || runs.length() == 0) {
-                    "ما ظهر تقرير GitHub Actions بعد. افتح سجل الفحوص أو انتظر تشغيل أول مهمة."
-                } else (0 until runs.length()).joinToString("\n\n") { i ->
-                    val row = runs.getJSONObject(i)
-                    val conclusion = row.optString("conclusion")
-                    val status = if (row.optString("status") == "completed") {
-                        if (conclusion == "success") "✅ ناجح"
-                        else if (conclusion == "failure") "❌ فشل"
-                        else "⚠️ " + conclusion
-                    } else "⏳ " + row.optString("status")
-                    "التشغيل #" + row.optInt("run_number") + " — " + status +
-                        "\n" + row.optString("created_at") + "\n" + row.optString("url")
+        runCatching { DeelaFourEngineApi.get(token, "/audit/latest") }
+            .onSuccess { data ->
+                val runs = data.optJSONArray("runs")
+                auditText = if (runs == null || runs.length() == 0) {
+                    "لا توجد نتائج تدقيق مصدر متاحة بعد."
+                } else {
+                    (0 until runs.length()).joinToString("\n") { i ->
+                        val run = runs.getJSONObject(i)
+                        val label = when {
+                            run.optString("status") != "completed" -> "جارٍ الفحص"
+                            run.optString("conclusion") == "success" -> "اكتمل بنجاح"
+                            run.optString("conclusion") == "failure" -> "فشل"
+                            else -> "حالة أخرى"
+                        }
+                        "GitHub #" + run.optInt("run_number") + ": " + label
+                    }
                 }
-            }
-            .onFailure { auditStatus = "تعذر الاستعلام عن GitHub: " + (it.message ?: "خطأ") }
+            }.onFailure { auditText = "تعذر استعلام فحوص الكود: " + (it.message ?: "خطأ") }
         auditBusy = false
     }
 
     LaunchedEffect(token) {
-        fetchCatalog()
-        fetchAudit()
+        refreshEngines()
+        refreshAudit()
     }
 
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("🛡️ DEELA — مختبر الأمان", style = MaterialTheme.typography.titleLarge)
-        Text("مركز واحد لثلاثة مشاريع مفتوحة المصدر ومختبر محاكاة تسجيل الدخول. لا تُنفذ محاولات اختراق فعلية ضد Snapchat أو خدمات خارجية.",
-            style = MaterialTheme.typography.bodyMedium)
+        Text("🧠 مركز محركات DEELA الموحد", style = MaterialTheme.typography.titleLarge)
+        Text(
+            "PentAGI + Pentest Swarm AI + HexStrike AI + PentestGPT — حالة الاتصال الفعلية فقط. " +
+                "نجاح اختبار GitHub أو وجود اسم المحرك لا يعني تشغيله على خادم دائم.",
+            style = MaterialTheme.typography.bodySmall,
+        )
         ElevatedCard(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("حالة المحركات", style = MaterialTheme.typography.titleMedium)
-                Text(catalog, style = MaterialTheme.typography.bodyMedium)
-                Text("Pentest Swarm AI • HexStrike AI • PentestGPT: ملفات المشاريع متاحة، لكن عملياتها ليست مستضافة أو متصلة بعد.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(summary, style = MaterialTheme.typography.titleMedium)
+                if (checkedAt.isNotBlank()) {
+                    Text("آخر رد من الخدمة: $checkedAt", style = MaterialTheme.typography.bodySmall)
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(enabled = !refreshBusy, onClick = { scope.launch { fetchCatalog() } }) {
-                        Text("↻ تحديث")
+                    OutlinedButton(enabled = !loading, onClick = { scope.launch { refreshEngines() } }) {
+                        Text("↻ فحص الاتصال الحقيقي")
                     }
-                    OutlinedButton(onClick = openAiCenter) { Text("🤖 مركز PentAGI") }
+                    OutlinedButton(onClick = openAiCenter) {
+                        Text("مركز PentAGI")
+                    }
+                }
+            }
+        }
+        engines.forEach { engine ->
+            ElevatedCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                    Text(engine.name, style = MaterialTheme.typography.titleMedium)
+                    Text(engine.status, style = MaterialTheme.typography.bodyMedium)
+                    if (engine.detail.isNotBlank()) {
+                        Text(
+                            engine.detail,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
                 }
             }
         }
         ElevatedCard(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("🔎 آخر فحص أمني لكود DEELA", style = MaterialTheme.typography.titleMedium)
-                Text("Semgrep + اختبارات مصادقة تجريبية عبر GitHub Actions. لا تشغّل محركات فحص اختراق عن بعد.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(auditStatus, style = MaterialTheme.typography.bodySmall)
-                OutlinedButton(enabled = !auditBusy, onClick = { scope.launch { fetchAudit() } }) {
-                    Text("↻ تحديث نتائج GitHub")
+            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("🔎 نتائج تدقيق كود DEELA", style = MaterialTheme.typography.titleMedium)
+                Text("هذه نتائج تدقيق المصدر، وليست نتيجة تشغيل محركات الاختبار الأربعة.",
+                    style = MaterialTheme.typography.bodySmall)
+                Text(auditText, style = MaterialTheme.typography.bodyMedium)
+                OutlinedButton(enabled = !auditBusy, onClick = { scope.launch { refreshAudit() } }) {
+                    Text("↻ تحديث تقارير GitHub")
                 }
             }
         }
-        ElevatedCard(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("محاكاة مقاومة التخمين والتحقق بخطوتين", style = MaterialTheme.typography.titleMedium)
-                Text("تقييم افتراضي يعتمد على الإعدادات التي تختارها. لا ترسل كلمات مرور أو رموز 2FA.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(selected = platform == "deela-demo", onClick = { platform = "deela-demo" },
-                        label = { Text("DEELA — Test") })
-                    FilterChip(selected = platform == "snapchat-demo", onClick = { platform = "snapchat-demo" },
-                        label = { Text("Snapchat — Demo") })
-                }
-                OutlinedTextField(
-                    modifier = Modifier.fillMaxWidth(),
-                    value = username,
-                    onValueChange = { if (it.length <= 37) username = it },
-                    singleLine = true,
-                    label = { Text("Test Username") },
-                    placeholder = { Text("test_deela") }
-                )
-                DeelaSecurityFlag("Two-factor authentication (2FA) enabled", mfa) { mfa = it }
-                DeelaSecurityFlag("Rate limiting enabled", throttle) { throttle = it }
-                DeelaSecurityFlag("Temporary account lockout enabled", lockout) { lockout = it }
-                Button(
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !running && Regex("^test_[A-Za-z0-9_]{3,32}$").matches(username),
-                    onClick = {
-                        running = true
-                        result = "جارٍ تنفيذ المحاكاة المحلية..."
-                        scope.launch {
-                            runCatching {
-                                DeelaSecurityHubApi.call(token, "/lab/simulate",
-                                    JSONObject().put("platform", platform)
-                                        .put("test_username", username)
-                                        .put("mfa_enabled", mfa)
-                                        .put("rate_limit_enabled", throttle)
-                                        .put("lockout_enabled", lockout))
-                            }.onSuccess { data ->
-                                val events = data.optJSONArray("events")
-                                val hints = data.optJSONArray("recommendations")
-                                result = buildString {
-                                    appendLine("✅ اكتملت المحاكاة الافتراضية. طلبات حقيقية: 0")
-                                    appendLine("محاولات افتراضية: " + data.optInt("attempts_simulated"))
-                                    appendLine("حالة حماية الدخول: " +
-                                        data.optJSONObject("checks")?.optString("password_guessing_protection"))
-                                    appendLine("حالة 2FA: " + data.optJSONObject("checks")?.optString("two_factor"))
-                                    if (events != null) {
-                                        appendLine("\nسيناريو المحاكاة:")
-                                        for (i in 0 until events.length()) appendLine("• " + events.optString(i))
-                                    }
-                                    if (hints != null) {
-                                        appendLine("\nالتوصيات:")
-                                        for (i in 0 until hints.length()) appendLine("• " + hints.optString(i))
-                                    }
-                                    appendLine("\n" + data.optString("notice"))
-                                }
-                            }.onFailure {
-                                result = "فشلت المحاكاة: " + (it.message ?: "خطأ اتصال")
-                            }
-                            running = false
-                        }
-                    }
-                ) { Text(if (running) "جارٍ الاختبار..." else "▶ Start Demo Assessment") }
-                if (!Regex("^test_[A-Za-z0-9_]{3,32}$").matches(username))
-                    Text("استخدم اسمًا تجريبيًا يبدأ بـ test_ ثم 3 إلى 32 حرفًا أو رقمًا فقط.",
-                        style = MaterialTheme.typography.bodySmall)
-                Text(result, style = MaterialTheme.typography.bodyMedium)
-            }
-        }
+        Text(
+            "التنفيذ عبر المحركات غير متاح حتى تتصل الأربعة بخدمات حقيقية موثقة ومصرح بها. " +
+                "لا تُرسل كلمات مرور أو رموز تحقق إلى هذه اللوحة.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall,
+        )
     }
 }

@@ -157,6 +157,7 @@ fun DeelaOwnerToolkit(token: String) {
                 override fun onPageFinished(view: WebView?, url: String?) {
                     web.evaluateJavascript("window.DeelaToolsNative?.checkAI?.()", null)
                     web.evaluateJavascript("window.DeelaToolsNative?.checkAgent?.()", null)
+                    web.evaluateJavascript("window.DeelaToolsNative?.checkEngines?.()", null)
                 }
             }
             val html = context.assets.open("deela_owner_toolkit.html").bufferedReader().use { it.readText() }
@@ -185,6 +186,7 @@ private class OwnerToolBridge(
         .build()
     private val api = BuildConfig.DEELA_API_BASE_URL.replace("/deela-control", "/deela-owner-ai")
     private val agentApi = BuildConfig.DEELA_API_BASE_URL.replace("/deela-control", "/deela-owner-agent")
+    private val securityHubApi = BuildConfig.DEELA_API_BASE_URL.replace("/deela-control", "/deela-security-hub")
 
     private fun deliver(callback: String, result: JSONObject) {
         web.post { web.evaluateJavascript("window.$callback(${JSONObject.quote(result.toString())})", null) }
@@ -234,6 +236,31 @@ private class OwnerToolBridge(
     @JavascriptInterface
     fun requestSpeech() {
         web.post { onSpeech() }
+    }
+
+    @JavascriptInterface
+    fun checkEngines() {
+        // Owner token stays on the native side and is never exposed to WebView JS.
+        // No remote scanning or account requests occur here: one authenticated health read.
+        scope.launch(Dispatchers.IO) {
+            val payload = runCatching {
+                val req = Request.Builder().url(securityHubApi + "/integrations")
+                    .header("Authorization", "Bearer " + token)
+                    .header("Accept", "application/json")
+                    .header("Cache-Control", "no-store")
+                    .get().build()
+                client.newCall(req).execute().use { res ->
+                    val content = runCatching { JSONObject(res.body?.string().orEmpty()) }
+                        .getOrElse { JSONObject().put("error", "رد الخادم غير صالح") }
+                    if (!res.isSuccessful) error(content.optString("error", "تعذر فحص اتصال المحركات"))
+                    content
+                }
+            }.getOrElse {
+                JSONObject().put("ok", false)
+                    .put("error", it.message ?: "تعذر فحص المحركات الفعلية")
+            }
+            deliver("deelaOwnerFourEnginesStatus", payload)
+        }
     }
 
     @JavascriptInterface

@@ -55,7 +55,7 @@ button,.nav button{border-radius:12px}.nav button.active,.tabs .active{backgroun
 <div class="mzo-lang-switch" role="group" aria-label="Language / اللغة"><button id="mzoAr" type="button" aria-pressed="true">AR</button><button id="mzoEn" type="button" aria-pressed="false">EN</button></div>
 <div class="shell"><aside class="side"><div class="brand">DEELA<span>_ALHKAMi</span></div><div class="sub">القوة الغاشمة ⚡ | أدوات المشروع الأول 3.7</div><nav class="nav" id="nav" aria-label="التنقل الرئيسي"></nav><div class="bottom">● واجهة محلية<br>لا يوجد تنفيذ عن بُعد</div></aside>
 <main class="main"><div class="top"><div><div class="eyebrow">لوحة التحكم / إصدار محلي</div><h1 id="heading">لوحة المعلومات</h1></div><div class="status"><span class="dot"></span> الواجهة تعمل</div></div>
-<section class="section active" id="dashboard"><div class="grid"><div class="card"><div class="muted">حالة النظام</div><div class="metric">متصل</div><div class="muted">واجهة المتصفح جاهزة</div></div><div class="card"><div class="muted">الأوامر المتاحة</div><div class="metric">١٦</div><div class="muted">أوامر جاهزة للنسخ</div></div><div class="card"><div class="muted">الإصدار</div><div class="metric">3.7.0</div><div class="muted">نسخة HTML مستقلة</div></div><div class="card wide"><h2>الوصول السريع</h2><div class="quick"><button data-go="commands">⌘ دليل الأوامر</button><button data-go="lab">⌨ مختبر البرمجة</button><button data-go="tools">⚙ أدوات المطور</button><button data-go="gamefiles">🎮 مختبر ملفات الألعاب</button><button data-go="security">◇ مركز الأمان</button><button data-go="snapReal">👻 أمان سناب الحقيقي</button></div></div><div class="card"><h2>نظرة عامة</h2><div class="muted">لوحة تحكم تعمل محليًا داخل المتصفح، ولا تحتاج إلى خادم. لا يتضمن الملف نموذج ذكاء اصطناعي أو اتصالًا تلقائيًا به.</div></div></div></section>
+<section class="section active" id="dashboard"><div class="grid"><div class="card"><div class="muted">حالة النظام</div><div class="metric">متصل</div><div class="muted">واجهة المتصفح جاهزة</div></div><div class="card"><div class="muted">الأوامر المتاحة</div><div class="metric">١٦</div><div class="muted">أوامر جاهزة للنسخ</div></div><div class="card"><div class="muted">الإصدار</div><div class="metric">3.7.0</div><div class="muted">نسخة HTML مستقلة</div></div><div class="card wide"><h2>الوصول السريع</h2><div class="quick"><button data-go="commands">⌘ دليل الأوامر</button><button data-go="lab">⌨ مختبر البرمجة</button><button data-go="tools">⚙ أدوات المطور</button><button data-go="gamefiles">🎮 مختبر ملفات الألعاب</button><button data-go="security">◇ مركز الأمان</button><button data-go="fourReal">🧠 المحركات الأربعة</button><button data-go="snapReal">👻 أمان سناب الحقيقي</button></div></div><div class="card"><h2>نظرة عامة</h2><div class="muted">لوحة تحكم تعمل محليًا داخل المتصفح، ولا تحتاج إلى خادم. لا يتضمن الملف نموذج ذكاء اصطناعي أو اتصالًا تلقائيًا به.</div></div></div></section>
 <section class="section" id="agent">
 <div class="card" style="background:linear-gradient(135deg,#312334,#1d1623);border:1px solid #8b5772;border-radius:22px">
   <h2 style="color:#f0c1d4">🤖 وكيل ديلا البرمجي — أوامر بالعربي</h2>
@@ -141,6 +141,16 @@ button,.nav button{border-radius:12px}.nav button.active,.tabs .active{backgroun
   <div class="snap-foot">لا تحتاج لإدخال كلمة مرور أو رمز تحقق هنا. ستفتح الروابط الرسمية في متصفح جهازك.</div>
 </div>
 </section>
+<section class="section" id="fourReal">
+  <div class="card" id="deelaFourEngines" style="border:1px solid #576276;background:linear-gradient(135deg,#1c1d2a,#11111a);border-radius:20px">
+    <h2>🧠 مركز DEELA الموحد — الأربعة محركات</h2>
+    <p class="muted">PentAGI وPentest Swarm AI وHexStrike AI وPentestGPT من مصدر واحد لحالة التشغيل. لا تُحتسب المحركات متصلة حتى تستجيب خوادم حقيقية مع أدوات ونموذج جاهز.</p>
+    <div id="deelaFourSummary" class="note" role="status">لم يتم فحص حالة المحركات في هذا الدخول.</div>
+    <div class="actions"><button id="deelaFourRefresh" type="button">↻ فحص الاتصال المباشر</button></div>
+    <div id="deelaFourCards" class="toolgrid" role="status"></div>
+    <div class="note">هذه لوحة حالة تشغيل فعلية وليست محاكاة ولا اختبار GitHub مؤقتًا. تنفيذ المهام يتطلب خوادم مجهّزة ضمن نطاق فحص مصرح به. لا تُدخل كلمات مرور أو رموز تحقق تخص أي خدمة هنا.</div>
+  </div>
+</section>
 <section class="section" id="terms"><div class="card"><h2>شروط الاستخدام</h2><ul><li>استخدم الأدوات والشيفرة ضمن الأنظمة المصرح لك بالعمل عليها.</li><li>احمِ البيانات الشخصية واحترم الخصوصية.</li><li>التزم بحقوق النشر وتراخيص البرمجيات والملكية الفكرية.</li><li>راجع الشيفرة واختبرها قبل نشرها.</li><li>أنت مسؤول عن كيفية استخدام الطلبات والملفات التي تصدرها.</li></ul></div></section>
 <section class="section" id="settings"><div class="card"><h2>الإعدادات</h2><p class="muted">المظهر: أسود وأحمر قرمزي · الواجهة: متجاوبة · التخزين الدائم: غير مستخدم</p><div class="actions"><button id="reset">إعادة ضبط الاختيارات</button><button id="glow">تبديل تأثير النيون</button></div></div></section>
 <section class="section" id="about"><div class="card"><h2>حول DEELA-APPS</h2><p class="muted">لوحة تحكم مستقلة للمطورين، بتصميم تقني مستوحى من واجهات مراكز الأوامر. الإصدار 3.7.0، مبنية باستخدام HTML وCSS وJavaScript، وتعمل محليًا. الاسم هو هوية الواجهة، وتتصل بخادم محلي اختياري لاستقبال نتائج الذكاء الاصطناعي عبر OpenAI API. لا تشغّل الشيفرة الناتجة تلقائيًا.</p></div></section>
@@ -148,7 +158,7 @@ button,.nav button{border-radius:12px}.nav button.active,.tabs .active{backgroun
 <script>
 'use strict';
 const gameCommands=[['/game','تحليل فكرة لعبة'],['/mod','تطوير مود للعبة تسمح بالتعديل'],['/coins','تصميم نظام عملات للعبة خاصة'],['/unity','تطوير لعبة Unity'],['/save','فهم ملف حفظ محلي'],['/balance','موازنة اقتصاد اللعبة']];
-const sections=[['dashboard','◈ لوحة المعلومات'],['agent','🤖 وكيل البرمجة'],['commands','⌘ دليل الأوامر'],['lab','⌨ مختبر البرمجة'],['gamefiles','🎮 مختبر ملفات الألعاب'],['github','⌁ مستودعات GitHub'],['tools','⚙ أدوات المطور'],['security','◇ مركز الأمان'],['snapReal','👻 أمان سناب الحقيقي'],['terms','▤ شروط الاستخدام'],['settings','☷ الإعدادات'],['about','ⓘ حول البرنامج']];
+const sections=[['dashboard','◈ لوحة المعلومات'],['agent','🤖 وكيل البرمجة'],['commands','⌘ دليل الأوامر'],['lab','⌨ مختبر البرمجة'],['gamefiles','🎮 مختبر ملفات الألعاب'],['github','⌁ مستودعات GitHub'],['tools','⚙ أدوات المطور'],['security','◇ مركز الأمان'],['fourReal','🧠 المحركات الأربعة'],['snapReal','👻 أمان سناب الحقيقي'],['terms','▤ شروط الاستخدام'],['settings','☷ الإعدادات'],['about','ⓘ حول البرنامج']];
 const cmds=[['/help','عرض المساعدة المتاحة'],['/menu','فتح قائمة الأوامر'],['/code','إنشاء شيفرة برمجية'],['/debug','تشخيص الأخطاء البرمجية'],['/explain','شرح الشيفرة'],['/optimize','تحسين الأداء'],['/review','مراجعة الشيفرة المصدرية'],['/build','تخطيط مشروع أو بناؤه'],['/status','التحقق من حالة المشروع'],['/reset','إعادة ضبط السياق'],...gameCommands];
 const languages=['بايثون','جافاسكربت','HTML / CSS','سي شارب #C','يونيتي','تطوير أندرويد','تطوير واجهات API','هندسة المشاريع'];let language='بايثون',mode='بناء مشروع',glow=true;const $=id=>document.getElementById(id);let toastTimer;
 function toast(t){$('toast').textContent=t;$('toast').style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').style.display='none',1800)}
@@ -413,6 +423,54 @@ const activate=(id,kind)=>{
 activate('snapGoAccount','account');
 activate('snapGoSessions','sessions');
 activate('snapGo2fa','twofactor');
+})();
+</script>
+<script>
+(function(){
+'use strict';
+const summary=document.getElementById('deelaFourSummary');
+const root=document.getElementById('deelaFourCards');
+const refresh=document.getElementById('deelaFourRefresh');
+const names={'pentagi':'PentAGI','pentest-swarm':'Pentest Swarm AI','hexstrike':'HexStrike AI','pentestgpt':'PentestGPT'};
+window.deelaOwnerFourEnginesStatus=function(raw){
+  let data;
+  try { data=typeof raw==='string'?JSON.parse(raw):raw; }
+  catch { summary.textContent='تعذر فهم رد الخادم. لا توجد حالة تشغيل موثقة.';return; }
+  if(!data||data.ok!==true||!Array.isArray(data.engines)||data.engines.length!==4){
+    summary.textContent='تعذر التحقق: '+String(data?.error||'لم تصل حالات أربعة محركات فعلية');
+    root.replaceChildren();return;
+  }
+  root.replaceChildren();
+  let connected=0;
+  for(const e of data.engines){
+    const live=e.connected===true&&e.status==='online'&&e.runtime==='live'&&e.model_connected===true&&e.tools_ready===true;
+    if(live)connected++;
+    const card=document.createElement('div');card.className='tool';
+    const header=document.createElement('strong');header.textContent=names[e.id]||String(e.name||'محرك غير معروف');
+    const state=document.createElement('p');state.className='muted';
+    const states={
+      not_configured:'غير مهيأ: لا يوجد خادم متصل',
+      offline:'الخادم لا يستجيب',
+      degraded:'الخادم يستجيب؛ أدواته أو نموذجه غير جاهز',
+      invalid_configuration:'خطأ في إعداد عنوان الخادم',
+      unverified:'لم يتم التحقق من هوية الخادم'
+    };
+    state.textContent=live?'✅ متصل — وفق فحص الخادم المباشر':(states[e.status]||'غير جاهز: '+String(e.status||'غير معروف'));
+    const reason=document.createElement('small');
+    reason.textContent=String(e.reason||'').slice(0,200);
+    card.append(header,state,reason);root.append(card);
+  }
+  summary.textContent='المحركات المتصلة فعليًا: '+connected+' من 4 — '+String(data.checked_at||'وقت غير متاح');
+};
+refresh.addEventListener('click',()=>{
+  if(typeof window.DeelaToolsNative?.checkEngines!=='function'){
+    summary.textContent='فحص الاتصال متاح داخل تطبيق المالك الذي يدعم الربط بالخادم فقط.';
+    return;
+  }
+  summary.textContent='جارٍ الاتصال بخدمة التحقق الفعلية...';
+  root.replaceChildren();
+  window.DeelaToolsNative.checkEngines();
+});
 })();
 </script>
 </body></html>
