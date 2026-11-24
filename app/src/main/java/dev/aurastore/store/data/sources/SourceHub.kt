@@ -134,7 +134,8 @@ object SourceHub {
         val section = withContext(Dispatchers.IO) {
             // The home page and the term tree are two requests, so they go together; the flat list is
             // the shelves joined, which is what the older callers of `apps` expect.
-            val shelves = runCatching { source.shelves() }.getOrDefault(emptyList())\n                .map { it.copy(apps = visible(it.apps)) }
+            val shelves = runCatching { source.shelves() }.getOrDefault(emptyList())
+                .map { it.copy(apps = visible(it.apps)) }
             val categories = runCatching { source.categories() }.getOrDefault(emptyList())
             val apps = shelves.flatMap { it.apps }.distinctBy { it.key }.ifEmpty {
                 runCatching { source.latest() }.getOrDefault(emptyList())
@@ -163,7 +164,8 @@ object SourceHub {
     suspend fun appsPage(source: SourceId, category: SourceCategory, page: Int): SourcePage {
         val adapter = Sources.all.firstOrNull { it.id == source } ?: return SourcePage(emptyList())
         return withContext(Dispatchers.IO) {
-            runCatching { adapter.appsPage(category, page) }.getOrDefault(SourcePage(emptyList()))\n                .let { it.copy(apps = visible(it.apps)) }
+            runCatching { adapter.appsPage(category, page) }.getOrDefault(SourcePage(emptyList()))
+                .let { it.copy(apps = visible(it.apps)) }
         }
     }
 
@@ -171,7 +173,8 @@ object SourceHub {
     suspend fun allAppsPage(source: SourceId, page: Int): SourcePage {
         val adapter = Sources.all.firstOrNull { it.id == source } ?: return SourcePage(emptyList())
         return withContext(Dispatchers.IO) {
-            runCatching { adapter.allAppsPage(page) }.getOrDefault(SourcePage(emptyList()))\n                .let { it.copy(apps = visible(it.apps)) }
+            runCatching { adapter.allAppsPage(page) }.getOrDefault(SourcePage(emptyList()))
+                .let { it.copy(apps = visible(it.apps)) }
         }
     }
 
@@ -235,7 +238,9 @@ object SourceHub {
      */
     suspend fun matchFor(source: Source, term: String): SourceMatch? = withContext(Dispatchers.IO) {
         val apps = runCatching { source.search(term) }.getOrDefault(emptyList())
-        if (apps.isEmpty()) return@withContext null\n        val permitted = visible(apps)\n        if (permitted.isEmpty()) return@withContext null
+        if (apps.isEmpty()) return@withContext null
+        val permitted = visible(apps)
+        if (permitted.isEmpty()) return@withContext null
         val app = apps.firstOrNull { candidate -> titleMatches(candidate.title, term) }
             ?: apps.firstOrNull { candidate -> candidate.subtitle?.let { titleMatches(it, term) } == true }
             ?: apps.firstOrNull()
