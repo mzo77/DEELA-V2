@@ -4,3 +4,5 @@ Verified build: https://github.com/mzo77/DEELA-V2/actions/runs/45321229238
 Scope: Apple certificate group manager, owner-only secure P12/profile file vault, iOS device UDID assignment and optional Apple API registration.
 No IPA signing, subscriber OTA installation, or unlicensed Apple distribution enabled.
 Use existing permanent Android signing certificate. Do not replace v0.9.11 in place.
+
+Retry: official version safety guard updated to permit 0.9.12; original source SHA and permanent signing identity unchanged.
