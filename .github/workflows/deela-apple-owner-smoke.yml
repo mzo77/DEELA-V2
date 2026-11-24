@@ -1,0 +1,45 @@
+name: Verify DEELA Apple Certificate Owner API
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/control/**'
+      - 'control-center/supabase/deela-control/**'
+      - '.github/workflows/deela-apple-owner-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  owner-only-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate owner certificate UI JavaScript
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          import subprocess
+          h=Path('docs/control/index.html').read_text()
+          for identifier in ('appleCertificateForm','appleFileForm','appleDeviceForm','appleDevices','appleApiStatus','data-tab="apple"'):
+            assert identifier in h,identifier
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',h,re.DOTALL|re.IGNORECASE)
+          assert len(scripts)==1,len(scripts)
+          Path('/tmp/deela-apple-owner.js').write_text(scripts[0])
+          subprocess.run(['node','--check','/tmp/deela-apple-owner.js'],check=True)
+          print('Certificate manager UI and JavaScript verified')
+          PY
+      - name: Verify deployed Apple owner routes reject unauthorized requests
+        run: |
+          set -euo pipefail
+          BASE="https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-control"
+          curl -fsS --max-time 20 "$BASE/health" | grep -Fq 'DEELA Control Center'
+          for route in apple/certificates apple/devices apple/devices/register apple/certificates/file; do
+            status="$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' "$BASE/api/owner/$route")"
+            test "$status" = "403" || (echo "Unexpected access: $route ($status)";exit 1)
+          done
+          status="$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' --data '{"title":"unauthorized","method":"ad_hoc"}' "$BASE/api/owner/apple/certificates")"
+          test "$status" = "403" || (echo "Anonymous certificate creation incorrectly allowed ($status)"; exit 1)
+          echo "All owner-only certificate routes are protected"
