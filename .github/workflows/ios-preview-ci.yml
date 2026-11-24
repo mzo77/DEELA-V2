@@ -35,7 +35,7 @@ jobs:
           assert 'href="./install/"' not in html
           assert "وضع العرض فقط" in html
           assert manifest["display"]=="standalone"
-          assert "deela-ios-shell-v2" in Path("docs/ios/sw.js").read_text()
+          assert "deela-ios-shell-v3" in Path("docs/ios/sw.js").read_text()
           print("Preview-only catalogue and iPhone Home Screen app checks passed.")
           PY
       - name: Verify protected DEELA iOS API remains closed to anonymous visitors
@@ -46,7 +46,7 @@ jobs:
           python3 - <<'PY'
           import json
           h=json.load(open('/tmp/deela-ios-health.json'))
-          assert h["platform"]=="ios" and h["sources"]==15
+          assert h["platform"]=="ios" and h["sources"]==1
           PY
           for path in /api/catalog /api/sources '/api/source?id=0'; do
             code="$(curl --silent --max-time 20 -o /dev/null -w '%{http_code}' "$BASE$path")"
