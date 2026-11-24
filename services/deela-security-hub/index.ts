@@ -16,8 +16,9 @@ const headers = {
 const reply=(obj:Record<string,unknown>,status=200)=>new Response(JSON.stringify(obj),{status,headers});
 const error=(message:string,status:number)=>reply({ok:false,error:message},status);
 
-// Three upstream open-source PROJECTS, not running scanners. No host URLs or secrets accepted from clients.
+// Four upstream source projects; NOT live agents until an authenticated service reports tool + model readiness.
 const engines=[
+  {id:"pentagi",name:"PentAGI",repo:"https://github.com/vxcontrol/pentagi",kind:"autonomous security research",runtime:"not_deployed"},
   {id:"pentest-swarm",name:"Pentest Swarm AI",repo:"https://github.com/Armur-Ai/Pentest-Swarm-AI",kind:"automated assessment",runtime:"not_deployed"},
   {id:"hexstrike",name:"HexStrike AI",repo:"https://github.com/0x4m4/hexstrike-ai",kind:"MCP security tools",runtime:"not_deployed"},
   {id:"pentestgpt",name:"PentestGPT",repo:"https://github.com/GreyDGL/PentestGPT",kind:"interactive security reasoning",runtime:"not_deployed"},
@@ -62,6 +63,7 @@ Deno.serve(async(req:Request)=>{
     // Live, owner-only connectivity checks. No CI examples, mock results or public user targets.
     // Each adapter must identify its actual upstream engine and prove the tool AND model are ready.
     const configs=[
+      {id:"pentagi",name:"PentAGI",urlKey:"DEELA_PENTAGI_HEALTH_URL",tokenKey:"DEELA_PENTAGI_HEALTH_TOKEN"},
       {id:"pentest-swarm",name:"Pentest Swarm AI",urlKey:"DEELA_SWARM_HEALTH_URL",tokenKey:"DEELA_SWARM_HEALTH_TOKEN"},
       {id:"hexstrike",name:"HexStrike AI",urlKey:"DEELA_HEXSTRIKE_HEALTH_URL",tokenKey:"DEELA_HEXSTRIKE_HEALTH_TOKEN"},
       {id:"pentestgpt",name:"PentestGPT",urlKey:"DEELA_PENTESTGPT_HEALTH_URL",tokenKey:"DEELA_PENTESTGPT_HEALTH_TOKEN"}
@@ -102,7 +104,7 @@ Deno.serve(async(req:Request)=>{
       notice:"يتم احتساب المحرك متصلًا فقط عند استجابة HTTPS موثقة من خادم تشغيله ونموذج الذكاء وأدواته. لا توجد بيانات وهمية أو تشغيل مؤقت."});
   }
   if(req.method==="GET"&&(path==="/engines"||path==="/status"||path==="/"))
-    return reply({ok:true,mode:"simulation_only",engines,lab:{ready:true,kind:"synthetic_auth_simulation"},warning:"المشاريع الثلاثة غير مثبّتة أو متصلة بخادم حي. لا توجد أدوات تخمين كلمات المرور أو تجاوز 2FA."});
+    return reply({ok:true,mode:"unified_4_engine_live_status",engines,lab:{ready:true,kind:"synthetic_auth_simulation"},warning:"المحركات الأربعة غير مثبّتة أو متصلة بخادم حي. لا توجد أدوات تخمين كلمات المرور أو تجاوز 2FA."});
   if(req.method==="POST"&&path==="/lab/simulate"){
     if(Number(req.headers.get("content-length")||"0")>3000)return error("الطلب كبير جدًا",413);
     let body:Record<string,unknown>;
