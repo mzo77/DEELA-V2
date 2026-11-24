@@ -1,0 +1,8 @@
+Owner-approved official DEELA release request
+Target: v0.9.11
+Pinned canonical merged source: 869c0b3db93dda6a5402ca39282b37a436e2db9f
+ApplicationId: com.deela.apps
+Required certificate SHA-256: 83698bc6e21ddabb83eaf45d3386170d676dcf96270081c163f8b2e107fdef3c
+Android smoke compile: successful, DEELA Security Lab CI: successful.
+This trigger uses the official workflow's own build, version, signing certificate, SHA-256 and GitHub release verification gates.
+Never distribute debug-signed APKs. On any failed verification, do not create a public release.
