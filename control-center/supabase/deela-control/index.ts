@@ -154,6 +154,28 @@ if(req.method==="GET"&&path==="/api/v1/source/updates"){
  if(error)throw error;return j({updates:data||[]});
 }
 if(path.startsWith("/api/owner/")){const u=await who(req);if(!u||u.role!=="owner")return fail("صلاحية المالك مطلوبة",403);
+if(path==="/api/owner/service-observations"){
+ const names=["hexstrike","pentestgpt","pentagi","pentest-swarm"];
+ const states=["responding","not_responding","unknown"];
+ if(req.method==="GET"){
+  const {data,error}=await admin.from("deela_owner_status_observations").select("service_name,reported_status,received_at").eq("owner_id",u.id);
+  if(error)return fail("تعذر قراءة التقارير",500);
+  const observations=names.map(service_name=>{
+   const row=(data||[]).find(x=>x.service_name===service_name);
+   return {service_name,reported_status:row?.reported_status||"unknown",received_at:row?.received_at||null,fresh:!!row&&Date.now()-Date.parse(row.received_at)<120000};
+  });
+  return new Response(JSON.stringify({observations,source:"owner_reported"}),{headers:{...headers,"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"}});
+ }
+ if(req.method==="POST"){
+  const b=await req.json();
+  if(!b||typeof b!=="object"||Array.isArray(b)||Object.keys(b).some(k=>!["service_name","reported_status"].includes(k))||!names.includes(b.service_name)||!states.includes(b.reported_status))return fail("تقرير غير صالح",400);
+  const {error}=await admin.from("deela_owner_status_observations").upsert({owner_id:u.id,service_name:b.service_name,reported_status:b.reported_status,received_at:new Date().toISOString()},{onConflict:"owner_id,service_name"});
+  if(error)return fail("تعذر حفظ التقرير",500);
+  return j({ok:true,source:"owner_reported"});
+ }
+ return fail("الطريقة غير مسموحة",405);
+}
+
 if(req.method==="GET"&&path==="/api/owner/connection-status")return new Response(JSON.stringify({ok:true}),{headers:{...headers,"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"}});
 
 
