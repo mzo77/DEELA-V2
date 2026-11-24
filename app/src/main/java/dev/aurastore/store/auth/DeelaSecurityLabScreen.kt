@@ -89,6 +89,8 @@ fun DeelaSecurityLabScreen(token: String, openAiCenter: () -> Unit) {
     val scope = rememberCoroutineScope()
     var catalog by remember { mutableStateOf("جارٍ فحص اتصال محركات الأمان...") }
     var refreshBusy by remember { mutableStateOf(false) }
+    var auditStatus by remember { mutableStateOf("لم يُستعلم بعد عن آخر فحص للكود.") }
+    var auditBusy by remember { mutableStateOf(false) }
     var platform by remember { mutableStateOf("deela-demo") }
     var username by remember { mutableStateOf("test_deela") }
     var mfa by remember { mutableStateOf(false) }
@@ -113,7 +115,33 @@ fun DeelaSecurityLabScreen(token: String, openAiCenter: () -> Unit) {
         refreshBusy = false
     }
 
-    LaunchedEffect(token) { fetchCatalog() }
+    suspend fun fetchAudit() {
+        auditBusy = true
+        runCatching { DeelaSecurityHubApi.call(token, "/audit/latest") }
+            .onSuccess { body ->
+                val runs = body.optJSONArray("runs")
+                auditStatus = if (runs == null || runs.length() == 0) {
+                    "ما ظهر تقرير GitHub Actions بعد. افتح سجل الفحوص أو انتظر تشغيل أول مهمة."
+                } else (0 until runs.length()).joinToString("\n\n") { i ->
+                    val row = runs.getJSONObject(i)
+                    val conclusion = row.optString("conclusion")
+                    val status = if (row.optString("status") == "completed") {
+                        if (conclusion == "success") "✅ ناجح"
+                        else if (conclusion == "failure") "❌ فشل"
+                        else "⚠️ " + conclusion
+                    } else "⏳ " + row.optString("status")
+                    "التشغيل #" + row.optInt("run_number") + " — " + status +
+                        "\n" + row.optString("created_at") + "\n" + row.optString("url")
+                }
+            }
+            .onFailure { auditStatus = "تعذر الاستعلام عن GitHub: " + (it.message ?: "خطأ") }
+        auditBusy = false
+    }
+
+    LaunchedEffect(token) {
+        fetchCatalog()
+        fetchAudit()
+    }
 
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
@@ -134,6 +162,18 @@ fun DeelaSecurityLabScreen(token: String, openAiCenter: () -> Unit) {
                         Text("↻ تحديث")
                     }
                     OutlinedButton(onClick = openAiCenter) { Text("🤖 مركز PentAGI") }
+                }
+            }
+        }
+        ElevatedCard(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("🔎 آخر فحص أمني لكود DEELA", style = MaterialTheme.typography.titleMedium)
+                Text("Semgrep + اختبارات مصادقة تجريبية عبر GitHub Actions. لا تشغّل محركات فحص اختراق عن بعد.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(auditStatus, style = MaterialTheme.typography.bodySmall)
+                OutlinedButton(enabled = !auditBusy, onClick = { scope.launch { fetchAudit() } }) {
+                    Text("↻ تحديث نتائج GitHub")
                 }
             }
         }
