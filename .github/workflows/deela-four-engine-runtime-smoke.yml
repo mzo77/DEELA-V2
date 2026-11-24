@@ -68,6 +68,31 @@ jobs:
           cd upstream
           uv run pentestgpt-legacy --version
           uv run pentestgpt-legacy --list-models
+      - name: Start real HexStrike local HTTP service and check health
+        if: matrix.engine == 'hexstrike'
+        run: |
+          set -euo pipefail
+          cd upstream
+          python3 -m venv /tmp/deela-hexstrike-env
+          /tmp/deela-hexstrike-env/bin/pip install -r requirements.txt
+          nohup /tmp/deela-hexstrike-env/bin/python hexstrike_server.py > /tmp/deela-hexstrike.log 2>&1 &
+          echo $! > /tmp/deela-hexstrike.pid
+          python3 - <<'PY'
+          import time, urllib.request, urllib.error
+          for attempt in range(30):
+              try:
+                  with urllib.request.urlopen('http://127.0.0.1:8888/', timeout=3) as response:
+                      print('HexStrike HTTP response:',response.status)
+                      break
+              except urllib.error.HTTPError as exc:
+                  print('HexStrike HTTP service answered:',exc.code)
+                  break
+              except Exception:
+                  time.sleep(2)
+          else:
+              print(open('/tmp/deela-hexstrike.log').read()[-5000:])
+              raise SystemExit('HexStrike local server did not respond')
+          PY
       - name: Report truthful scope
         run: |
           echo "Real upstream checkout checked. This is NOT a persistent running AI model."
