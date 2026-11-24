@@ -32,6 +32,11 @@ jobs:
             "$BASE/deela-private-store/" -o /tmp/owner-login.html
           grep -Fq 'هذه النسخة الحقيقية' /tmp/owner-login.html
           ! grep -Fq 'product-grid' /tmp/owner-login.html
+          curl -sS -D /tmp/owner-login-headers -o /dev/null "$BASE/deela-private-store/"
+          echo '== Private login response headers =='
+          grep -iE '^(HTTP/|content-type:|x-content-type-options:|content-encoding:|content-disposition:|cache-control:)' /tmp/owner-login-headers || true
+          # Browser must receive HTML, not a plaintext source dump.
+          grep -qiE '^content-type: text/html' /tmp/owner-login-headers
           for p in style.css app.js admin/index.html admin/admin.js api/shop/catalog api/shop/admin/orders; do
             code="$(curl -sS -o /tmp/result -w '%{http_code}' "$BASE/deela-private-store/$p")"
             test "$code" = "403" || { echo "::error::Private endpoint $p exposed HTTP $code"; exit 1; }
