@@ -6,14 +6,14 @@ on:
   push:
     branches: [main]
     paths:
-      - '.github/deela-release-request/official-0.9.11.txt'
+      - '.github/deela-release-request/official-0.9.12.txt'
   workflow_dispatch:
     inputs:
       source_ref:
         description: "Reviewed DEELA source branch or SHA to release"
         required: true
         type: string
-        default: feature/admin-source-updates-and-signup-requests
+        default: feature/deela-apple-certificates-0912
       release_notes:
         description: "Short update notes shown to subscribers"
         required: false
@@ -50,7 +50,7 @@ jobs:
       - name: Check out the reviewed Android source
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_ref || '869c0b3db93dda6a5402ca39282b37a436e2db9f' }}
+          ref: ${{ inputs.source_ref || '558a3dc1c8ec9db8af3ca14bd0b4ae9a0fb86981' }}
           persist-credentials: true
 
       - uses: actions/setup-java@v4
@@ -179,7 +179,7 @@ jobs:
       - name: Publish public, stable GitHub Release for in-app update notifications
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_NOTES: "${{ inputs.release_notes || 'DEELA 0.9.11: مركز الأمان التجريبي للمالك، فحوص كود مصدر موثقة، والاحتفاظ بإدارة التطبيقات والاشتراكات. المحركات الثلاثة غير مستضافة بعد ولا توجد وظائف استرجاع حسابات أو تجاوز 2FA.' }}"
+          RELEASE_NOTES: "${{ inputs.release_notes || 'DEELA 0.9.12: إدارة شهادات Apple بشكل آمن، ربط أجهزة مشتركي iOS ومعرّف UDID، تسجيل الأجهزة عبر App Store Connect API عند إعداد المفاتيح. لا يوجد توقيع IPA أو تثبيت مباشر حتى ربط خدمة توزيع مصرح بها.' }}"
           TAG: ${{ steps.verify.outputs.tag }}
           APK: ${{ steps.verify.outputs.apk }}
         run: |
