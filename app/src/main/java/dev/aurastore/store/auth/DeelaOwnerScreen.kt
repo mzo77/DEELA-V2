@@ -23,11 +23,53 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import java.net.URLEncoder
 
 private data class OwnerMember(val id:String,val email:String,val role:String,val active:Boolean,val suspended:Boolean,val endsAt:String)
 private data class OwnerRequest(val id:String,val userId:String,val email:String,val months:Int,val platform:String)
 private data class OwnerData(val members:List<OwnerMember>,val audit:List<String>,val email:String,val requests:List<OwnerRequest>)
+private data class OwnerCatalogEntry(
+    val key:String,val title:String,val kind:String,val category:String,
+    val hidden:Boolean,val featured:Boolean=false
+)
+private data class OwnerCatalogPage(val apps:List<OwnerCatalogEntry>,val hasMore:Boolean)
+
 private object OwnerApi {
+    private const val IOS_BASE="https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-ios-web"
+    private fun encode(value:String)=URLEncoder.encode(value,"UTF-8")
+    suspend fun catalog(token:String,platform:String,query:String,offset:Int,limit:Int=40):OwnerCatalogPage=withContext(Dispatchers.IO){
+        val url=if(platform=="ios") IOS_BASE+"/api/source?id=0&page="+(offset/limit+1)+"&limit="+limit+"&q="+encode(query)
+                else base+"/api/owner/android-catalog?offset="+offset+"&limit="+limit+"&q="+encode(query)
+        val request=Request.Builder().url(url).header("Authorization","Bearer "+token).build()
+        client.newCall(request).execute().use { response ->
+            if(!response.isSuccessful)error("تعذر تحميل تطبيقات "+platform+": "+response.code)
+            val payload=JSONObject(response.body.string())
+            val list=payload.optJSONArray("apps")?:JSONArray()
+            val apps=(0 until list.length()).map { i ->
+                val v=list.getJSONObject(i)
+                OwnerCatalogEntry(
+                    key=v.optString("catalog_key"),
+                    title=v.optString("title").ifBlank{ "تطبيق" },
+                    kind=v.optString("kind",if(platform=="ios")"ios" else "app"),
+                    category=v.optString("category","تطبيقات"),
+                    hidden=v.optBoolean("is_hidden"),
+                    featured=v.optBoolean("is_featured")
+                )
+            }.filter { it.key.isNotBlank() }
+            OwnerCatalogPage(apps,payload.optBoolean("has_more",false))
+        }
+    }
+    suspend fun setCatalogHidden(token:String,platform:String,app:OwnerCatalogEntry,hidden:Boolean)=withContext(Dispatchers.IO){
+        val url=if(platform=="ios") IOS_BASE+"/api/owner/catalog-rules" else base+"/api/owner/android-catalog"
+        val payload=JSONObject().put("catalog_key",app.key).put("is_hidden",hidden)
+        if(platform=="ios")payload.put("is_featured",app.featured)
+        val request=Request.Builder().url(url).header("Authorization","Bearer "+token)
+            .post(payload.toString().toRequestBody("application/json".toMediaType())).build()
+        client.newCall(request).execute().use { response ->
+            if(!response.isSuccessful)error("تعذر تعديل ظهور التطبيق: "+response.code)
+        }
+    }
+
     private val client=OkHttpClient()
     private val base get()=BuildConfig.DEELA_API_BASE_URL.trimEnd('/')
     suspend fun dashboard(token:String):OwnerData=withContext(Dispatchers.IO) {
@@ -74,6 +116,14 @@ private object OwnerApi {
 fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
     val scope=rememberCoroutineScope()
     var page by remember { mutableStateOf("الرئيسية") }
+    var selectedPlatform by remember { mutableStateOf("android") }
+    var catalogQuery by remember { mutableStateOf("") }
+    var catalogOffset by remember { mutableIntStateOf(0) }
+    var catalogReload by remember { mutableIntStateOf(0) }
+    var catalogItems by remember { mutableStateOf<List<OwnerCatalogEntry>>(emptyList()) }
+    var catalogHasMore by remember { mutableStateOf(false) }
+    var catalogBusy by remember { mutableStateOf(false) }
+    var catalogError by remember { mutableStateOf<String?>(null) }
     var data by remember { mutableStateOf<OwnerData?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
@@ -82,6 +132,18 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
     var selectedMonths by remember { mutableIntStateOf(1) }
     var requestReview by remember { mutableStateOf<Pair<OwnerRequest,String>?>(null) }
     var mailNotice by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(page,selectedPlatform,catalogQuery,catalogOffset,catalogReload,session.token) {
+        if(page=="التطبيقات") {
+            catalogBusy=true
+            try {
+                val result=OwnerApi.catalog(session.token,selectedPlatform,catalogQuery,catalogOffset)
+                catalogItems=if(catalogOffset==0)result.apps else (catalogItems+result.apps).distinctBy { it.key }
+                catalogHasMore=result.hasMore
+                catalogError=null
+            }catch(e:Exception){catalogError=e.message?:"تعذر تحميل التطبيقات"}
+            finally {catalogBusy=false}
+        }
+    }
     LaunchedEffect(session.token,reload,page) {
         busy=true
         try { data=OwnerApi.dashboard(session.token);error=null }
@@ -163,7 +225,7 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
             ) {
-                listOf("الرئيسية", "الطلبات", "المشتركون", "التحديثات", "القوة الغاشمة ⚡", "الرسائل", "السجل").forEach { tab ->
+                listOf("الرئيسية", "الطلبات", "المشتركون", "التطبيقات", "التحديثات", "القوة الغاشمة ⚡", "الرسائل", "السجل").forEach { tab ->
                     FilterChip(
                         selected = page == tab,
                         onClick = { page = tab },
@@ -340,6 +402,51 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                                             TextButton(enabled = !busy, onClick = { pending = member to "revoke" }) { Text("إلغاء") }
                                         }
                                     }
+                                }
+                            }
+                        }
+                    }
+                    "التطبيقات" -> {
+                        Text("المتجر الرسمي — تحكم المالك",style=MaterialTheme.typography.titleMedium)
+                        Text("إخفاء أي تطبيق يمنع ظهوره للمشتركين، دون حذف ملفاته.",style=MaterialTheme.typography.bodySmall)
+                        Row(horizontalArrangement=Arrangement.spacedBy(7.dp)) {
+                            listOf("android" to "أندرويد","ios" to "آيفون").forEach { (platform,label) ->
+                                FilterChip(selected=selectedPlatform==platform,onClick={
+                                    selectedPlatform=platform;catalogQuery="";catalogOffset=0;catalogItems=emptyList()
+                                },label={Text(label)})
+                            }
+                        }
+                        OutlinedTextField(
+                            value=catalogQuery,
+                            onValueChange={ catalogQuery=it;catalogOffset=0;catalogItems=emptyList() },
+                            label={Text("البحث باسم التطبيق أو معرفه")},
+                            singleLine=true,modifier=Modifier.fillMaxWidth()
+                        )
+                        if(catalogBusy) LinearProgressIndicator(Modifier.fillMaxWidth())
+                        catalogError?.let {Text(it,color=MaterialTheme.colorScheme.error)}
+                        LazyColumn(modifier=Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(9.dp)) {
+                            items(catalogItems,key={it.key}) { app ->
+                                ElevatedCard(Modifier.fillMaxWidth()) {
+                                    Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(7.dp)) {
+                                        Text(app.title,style=MaterialTheme.typography.titleSmall)
+                                        Text(app.category+" · "+(if(app.hidden)"مخفي عن المشتركين" else "ظاهر للمشتركين"),
+                                            style=MaterialTheme.typography.bodySmall)
+                                        TextButton(enabled=!catalogBusy,onClick={
+                                            catalogBusy=true
+                                            scope.launch{
+                                                try{
+                                                    OwnerApi.setCatalogHidden(session.token,selectedPlatform,app,!app.hidden)
+                                                    catalogOffset=0;catalogReload++
+                                                }catch(e:Exception){catalogError=e.message?:"فشل حفظ الإخفاء"}
+                                                finally{catalogBusy=false}
+                                            }
+                                        }) {Text(if(app.hidden)"إظهار التطبيق" else "إخفاء التطبيق")}
+                                    }
+                                }
+                            }
+                            if(catalogHasMore) item {
+                                OutlinedButton(enabled=!catalogBusy,onClick={catalogOffset+=40},modifier=Modifier.fillMaxWidth()){
+                                    Text("المزيد من التطبيقات")
                                 }
                             }
                         }
