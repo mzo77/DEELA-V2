@@ -1,0 +1,104 @@
+name: DEELA Real Runtime Continuity Test
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/deela-runtime-continuity-test.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: deela-runtime-continuity-proof
+  cancel-in-progress: true
+jobs:
+  start-real-hexstrike:
+    name: Start and recheck real HexStrike in temporary runner
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    outputs:
+      runner_name: ${{ steps.identity.outputs.runner_name }}
+    steps:
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Clone the official HexStrike source
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/0x4m4/hexstrike-ai.git upstream
+          git -C upstream rev-parse HEAD
+      - name: Install tested server dependencies only
+        run: |
+          set -euo pipefail
+          python -m venv /tmp/deela-runtime-test
+          /tmp/deela-runtime-test/bin/pip install --only-binary=:all: 'flask>=2.3,<4' 'requests>=2.31,<3' 'psutil>=5.9,<6' 'beautifulsoup4>=4.12,<5' 'aiohttp>=3.8,<4' 'selenium>=4.15,<5' 'webdriver-manager>=4,<5' 'mitmproxy==12.3.1'
+          /tmp/deela-runtime-test/bin/pip check
+      - name: Limit local test service to loopback
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          source=Path('upstream/hexstrike_server.py')
+          code=source.read_text()
+          needle='app.run(host="0.0.0.0", port=API_PORT, debug=DEBUG_MODE)'
+          assert code.count(needle)==1, 'Expected bind statement not found'
+          source.write_text(code.replace(needle,'app.run(host="127.0.0.1", port=API_PORT, debug=DEBUG_MODE)'))
+          print('Local-only security test; no public port or target scanning.')
+          PY
+      - name: Start actual HexStrike HTTP server
+        run: |
+          set -euo pipefail
+          nohup /tmp/deela-runtime-test/bin/python upstream/hexstrike_server.py > /tmp/deela-hexstrike-continuity.log 2>&1 &
+          echo $! > /tmp/deela-hexstrike-continuity.pid
+          python - <<'PY'
+          import json,time,urllib.request
+          for n in range(45):
+              try:
+                  with urllib.request.urlopen('http://127.0.0.1:8888/api/process/health-check',timeout=4) as r:
+                      payload=json.load(r)
+                      if r.status==200 and payload.get('success') is True:
+                          print('STARTUP_HTTP_200_OK')
+                          break
+              except Exception:
+                  time.sleep(2)
+          else:
+              print(open('/tmp/deela-hexstrike-continuity.log').read()[-5000:])
+              raise SystemExit('HexStrike failed to start')
+          PY
+      - name: Prove local service remains alive for 45 seconds
+        id: identity
+        run: |
+          set -euo pipefail
+          sleep 45
+          python - <<'PY'
+          import json,os,urllib.request
+          pid=int(open('/tmp/deela-hexstrike-continuity.pid').read())
+          os.kill(pid,0)
+          with urllib.request.urlopen('http://127.0.0.1:8888/api/process/health-check',timeout=10) as r:
+              payload=json.load(r)
+          assert r.status==200 and payload.get('success') is True
+          print('AFTER_45_SECONDS_HTTP_200_OK')
+          print('HEALTH:',payload.get('health_report',{}).get('overall_status'))
+          PY
+          echo "runner_name=$(hostname)" >> "$GITHUB_OUTPUT"
+          echo "✅ HexStrike really ran and returned HTTP 200 after 45 seconds **inside this one temporary runner**." >> "$GITHUB_STEP_SUMMARY"
+  check-after-runner-exits:
+    name: Verify process does not transfer to another runner
+    needs: start-real-hexstrike
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Compare runner identities and check endpoint
+        env:
+          FIRST_RUNNER: ${{ needs.start-real-hexstrike.outputs.runner_name }}
+        run: |
+          set -euo pipefail
+          echo "Source runner: $FIRST_RUNNER"
+          echo "New job runner: $(hostname)"
+          python3 - <<'PY'
+          import urllib.request,urllib.error
+          try:
+              with urllib.request.urlopen('http://127.0.0.1:8888/api/process/health-check',timeout=3) as r:
+                  raise SystemExit(f'Unexpected service found on new runner: {r.status}')
+          except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as e:
+              print('NO_CROSS_JOB_SERVICE: expected; GitHub-hosted jobs do not keep previous server alive')
+          PY
+          echo "⚠️ The next GitHub Actions job has no HexStrike server. This proves the runner test is temporary; it does not deliver 24/7 hosting." >> "$GITHUB_STEP_SUMMARY"
