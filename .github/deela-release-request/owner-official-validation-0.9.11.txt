@@ -1,0 +1,5 @@
+DEELA 0.9.11 original-certificate signing verification.
+Reviewed owner source branch: feature/deela-owner-official-0911
+Source commit: 09a94edec953febcbd05042d80c94054b2679db9
+Preserves owner app catalog controls and subscription gate. Do not release if signature, package identity, version, build, or tests fail.
+Validation-only artifact. No public release triggered by this request.
