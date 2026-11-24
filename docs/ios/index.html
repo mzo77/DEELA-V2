@@ -76,7 +76,7 @@ button,input,select{font:inherit}a{color:#ff98b0;text-decoration:none}button{cur
   <section id="activeArea" class="hidden">
    <div class="tabs" id="storeTabs">
     <button class="active" type="button" data-panel="myApps">الرئيسية • البرامج</button>
-    <button type="button" data-panel="featuredSources">المصادر</button>
+    <button type="button" data-panel="featuredSources">المكتبة والمصادر</button>
     <button type="button" data-panel="helpPanel">حول المتجر</button>
     <button type="button" data-panel="ownerPanel" id="ownerTab" class="hidden">طلبات iOS للمالك</button>
    </div>
@@ -85,7 +85,7 @@ button,input,select{font:inherit}a{color:#ff98b0;text-decoration:none}button{cur
       <div><h2 style="margin:0">مكتبة تطبيقات الآيفون</h2><p class="muted" id="catalogSummary" style="margin:4px 0">جارٍ جلب بيانات التطبيقات من المصادر المتاحة...</p></div>
       <button type="button" id="refreshCatalog" class="button secondary small">تحديث البرامج</button>
     </div>
-    <div class="notice" role="note">هذه النسخة للتصفح والاستعراض فقط. يمكنك رؤية البرامج وتفاصيلها، لكن لا يمكن تحميل أو تثبيت IPA منها حاليًا.</div>
+    <div class="notice" role="note">هذه المكتبة تحتوي على آلاف التطبيقات من مصادر خارجية. التصفح متاح للمشتركين، أمّا تنزيل IPA والتثبيت فيحتاجان آلية توقيع معتمدة ولم يتم تفعيلهما بعد.</div>
     <div class="catalog-tools">
       <input class="search" id="mySearch" placeholder="ابحث عن تطبيق أو مطوّر أو وصف..." aria-label="بحث في تطبيقات الآيفون">
       <select class="search" id="categoryFilter" aria-label="تصفية تصنيفات التطبيقات" style="width:auto;max-width:185px"><option value="">جميع التصنيفات</option></select>
@@ -95,8 +95,8 @@ button,input,select{font:inherit}a{color:#ff98b0;text-decoration:none}button{cur
     <button type="button" class="button secondary block hidden" id="moreApps" style="margin-top:15px">عرض المزيد من التطبيقات</button>
    </section>
    <section id="featuredSources" class="hidden">
-    <h2>المصادر الأصلية</h2>
-    <p class="muted">المصادر الـ15 الموصى بها في Feather محفوظة كما هي. اختر مصدرًا لعرض أسماء التطبيقات وتفاصيلها؛ لن تظهر أي أزرار تنزيل.</p>
+    <h2>مكتبة Accretion</h2>
+    <p class="muted">تصفح مكتبة Accretion الموحدة التي تجمع آلاف التطبيقات والألعاب من مصادر AltStore العامة. عرض الملفات لا يعني إتاحة التثبيت بدون توقيع Apple.</p>
     <div id="sourceList" class="sources"></div>
     <div id="sourceResults" class="hidden">
       <div class="catalog-tools"><h2 id="sourceTitle"></h2><input class="search" id="sourceSearch" placeholder="ابحث في المصدر" aria-label="بحث في المصدر"></div>
@@ -106,14 +106,14 @@ button,input,select{font:inherit}a{color:#ff98b0;text-decoration:none}button{cur
    </section>
    <section id="helpPanel" class="panel hidden">
     <h2>عن DEELA iOS</h2>
-    <p>متجر ديلا للآيفون نسخة ويب مخصصة للمشتركين المعتمدين. بعد تسجيل الدخول تظهر التطبيقات ببياناتها وصورها وتفاصيلها من مصادر Feather المقترحة والتطبيقات التي تنشرها إدارة ديلا.</p>
+    <p>متجر ديلا للآيفون نسخة ويب مخصصة للمشتركين المعتمدين. بعد تسجيل الدخول تظهر التطبيقات ببياناتها وصورها وتفاصيلها من مكتبة Accretion المجمّعة والتطبيقات التي توافق عليها إدارة ديلا.</p>
     <p>التحميل والتثبيت <strong>متوقفان مؤقتًا داخل هذه النسخة</strong>. لم تُحذف أي مصادر من المشروع، وسيظل عرض البرامج والبحث عنها متاحين إلى أن تتوفر طريقة توزيع مناسبة.</p>
    </section>
    <section id="ownerPanel" class="panel hidden">
      <h2>إدارة طلبات اشتراك الآيفون</h2>
      <p class="muted">هذه الصفحة للمالك فقط. الموافقة تفعّل الاشتراك في نظام ديلا الحالي، ولا تعني تسجيل UDID لدى Apple.</p>
      <button id="refreshOwner" type="button" class="button secondary small">تحديث الطلبات</button>
-     <div id="ownerRequests"></div>
+     <div class="panel"><h3>مكتبة التطبيقات المتصلة</h3><p id="ownerCatalogStats" class="muted">جاري قراءة إحصاءات Accretion...</p><p><a href="https://mzo77.github.io/DEELA-V2/control/" target="_blank" rel="noopener noreferrer">فتح لوحة تحكم ديلا الرئيسية</a></p></div><div id="ownerRequests"></div>
    </section>
   </section>
  </section>
@@ -125,7 +125,7 @@ button,input,select{font:inherit}a{color:#ff98b0;text-decoration:none}button{cur
     <div class="notice">التحميل والتثبيت غير متاحين حاليًا. هذه التفاصيل للعرض فقط.</div>
     <button type="button" disabled class="button block" aria-disabled="true">التحميل غير متاح مؤقتًا</button>
  </dialog>
- <footer class="footer">DEELA iOS · نسخة ويب مستقلة · مصادر Feather محفوظة · الحقوق والتراخيص لأصحابها.</footer>
+ <footer class="footer">DEELA iOS · نسخة ويب مستقلة · مصادر Accretion المجمّعة · الحقوق والتراخيص لأصحابها.</footer>
 </main>
 <script defer src="./app.js"></script>
 </body></html>
