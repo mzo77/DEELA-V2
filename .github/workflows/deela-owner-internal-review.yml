@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - '.github/deela-release-request/owner-review-0.9.9.txt'
+      - '.github/deela-release-request/owner-review-0.9.10.txt'
   workflow_dispatch:
 
 permissions:
@@ -47,7 +47,7 @@ jobs:
           chmod +x gradlew
           ./gradlew --no-daemon :app:assembleRelease :app:testDebugUnitTest --tests 'dev.aurastore.store.data.AppReleasesTest'
           test -s app/build/outputs/apk/release/app-release-unsigned.apk
-          grep -Fq 'val appVersionName = "0.9.9"' app/build.gradle.kts
+          grep -Fq 'val appVersionName = "0.9.10"' app/build.gradle.kts
 
       - name: Validate permanent DEELA keystore and password without exposing secrets
         env:
@@ -94,20 +94,20 @@ jobs:
             --ks-key-alias deela_release \
             --ks-pass env:DEELA_RELEASE_KEYSTORE_PASSWORD \
             --key-pass env:DEELA_RELEASE_KEYSTORE_PASSWORD \
-            --out dist/DEELA-0.9.9-owner-review-signed.apk "$RUNNER_TEMP/deela-owner-aligned.apk"
-          "$ANDROID_HOME/build-tools/36.1.0/apksigner" verify --verbose --print-certs dist/DEELA-0.9.9-owner-review-signed.apk > "$RUNNER_TEMP/signer.txt"
+            --out dist/DEELA-0.9.10-owner-review-signed.apk "$RUNNER_TEMP/deela-owner-aligned.apk"
+          "$ANDROID_HOME/build-tools/36.1.0/apksigner" verify --verbose --print-certs dist/DEELA-0.9.10-owner-review-signed.apk > "$RUNNER_TEMP/signer.txt"
           SIGNER="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$RUNNER_TEMP/signer.txt" | tr -d ':' | tr '[:upper:]' '[:lower:]' | head -n 1)"
           test "$SIGNER" = "83698bc6e21ddabb83eaf45d3386170d676dcf96270081c163f8b2e107fdef3c"
-          BADGING="$("$ANDROID_HOME/build-tools/36.1.0/aapt" dump badging dist/DEELA-0.9.9-owner-review-signed.apk | head -n 1)"
+          BADGING="$("$ANDROID_HOME/build-tools/36.1.0/aapt" dump badging dist/DEELA-0.9.10-owner-review-signed.apk | head -n 1)"
           echo "$BADGING" | grep -Fq "name='com.deela.apps'"
-          echo "$BADGING" | grep -Fq "versionName='0.9.9'"
-          (cd dist && sha256sum DEELA-0.9.9-owner-review-signed.apk > DEELA-0.9.9-owner-review-signed.apk.sha256)
-          echo "DEELA 0.9.9 signed for owner review. No public GitHub Release will be created."
+          echo "$BADGING" | grep -Fq "versionName='0.9.10'"
+          (cd dist && sha256sum DEELA-0.9.10-owner-review-signed.apk > DEELA-0.9.10-owner-review-signed.apk.sha256)
+          echo "DEELA 0.9.10 signed for owner review. No public GitHub Release will be created."
 
       - name: Verify and upload owner-only review build (NOT published as an app update)
         uses: actions/upload-artifact@v4
         with:
-          name: DEELA-0.9.9-OWNER-REVIEW-SIGNED-APK-NOT-PUBLISHED
+          name: DEELA-0.9.10-OWNER-REVIEW-SIGNED-APK-NOT-PUBLISHED
           path: dist/
           if-no-files-found: error
           retention-days: 14
