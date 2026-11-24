@@ -22,13 +22,16 @@ jobs:
           PORTAL="https://mzo77.github.io/DEELA-V2/private-store/"
           curl --retry 4 --retry-delay 2 --max-time 25 -sS -D /tmp/web-redirect-headers \
             -o /tmp/web-redirect-body "$BASE/deela-private-store/"
+          echo "== Origin redirect headers =="; head -n 22 /tmp/web-redirect-headers
           grep -qiE '^HTTP/[0-9.]+ 302' /tmp/web-redirect-headers
           grep -Fqi "location: $PORTAL" /tmp/web-redirect-headers
           curl --retry 4 --retry-delay 2 --max-time 25 --fail-with-body -sS \
             -D /tmp/portal-headers "$PORTAL" -o /tmp/portal.html
+          echo "== Github Pages headers =="; head -n 22 /tmp/portal-headers
           grep -qi '^content-type: text/html' /tmp/portal-headers
           grep -Fq 'بوابة المالك الخاصة' /tmp/portal.html
-          grep -Fq 'deela-private-store/protected/' /tmp/portal.html
+          grep -Fq 'const PRIVATE=ROOT+"deela-private-store"' /tmp/portal.html
+          grep -Fq '"/protected/"' /tmp/portal.html
           ! grep -Fq 'class="product-grid"' /tmp/portal.html
           echo "The owner browser portal is real HTML; no storefront data in public page."
           curl --retry 4 --max-time 25 --fail-with-body -sS \
