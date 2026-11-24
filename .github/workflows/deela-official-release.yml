@@ -140,8 +140,8 @@ jobs:
           VERSION="$(sed -n 's/.*val appVersionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
           [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Unexpected Android version"; exit 1; }
           TAG="v$VERSION"
-          if [ "${{ github.event_name }}" = "push" ] && [ "$VERSION" != "0.9.11" ]; then
-            echo "::error::This official push request is pinned to DEELA 0.9.11 only."
+          if [ "${{ github.event_name }}" = "push" ] && [ "$VERSION" != "0.9.12" ]; then
+            echo "::error::This official push request is pinned to DEELA 0.9.12 only."
             exit 1
           fi
           if GH_TOKEN="${{ github.token }}" gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
