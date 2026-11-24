@@ -11,6 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.aurastore.store.BuildConfig
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -68,6 +70,18 @@ private object OwnerApi {
 
     private val client=OkHttpClient()
     private val base get()=BuildConfig.DEELA_API_BASE_URL.trimEnd('/')
+    suspend fun checkOwnerConnection(token:String):Boolean=withContext(Dispatchers.IO) {
+        val request=Request.Builder().url(base+"/api/owner/connection-status")
+            .header("Authorization","Bearer "+token).header("Cache-Control","no-cache").get().build()
+        client.newBuilder()
+            .callTimeout(10,java.util.concurrent.TimeUnit.SECONDS)
+            .followRedirects(false).followSslRedirects(false)
+            .build().newCall(request).execute().use { response ->
+                response.isSuccessful && response.body?.string()?.let {
+                    JSONObject(it).optBoolean("ok",false)
+                }==true
+            }
+    }
     suspend fun dashboard(token:String):OwnerData=withContext(Dispatchers.IO) {
         val request=Request.Builder().url(base+"/api/owner/dashboard").header("Authorization","Bearer "+token).build()
         client.newCall(request).execute().use { response ->
@@ -110,6 +124,22 @@ private object OwnerApi {
 fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
     val scope=rememberCoroutineScope()
     var page by remember { mutableStateOf("الرئيسية") }
+    var connectionStatus by remember(session.token) { mutableStateOf<Boolean?>(null) }
+    var checkedAt by remember(session.token) { mutableStateOf<Long?>(null) }
+    LaunchedEffect(page,session.token) {
+        if(page=="حالة الاتصال") {
+            connectionStatus=null
+            checkedAt=null
+            while(true) {
+                connectionStatus=try {
+                    OwnerApi.checkOwnerConnection(session.token)
+                } catch(e:CancellationException) { throw e }
+                  catch(e:Exception) { false }
+                checkedAt=System.currentTimeMillis()
+                delay(30_000)
+            }
+        }
+    }
     var selectedPlatform by remember { mutableStateOf("android") }
     var catalogQuery by remember { mutableStateOf("") }
     var catalogOffset by remember { mutableIntStateOf(0) }
@@ -179,7 +209,7 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
             Text("لوحة تحكم المالك 👑",style=MaterialTheme.typography.titleLarge)
             Spacer(Modifier.height(12.dp))
             Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-                listOf("الرئيسية","الطلبات","المشتركون","التطبيقات","السجل").forEach { tab ->
+                listOf("الرئيسية","الطلبات","المشتركون","التطبيقات","السجل","حالة الاتصال").forEach { tab ->
                     FilterChip(selected=page==tab,onClick={page=tab},label={Text(tab)})
                 }
             }
@@ -189,7 +219,26 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                 TextButton(onClick={reload++}) {Text("إعادة المحاولة")}
             }
             val current=data
-            if(current!=null) {
+            if(page=="حالة الاتصال") {
+                Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                    Text("مراقبة إدارة المالك",style=MaterialTheme.typography.titleMedium)
+                    Text(when(connectionStatus) {
+                        true -> "واجهة إدارة المالك تستجيب للحساب الحالي"
+                        false -> "تعذر التحقق من الاتصال أو الصلاحية"
+                        null -> "جارٍ التحقق"
+                    })
+                    checkedAt?.let { stamp ->
+                        Text("آخر فحص: "+java.text.DateFormat.getDateTimeInstance().format(java.util.Date(stamp)))
+                    }
+                    Text("يتكرر الفحص كل 30 ثانية أثناء عرض هذه الصفحة.",style=MaterialTheme.typography.bodySmall)
+                    HorizontalDivider()
+                    listOf("HexStrike AI","PentestGPT","PentAGI","Pentest Swarm").forEach { engine ->
+                        Text(engine,style=MaterialTheme.typography.titleSmall)
+                        Text("لا توجد بيانات تشغيل موثقة متصلة",style=MaterialTheme.typography.bodySmall)
+                    }
+                    Text("نجاح اتصال إدارة المالك لا يعني أن المحركات تعمل.",style=MaterialTheme.typography.bodySmall)
+                }
+            } else if(current!=null) {
                 when(page) {
                     "الرئيسية" -> {
                         val subscribers=current.members.filter {it.role!="owner"}
@@ -206,6 +255,7 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                         HorizontalDivider()
                         Text("قوة غاشمة ⚡",style=MaterialTheme.typography.titleMedium)
                         Text("الأدوات المتقدمة لم تُنقل بعد.")
+                        OutlinedButton(onClick={page="حالة الاتصال"}) {Text("مراقبة الاتصال")}
                     }
                     "الطلبات" -> {
                         LazyColumn(modifier=Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(10.dp)) {
