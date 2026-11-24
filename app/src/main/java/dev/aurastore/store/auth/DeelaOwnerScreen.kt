@@ -1,6 +1,8 @@
 package dev.aurastore.store.auth
 
 import androidx.compose.foundation.layout.*
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Brush
@@ -114,6 +116,14 @@ private object OwnerApi {
 }
 @Composable
 fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
+    val activityContext=LocalContext.current
+    val openCommerce:(String)->Unit = { page ->
+        activityContext.startActivity(
+            Intent(activityContext,DeelaShopOwnerActivity::class.java)
+                .putExtra(DeelaShopOwnerActivity.EXTRA_TOKEN,session.token)
+                .putExtra(DeelaShopOwnerActivity.EXTRA_PAGE,page)
+        )
+    }
     val scope=rememberCoroutineScope()
     var page by remember { mutableStateOf("الرئيسية") }
     var selectedPlatform by remember { mutableStateOf("android") }
@@ -189,25 +199,26 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
             dismissButton={ TextButton(onClick={ pending=null }) { Text("إلغاء") } }
         )
     }
-    val rose = Color(0xFFC883A0)
+    // The owner UI has a quiet navy/teal palette, separate from subscriber pages.
+    val rose = Color(0xFF85DCD8)
     val ownerScheme = darkColorScheme(
         primary = rose,
-        onPrimary = Color(0xFF24131E),
-        secondary = Color(0xFFC7A9D5),
-        onSecondary = Color(0xFF27192C),
-        tertiary = Color(0xFF8EC7A8),
-        background = Color(0xFF100E15),
-        surface = Color(0xFF221A25),
-        surfaceVariant = Color(0xFF322634),
-        onSurface = Color(0xFFF7EDF4),
-        onSurfaceVariant = Color(0xFFCDBDCC),
-        outline = Color(0xFF6C5065),
-        error = Color(0xFFE49EA5),
+        onPrimary = Color(0xFF0B2330),
+        secondary = Color(0xFFACC6F4),
+        onSecondary = Color(0xFF15243E),
+        tertiary = Color(0xFF96CDBA),
+        background = Color(0xFF0D1728),
+        surface = Color(0xFF18293E),
+        surfaceVariant = Color(0xFF263B51),
+        onSurface = Color(0xFFEBF5FF),
+        onSurfaceVariant = Color(0xFFBCD3E2),
+        outline = Color(0xFF5A788B),
+        error = Color(0xFFE1BE90),
     )
     MaterialTheme(colorScheme = ownerScheme) {
         Column(
             modifier = Modifier.fillMaxSize()
-                .background(Brush.verticalGradient(listOf(Color(0xFF291C29), Color(0xFF100E15))))
+                .background(Brush.verticalGradient(listOf(Color(0xFF162B3E), Color(0xFF0D1728))))
                 .padding(horizontal = 16.dp),
         ) {
             Spacer(Modifier.height(16.dp))
@@ -225,15 +236,15 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
             ) {
-                listOf("الرئيسية", "الطلبات", "المشتركون", "التطبيقات", "شهادات Apple", "التحديثات", "القوة الغاشمة ⚡", "مركز الذكاء 🤖", "مختبر الأمان 🛡️", "الرسائل", "السجل").forEach { tab ->
+                listOf("الرئيسية", "المتجر الإلكتروني", "الطلبات", "المشتركون", "التطبيقات", "شهادات Apple", "التحديثات", "القوة الغاشمة ⚡", "مركز الذكاء 🤖", "مختبر الأمان 🛡️", "الرسائل", "السجل").forEach { tab ->
                     FilterChip(
                         selected = page == tab,
                         onClick = { page = tab },
                         label = { Text(tab) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFF664052),
+                            selectedContainerColor = Color(0xFF24566A),
                             selectedLabelColor = Color.White,
-                            containerColor = Color(0xFF211921),
+                            containerColor = Color(0xFF152A3D),
                         ),
                     )
                 }
@@ -256,6 +267,33 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                 }
             } else {
                 when (page) {
+                    "المتجر الإلكتروني" -> {
+                        Column(
+                            modifier = Modifier.weight(1f).fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(13.dp)
+                        ) {
+                            Text("متجر ديلا الإلكتروني الرسمي", style=MaterialTheme.typography.titleLarge)
+                            Text("الواجهة متصلة بقاعدة بيانات DEELA نفسها. صفحة الويب محمية بحساب المالك حاليًا.",
+                                color=MaterialTheme.colorScheme.onSurfaceVariant,
+                                style=MaterialTheme.typography.bodyMedium)
+                            Button(
+                                onClick={openCommerce("shop")},
+                                modifier=Modifier.fillMaxWidth()
+                            ) {Text("فتح المتجر الإلكتروني")}
+                            OutlinedButton(
+                                onClick={openCommerce("admin")},
+                                modifier=Modifier.fillMaxWidth()
+                            ) {Text("فتح إدارة المنتجات والطلبات")}
+                            ElevatedCard(
+                                modifier=Modifier.fillMaxWidth(),
+                                colors=CardDefaults.elevatedCardColors(containerColor=Color(0xFF1A3546))
+                            ) {
+                                Text("إضافة المنتجات والأسعار والصور والعروض، ومراجعة الطلبات وتفعيل العضويات من حساب المالك دون تحويل المشتركين إلى تطبيق آخر.",
+                                    modifier=Modifier.padding(17.dp),
+                                    style=MaterialTheme.typography.bodyMedium)
+                            }
+                        }
+                    }
                     "الرئيسية" -> {
                         val subscribers = current.members.filter { it.role != "owner" }
                         val active = subscribers.count { it.active && !it.suspended }
@@ -268,7 +306,7 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                         ) {
                             item {
                                 ElevatedCard(
-                                    colors = CardDefaults.elevatedCardColors(containerColor = Color(0xFF342232)),
+                                    colors = CardDefaults.elevatedCardColors(containerColor = Color(0xFF1B344A)),
                                     shape = RoundedCornerShape(22.dp),
                                     modifier = Modifier.fillMaxWidth(),
                                 ) {
