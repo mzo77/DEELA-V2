@@ -44,11 +44,7 @@ jobs:
               "https://mzo77.github.io/DEELA-V2/$path" -o "/tmp/recover-$(echo "$path" | tr '/' '_').html"
             grep -q 'تعيين كلمة مرور جديدة' "/tmp/recover-$(echo "$path" | tr '/' '_').html"
           done
-          # The preview publishes only the separate static site, never an APK.
-          curl --fail-with-body --location --retry 6 --retry-all-errors --retry-delay 4 --max-time 25 \
-            -H 'Cache-Control: no-cache' \
-            "https://mzo77.github.io/DEELA-V2/store-preview/" -o /tmp/deela-shop-preview.html
-          grep -q 'معاينة متجر DEELA' /tmp/deela-shop-preview.html
-          curl --fail-with-body --location --retry 6 --retry-all-errors --retry-delay 4 --max-time 25 \
-            "https://mzo77.github.io/DEELA-V2/store-preview/shop.html" -o /tmp/deela-shop-site.html
-          grep -q 'deela-shop/admin/overview' /tmp/deela-shop-site.html
+          # The owner-only commerce storefront is NOT deployed to GitHub Pages.
+          # Keep public Pages limited to the existing non-commerce URLs.
+          test ! -e docs/store-preview/index.html
+          test ! -e docs/store-preview/shop.html
