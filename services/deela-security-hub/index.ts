@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.95.0";
+import { simulate } from "./simulation.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -31,41 +32,32 @@ async function isOwner(req:Request):Promise<boolean>{
   return !profileError&&data?.role==="owner";
 }
 
-function simulate(body:Record<string,unknown>){
-  // Pure local rules: NO connections to Snapchat or any external account.
-  const platform=String(body.platform||"deela-demo");
-  const username=String(body.test_username||"").trim();
-  if(!["deela-demo","snapchat-demo"].includes(platform))return {error:"اختر بيئة تجريبية من الخيارات المحددة."};
-  if(!/^test_[a-zA-Z0-9_]{3,32}$/.test(username))return {error:"اسم الحساب التجريبي يجب أن يبدأ بـ test_ ثم 3 إلى 32 حرفًا إنجليزيًا أو رقمًا."};
-  const mfa=body.mfa_enabled===true;
-  const throttle=body.rate_limit_enabled===true;
-  const lockout=body.lockout_enabled===true;
-  const maxAttempts=5;
-  const events=[
-    "تشغيل محاكاة محلية لحساب افتراضي؛ لم تُرسل أي طلبات إلى "+(platform==="snapchat-demo"?"Snapchat":"DEELA")+".",
-    throttle?"بعد المحاولات المتكررة: نظام تحديد المعدل يمنع الطلبات الزائدة (افتراض إعداد صحيح).":"لا توجد سياسة تحديد معدل في السيناريو؛ قد يزيد خطر التخمين.",
-    lockout?"قفل الحساب التجريبي بعد "+maxAttempts+" محاولات فاشلة (افتراض إعداد صحيح).":"السيناريو لا يفرض قفلًا بعد المحاولات الفاشلة.",
-    mfa?"اختبار قرار المصادقة: تُرفض الجلسة دون عامل تحقق ثانٍ صحيح.":"السيناريو لا يطلب عامل تحقق ثانٍ.",
-  ];
-  const recommendations=[
-    ...(!throttle?["فعّل تحديد معدل المحاولات عند تسجيل الدخول."]:[]),
-    ...(!lockout?["فعّل قفلًا مؤقتًا متدرجًا مع إشعارات للمستخدم."]:[]),
-    ...(!mfa?["فعّل المصادقة متعددة العوامل في الحساب التجريبي ونظامك."]:[]),
-    "لا تستخدم أسماء مستخدمين حقيقية أو كلمات مرور أو رموز تحقق في هذا المختبر.",
-  ];
-  return {ok:true,kind:"synthetic_auth_simulation",real_requests:0,attacks_executed:0,
-    platform,username,attempts_simulated:maxAttempts,
-    checks:{password_guessing_protection:throttle&&lockout?"simulated_protected":"simulated_needs_improvement",
-            two_factor:mfa?"simulated_required":"simulated_disabled"},
-    events,recommendations,
-    notice:"النتائج افتراضية طبقًا للخيارات المحددة؛ لا تحقق فعليًا من أمان Snapchat أو DEELA ولا تسترجع كلمات مرور."};
-}
-
 Deno.serve(async(req:Request)=>{
   if(req.method==="OPTIONS")return new Response(null,{status:204,headers});
   if(!["GET","POST"].includes(req.method))return error("الطريقة غير مدعومة",405);
   if(!(await isOwner(req)))return error("هذه الخدمة لمالك DEELA فقط",403);
   const path=new URL(req.url).pathname.replace(/^.*?\/deela-security-hub/,"")||"/";
+  if(req.method==="GET"&&path==="/audit/latest"){
+    // GitHub Actions static source audit on DEELA's own public repository; no user-supplied URLs.
+    const url="https://api.github.com/repos/mzo77/DEELA-V2/actions/workflows/deela-security-audit.yml/runs?per_page=3&branch=feature/deela-pentagi-0910";
+    try{
+      const response=await fetch(url,{
+        signal:AbortSignal.timeout(10000),
+        headers:{"Accept":"application/vnd.github+json","User-Agent":"deela-security-hub/1.0","X-GitHub-Api-Version":"2022-11-28"}
+      });
+      if(!response.ok)return reply({ok:false,available:false,reason:"تعذّر الاستعلام عن GitHub Actions ("+response.status+")",actions_url:"https://github.com/mzo77/DEELA-V2/actions/workflows/deela-security-audit.yml"},502);
+      const data=await response.json();
+      const runs=Array.isArray(data.workflow_runs)?data.workflow_runs.slice(0,3).map((r:Record<string,unknown>)=>({
+        status:String(r.status||"unknown"),conclusion:r.conclusion||null,url:String(r.html_url||""),
+        created_at:String(r.created_at||""),run_number:Number(r.run_number||0),
+      })):[];
+      return reply({ok:true,available:runs.length>0,runs,
+        actions_url:"https://github.com/mzo77/DEELA-V2/actions/workflows/deela-security-audit.yml",
+        note:"فحص حقيقي لكود DEELA عبر GitHub Actions، وليس تشغيل محركات Pentest Swarm أو HexStrike أو PentestGPT."});
+    }catch{
+      return reply({ok:false,available:false,reason:"تعذر الاتصال بخدمة GitHub Actions",actions_url:"https://github.com/mzo77/DEELA-V2/actions/workflows/deela-security-audit.yml"},502);
+    }
+  }
   if(req.method==="GET"&&(path==="/engines"||path==="/status"||path==="/"))
     return reply({ok:true,mode:"simulation_only",engines,lab:{ready:true,kind:"synthetic_auth_simulation"},warning:"المشاريع الثلاثة غير مثبّتة أو متصلة بخادم حي. لا توجد أدوات تخمين كلمات المرور أو تجاوز 2FA."});
   if(req.method==="POST"&&path==="/lab/simulate"){
