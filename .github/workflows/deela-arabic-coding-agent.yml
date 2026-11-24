@@ -80,6 +80,24 @@ jobs:
           npm install --global @opencode/cli
           opencode --version
 
+      - name: Lock down agent permissions and secrets (ephemeral workspace)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/deela-opencode.json" <<'JSON'
+          {
+            "$schema": "https://opencode.ai/config.json",
+            "permissions": [
+              {"action":"external_directory","resource":"*","effect":"deny"},
+              {"action":"edit","resource":".github/**","effect":"deny"},
+              {"action":"read","resource":"**/.env*","effect":"deny"},
+              {"action":"shell","resource":"git push *","effect":"deny"},
+              {"action":"shell","resource":"gh *","effect":"deny"}
+            ]
+          }
+          JSON
+          echo "OPENCODE_CONFIG=$RUNNER_TEMP/deela-opencode.json" >> "$GITHUB_ENV"
+
       - name: Run the Arabic coding agent with a free model (no paid API keys)
         id: agent
         continue-on-error: true
@@ -102,7 +120,9 @@ jobs:
         run: |
           set -euo pipefail
           git diff --check
-          git add -A -- app/ control-center/ docs/ website/ 2>/dev/null || true
+          for folder in app control-center docs website; do
+            if [ -d "$folder" ]; then git add -A -- "$folder"; fi
+          done
           python3 - <<'PY'
           import pathlib,subprocess,sys
           staged=subprocess.check_output(["git","diff","--cached","--name-only","-z"]).decode().split("\0")
