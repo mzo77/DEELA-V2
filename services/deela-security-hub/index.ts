@@ -66,7 +66,7 @@ Deno.serve(async(req:Request)=>{
     try{body=await req.json()}catch{return error("بيانات غير صالحة",400)}
     if(!body||typeof body!=="object"||Array.isArray(body))return error("بيانات غير صالحة",400);
     const result=simulate(body);
-    if(result.error)return error(String(result.error),400);
+    if("error" in result && result.error)return error(String(result.error),400);
     return reply(result);
   }
   return error("العملية غير متاحة",404);
