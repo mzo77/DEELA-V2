@@ -1,6 +1,8 @@
 package dev.aurastore.store.auth
 
 import androidx.compose.foundation.layout.*
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
@@ -143,6 +145,13 @@ private object OwnerApi {
 }
 @Composable
 fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
+    val context=LocalContext.current
+    val openShopManager={
+        context.startActivity(
+            Intent(context,DeelaShopOwnerActivity::class.java)
+                .putExtra(DeelaShopOwnerActivity.EXTRA_TOKEN,session.token)
+        )
+    }
     val scope=rememberCoroutineScope()
     var page by remember { mutableStateOf("الرئيسية") }
     var connectionStatus by remember(session.token) { mutableStateOf<Boolean?>(null) }
@@ -242,7 +251,7 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
             Text("لوحة تحكم المالك 👑",style=MaterialTheme.typography.titleLarge)
             Spacer(Modifier.height(12.dp))
             Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-                listOf("الرئيسية","الطلبات","المشتركون","التطبيقات","السجل","حالة الاتصال").forEach { tab ->
+                listOf("الرئيسية","المتجر الإلكتروني","الطلبات","المشتركون","التطبيقات","السجل","حالة الاتصال").forEach { tab ->
                     FilterChip(selected=page==tab,onClick={page=tab},label={Text(tab)})
                 }
             }
@@ -283,6 +292,17 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                 }
             } else if(current!=null) {
                 when(page) {
+                    "المتجر الإلكتروني" -> {
+                        Text("إدارة متجر DEELA الإلكتروني",style=MaterialTheme.typography.titleMedium)
+                        Text("المنتجات، الأسعار، العروض، الطلبات، تقييمات العملاء، وإعدادات واجهة المتجر.",
+                            style=MaterialTheme.typography.bodySmall)
+                        Spacer(Modifier.height(14.dp))
+                        Button(onClick=openShopManager,modifier=Modifier.fillMaxWidth()) {
+                            Text("فتح لوحة المتجر المتكاملة")
+                        }
+                        Text("الطلبات لا تسحب أي مبلغ ولا تفعّل الاشتراك تلقائيًا؛ راجع كل طلب قبل تحديث حالته.",
+                            style=MaterialTheme.typography.bodySmall)
+                    }
                     "الرئيسية" -> {
                         val subscribers=current.members.filter {it.role!="owner"}
                         Text("حساب المالك: "+current.email,style=MaterialTheme.typography.bodySmall)

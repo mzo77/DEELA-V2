@@ -1,0 +1,133 @@
+name: DEELA Commerce Store Site and Owner APK Tests
+on:
+  push:
+    branches: [feature/deela-commerce-90waves-style]
+    paths:
+      - "docs/store/**"
+      - "app/**"
+      - "control-center/supabase/deela-shop/**"
+      - ".github/workflows/deela-commerce-tests.yml"
+      - "gradle/**"
+      - "gradlew"
+      - "settings.gradle.kts"
+  workflow_dispatch:
+concurrency:
+  group: deela-commerce-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  web-and-api-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check all frontend JS and embedded admin
+        run: |
+          set -euo pipefail
+          node --check docs/store/app.js
+          node --check docs/store/admin/admin.js
+          node --check app/src/main/assets/store/admin/admin.js
+          diff -q docs/store/style.css app/src/main/assets/store/style.css
+          diff -q docs/store/index.html app/src/main/assets/store/index.html
+          diff -q docs/store/app.js app/src/main/assets/store/app.js
+          diff -q docs/store/icon.svg app/src/main/assets/store/icon.svg
+          diff -q docs/store/admin/index.html app/src/main/assets/store/admin/index.html
+          diff -q docs/store/admin/admin.js app/src/main/assets/store/admin/admin.js
+          diff -q docs/store/admin/admin.css app/src/main/assets/store/admin/admin.css
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          class Scan(HTMLParser):
+            def __init__(self): super().__init__();self.ids=set();self.dupes=set()
+            def handle_starttag(self,tag,attrs):
+              p=dict(attrs)
+              if "id" in p:
+                if p["id"] in self.ids:self.dupes.add(p["id"])
+                self.ids.add(p["id"])
+          for target in ["docs/store/index.html","docs/store/admin/index.html"]:
+            doc=Scan();doc.feed(Path(target).read_text())
+            assert not doc.dupes,(target,doc.dupes)
+            assert doc.ids
+            print(target,"unique HTML IDs:",len(doc.ids))
+          html=Path("docs/store/index.html").read_text()
+          js=Path("docs/store/app.js").read_text()
+          import re
+          for element in set(re.findall(r'\$\("([A-Za-z][A-Za-z0-9]*)"\)',js)):
+            if element=="reloadCatalog": continue  # Created dynamically on an API failure.
+            assert 'id="'+element+'"' in html,(element,"missing from storefront")
+          html=Path("docs/store/admin/index.html").read_text()
+          js=Path("docs/store/admin/admin.js").read_text()
+          for element in set(re.findall(r'\$\("([A-Za-z][A-Za-z0-9]*)"\)',js)):
+            assert 'id="'+element+'"' in html,(element,"missing from owner site")
+          source=Path("app/src/main/java/dev/aurastore/store/auth/DeelaOwnerScreen.kt").read_text()
+          assert '"المتجر الإلكتروني"' in source
+          assert 'DeelaShopOwnerActivity.EXTRA_TOKEN' in source
+          manifest=Path("app/src/main/AndroidManifest.xml").read_text()
+          assert 'android:name=".auth.DeelaShopOwnerActivity"' in manifest
+          assert 'android:exported="false"' in manifest
+          assert 'WebViewAssetLoader' in Path("app/src/main/java/dev/aurastore/store/auth/DeelaShopOwnerActivity.kt").read_text()
+          print("Web UI, owner navigation and native assets OK")
+          PY
+      - name: Verify secured Supabase shop API and actual catalog
+        run: |
+          set -euo pipefail
+          API="https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-shop"
+          curl -fsS --retry 3 --max-time 25 "$API/health" -o /tmp/deela-shop-health.json
+          curl -fsS --retry 3 --max-time 25 "$API/catalog" -o /tmp/deela-shop-catalog.json
+          python3 - <<'PY'
+          import json
+          h=json.load(open("/tmp/deela-shop-health.json"))
+          d=json.load(open("/tmp/deela-shop-catalog.json"))
+          assert h.get("ok") is True
+          assert h.get("payments_live") is False
+          assert len(d["products"])>=3
+          assert d["currency"]=="SAR"
+          assert all(x["published"] for x in d["products"])
+          assert all(x["price_sar"] is None or x["price_sar"]>=0 for x in d["products"])
+          print("Catalog live:",len(d["products"]),"products; no fake payment claims")
+          PY
+          code="$(curl -s -o /dev/null -w '%{http_code}' "$API/admin/overview")"
+          test "$code" = "403"
+          code="$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' --data '{"items":[]}' "$API/orders")"
+          test "$code" = "401"
+          curl -sS -D /tmp/deela-shop-cors -o /dev/null -X OPTIONS -H 'Origin: https://mzo77.github.io' -H 'Access-Control-Request-Method: POST' "$API/admin/product"
+          grep -qi 'access-control-allow-origin: https://mzo77.github.io' /tmp/deela-shop-cors
+
+  owner-apk-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Android SDK
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --channel=3 --install "platforms;android-37.0" "build-tools;36.1.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compile a separate DEELA commerce preview
+        env:
+          DEELA_COMMERCE_PREVIEW: "true"
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon :app:assembleDebug
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/36.1.0/aapt" dump badging "$APK" \
+            | grep -F "package: name='com.deela.apps.commercepreview'"
+          "$ANDROID_HOME/build-tools/36.1.0/apksigner" verify --print-certs "$APK"
+          mkdir -p dist
+          cp "$APK" dist/DEELA-Shop-Owner-Preview.apk
+          (cd dist && sha256sum *.apk > SHA256SUMS.txt)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DEELA-Shop-Owner-Preview
+          path: dist/
+          retention-days: 30
+          if-no-files-found: error
