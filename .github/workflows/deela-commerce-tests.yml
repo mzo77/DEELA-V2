@@ -12,7 +12,7 @@ on:
       - "settings.gradle.kts"
   workflow_dispatch:
 concurrency:
-  group: deela-commerce-${d}{{ github.ref }}
+  group: deela-commerce-${{ github.ref }}
   cancel-in-progress: true
 permissions:
   contents: read
