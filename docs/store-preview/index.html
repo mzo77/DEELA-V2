@@ -1,0 +1,43 @@
+<!doctype html><html lang="ar" dir="rtl"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1b31"><meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer"><title>DEELA | معاينة المتجر للمالك</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100dvh;display:grid;place-items:center;padding:20px;background:radial-gradient(ellipse at 80% 0%,#365f76,#0a1527 62%,#080e1c);font:500 14px/1.9 Tahoma,Arial,sans-serif;color:#e9f5fc}.card{background:#142940;border:1px solid #4c7787;border-radius:24px;padding:29px;width:min(440px,100%);box-shadow:0 24px 80px #020816a0}.brand{display:inline-grid;width:67px;height:67px;place-items:center;border-radius:20px;background:linear-gradient(135deg,#84ded5,#9ea8f1);color:#0e2033;font:bold 46px Arial}.label{display:block;color:#a0e7e0;letter-spacing:2px;font:800 10px Arial;margin-top:20px}h1{font-size:27px;margin:10px 0}.lead{font-size:13px;color:#b6cadc;margin:5px 0 20px}form label{display:block;font-weight:700;margin-top:15px}input{display:block;width:100%;background:#0a192c;border:1px solid #4b6a81;border-radius:12px;height:49px;padding:11px;color:white;font:inherit}input:focus{outline:2px solid #7bddd6}button{border:0;background:linear-gradient(110deg,#8ce3dd,#adb8fb);font:800 14px Tahoma;color:#112038;border-radius:12px;min-height:50px;width:100%;margin:19px 0 2px;cursor:pointer}button:disabled{opacity:.5}.note{color:#acc5d4;font-size:11px;margin-top:22px}.error{color:#f5d6bd;font-size:12px;margin-top:11px;min-height:18px}.footer{color:#7897ac;font-size:10px;margin-top:20px}.shortcut{display:none;margin-top:12px;color:#c2f8e9;font-size:13px}
+</style></head><body>
+<main class="card">
+<div class="brand">D</div><span class="label">PRIVATE OWNER PREVIEW</span>
+<h1>معاينة متجر DEELA</h1>
+<p class="lead">شاهد تصميم المتجر الإلكتروني قبل إطلاقه. الوصول لهذه الواجهة يتطلب حساب المالك المعتمد في ديلا.</p>
+<form id="ownerForm">
+<label for="email">بريد المالك</label><input type="email" id="email" required autocomplete="username" placeholder="بريد حساب DEELA">
+<label for="password">كلمة المرور</label><input type="password" id="password" required autocomplete="current-password" placeholder="••••••••">
+<button type="submit" id="submit">فتح المعاينة ←</button><p id="error" class="error" role="alert" aria-live="polite"></p>
+</form>
+<a class="shortcut" id="already" href="./shop.html">الدخول للمتجر بجلسة المالك الحالية ←</a>
+<p class="note">🔒 يتحقق الخادم من صلاحية المالك قبل عرض المتجر. هذه معاينة غير معلنة؛ لا تستخدمها لاستقبال طلبات عملاء حقيقيين قبل الإطلاق.</p>
+<p class="footer">DEELA © 2026 · GitHub Pages · لا توجد رسوم استضافة</p>
+</main>
+<script>
+(()=>{
+const API="https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/";
+const $=id=>document.getElementById(id);
+if(location.search.includes("logout=1")){sessionStorage.removeItem("deela-shop-owner-session");history.replaceState({},'',location.pathname);}
+if(sessionStorage.getItem("deela-shop-owner-session"))$("already").style.display="block";
+$("ownerForm").addEventListener("submit",async e=>{
+ e.preventDefault();
+ const btn=$("submit");btn.disabled=true;$("error").textContent="جارٍ التحقق من حساب المالك…";
+ try{
+ const r=await fetch(API+"deela-control/api/v1/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:$("email").value.trim().toLowerCase(),password:$("password").value,platform:"android"}),credentials:"omit",cache:"no-store",signal:AbortSignal.timeout(20000)});
+ const d=await r.json().catch(()=>({}));
+ if(!r.ok||!d.access_token)throw Error(d.error||"تعذّر تسجيل الدخول");
+ const check=await fetch(API+"deela-shop/admin/overview",{headers:{Authorization:"Bearer "+d.access_token},credentials:"omit",cache:"no-store",signal:AbortSignal.timeout(20000)});
+ if(!check.ok)throw Error("هذا الدخول ليس لحساب مالك DEELA، أو انتهت صلاحية الجلسة");
+ sessionStorage.setItem("deela-shop-owner-session",d.access_token);
+ $("password").value="";
+ location.replace("./shop.html");
+ }catch(err){$("error").textContent=err.message||"تعذّر التحقق من الدخول"}
+ finally{btn.disabled=false}
+});
+})();
+</script></body></html>
