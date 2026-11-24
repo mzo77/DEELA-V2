@@ -1,0 +1,7 @@
+DEELA official signed Android release authorization
+Version: 0.9.13
+Source commit: 2ec2af0966284c40ad9c4c35dccdc3d86647e827
+Application ID: com.deela.apps
+Purpose: Owner four-engine LIVE STATUS UI based on verified Supabase reports
+Release guardrails: APK must be signed with existing permanent DEELA certificate, verify fingerprint and version, publish only on success
+Actual engine runtime: Not continuously hosted; GitHub Actions smoke tests are temporary and must never be represented as persistent integration
