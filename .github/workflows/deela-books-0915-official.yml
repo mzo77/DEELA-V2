@@ -1,4 +1,4 @@
-name: DEELA v0.9.15 Official Private Books Marketplace Build
+name: DEELA v0.9.16 Official Private Books Marketplace Build
 on:
   push:
     branches:
@@ -9,14 +9,14 @@ on:
       - "gradle/**"
       - "gradlew"
       - "settings.gradle.kts"
-      - ".github/workflows/deela-books-0915-official.yml"
+      - ".github/workflows/deela-books-0916-official.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: deela-books-0915-official
+  group: deela-books-0916-official
   cancel-in-progress: true
 
 jobs:
@@ -44,7 +44,7 @@ jobs:
           page=(root/"java/dev/aurastore/store/auth/DeelaShopOwnerActivity.kt").read_text()
           gradle=Path("app/build.gradle.kts").read_text()
           customer=(root/"assets/store/app.js").read_text()
-          assert 'val appVersionName = "0.9.15"' in gradle
+          assert 'val appVersionName = "0.9.16"' in gradle
           assert 'applicationId = "com.deela.apps"' in gradle
           assert "DeelaShopOwnerActivity" in android and 'android:exported="false"' in android
           assert '"المتجر الإلكتروني"' in owner and '"شهادات Apple"' in owner
@@ -62,7 +62,7 @@ jobs:
           assert 'DeelaBooksOwnerActivity.EXTRA_TOKEN' in owner
           assert "WebViewAssetLoader" in books and 'JSONObject.quote(token)' in books
           assert len(list((root/"assets/books").glob("*"))) == 4
-          assert 'val appVersionName = "0.9.15"' in gradle
+          assert 'val appVersionName = "0.9.16"' in gradle
           print("DEELA Books private marketplace bundled with official subscriber and owner app")
           print("Signed official package integration and private authorization are intact")
           PY
@@ -123,7 +123,7 @@ jobs:
           SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
           yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
           "$SDKMANAGER" --channel=3 --install "platforms;android-37.0" "build-tools;36.1.0"
-      - name: Build official DEELA 0.9.15 without access to signing secrets
+      - name: Build official DEELA 0.9.16 without access to signing secrets
         run: |
           set -euo pipefail
           chmod +x gradlew
@@ -162,7 +162,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
-          APK="dist/DEELA-v0.9.15-Official-Private-Books.apk"
+          APK="dist/DEELA-v0.9.16-Official-Private-Books.apk"
           "$ANDROID_HOME/build-tools/36.1.0/zipalign" -f 4 \
             app/build/outputs/apk/release/app-release-unsigned.apk \
             "$RUNNER_TEMP/DEELA-aligned.apk"
@@ -180,13 +180,13 @@ jobs:
           test "$SIGNER" = "$EXPECTED" || { echo "::error::Not official DEELA signing identity"; exit 1; }
           BADGING="$("$ANDROID_HOME/build-tools/36.1.0/aapt" dump badging "$APK" | head -n 1)"
           echo "$BADGING" | grep -F "name='com.deela.apps'"
-          echo "$BADGING" | grep -F "versionName='0.9.15'"
+          echo "$BADGING" | grep -F "versionName='0.9.16'"
           (cd dist && sha256sum *.apk > SHA256SUMS.txt)
           echo "This signed build is private: no GitHub Release or subscriber update has been published"
       - name: Upload private official-signature test APK for owner review
         uses: actions/upload-artifact@v4
         with:
-          name: DEELA-v0.9.15-Official-Private-Books-APK
+          name: DEELA-v0.9.16-Official-Private-Books-APK
           path: dist/
           retention-days: 30
           if-no-files-found: error
