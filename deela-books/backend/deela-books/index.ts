@@ -41,6 +41,10 @@ async function settings(){
 }
 function itemInput(raw:Record<string,unknown>){
  const title=str(raw.title,180),author=str(raw.author,100),description=str(raw.description,5000);
+ const subtitle=str(raw.subtitle,220),audience=str(raw.audience,30)||"عام";
+ const content_warning=str(raw.content_warning,350);
+ const page_count=raw.page_count==null||raw.page_count===""?null:Number(raw.page_count);
+ const publication_year=raw.publication_year==null||raw.publication_year===""?null:Number(raw.publication_year);
  const category=str(raw.category,80)||"روايات",language=str(raw.language,50)||"العربية";
  const format=str(raw.format,20),condition=str(raw.book_condition,25)||"new";
  const price=currencies(raw.price_sar),shipping=currencies(raw.shipping_fee_sar??0);
@@ -49,11 +53,14 @@ function itemInput(raw:Record<string,unknown>){
  const rights=raw.rights_confirmed===true;
  if(title.length<2||!["physical","ebook","audiobook"].includes(format)||!Number.isInteger(stock)||stock<0||stock>100000||
    Number.isNaN(price)||Number.isNaN(shipping)||Number.isNaN(compare)||
-   !["new","like_new","good","acceptable","not_applicable"].includes(condition))
+   !["new","like_new","good","acceptable","not_applicable"].includes(condition)||
+   description.length<20 || !["عام","الناشئة","للبالغين"].includes(audience) ||
+   (page_count!==null&&(!Number.isInteger(page_count)||page_count<1||page_count>50000))||
+   (publication_year!==null&&(!Number.isInteger(publication_year)||publication_year<1000||publication_year>2100)))
    throw Error("تحقق من عنوان الكتاب ونوعه والسعر والكمية");
  if(!rights)throw Error("يجب تأكيد ملكية حقوق النشر أو إذن التوزيع");
  if(format!=="physical"&&file.length===0)throw Error("الكتاب الرقمي يحتاج ملف PDF أو EPUB أو MP3 مرفوعًا");
- return {title,author,description,category,language,format,book_condition:format==="physical"?condition:"not_applicable",
+ return {title,author,description,subtitle,audience,content_warning,page_count,publication_year,category,language,format,book_condition:format==="physical"?condition:"not_applicable",
    price_sar:price,compare_at_sar:compare,stock,shipping_fee_sar:format==="physical"?shipping:0,
    isbn:str(raw.isbn,30),city:str(raw.city,80),cover_path:cover||null,file_path:file||null,
    preview_excerpt:str(raw.preview_excerpt,3000),rights_confirmed:rights,updated_at:new Date().toISOString()};
@@ -72,6 +79,31 @@ async function signedCovers(products:any[]){
    return {...publicListing(p),cover_url};
  }));
 }
+async function enrichBooks(books:any[]){
+ if(!books.length)return books;
+ const ids=books.map(x=>x.id);
+ const [likes,reviews]=await Promise.all([
+  db.from("deela_books_likes").select("listing_id").in("listing_id",ids).limit(10000),
+  db.from("deela_books_reviews").select("id,listing_id,rating,body,created_at")
+    .in("listing_id",ids).eq("approved",true).order("created_at",{ascending:false}).limit(10000)
+ ]);
+ if(likes.error||reviews.error)throw Error("book community data unavailable");
+ const likeMap=new Map<string,number>(),reviewMap=new Map<string,{count:number,sum:number,items:any[]}>();
+ for(const x of likes.data||[])likeMap.set(x.listing_id,(likeMap.get(x.listing_id)||0)+1);
+ for(const x of reviews.data||[]){
+  const v=reviewMap.get(x.listing_id)||{count:0,sum:0,items:[]};
+  v.count++;v.sum+=x.rating;
+  if(v.items.length<8)v.items.push({id:x.id,rating:x.rating,body:x.body,created_at:x.created_at});
+  reviewMap.set(x.listing_id,v);
+ }
+ const signed=await signedCovers(books);
+ return signed.map(p=>{
+  const r=reviewMap.get(p.id);
+  return {...p,like_count:likeMap.get(p.id)||0,review_count:r?.count||0,
+   average_rating:r?Math.round(r.sum/r.count*10)/10:0,
+   reviews:r?.items||[]};
+ });
+}
 async function currentListings(isOwner:boolean,search:URLSearchParams){
  let q=db.from("deela_books_listings")
   .select("*,deela_books_sellers!inner(id,shop_name,slug,status,city)")
@@ -85,7 +117,7 @@ async function currentListings(isOwner:boolean,search:URLSearchParams){
  const category=str(search.get("category"),80);
  const words=str(search.get("q"),100).toLocaleLowerCase();
  const selected=(result.data||[]).filter(p=>(!category||p.category===category)&&(!words||[p.title,p.author,p.category,p.description].some((v:string)=>String(v||"").toLocaleLowerCase().includes(words))));
- return await signedCovers(selected);
+ return await enrichBooks(selected);
 }
 async function ownerOverview(req:Request){
  const [s,l,o,r,m]=await Promise.all([
@@ -119,18 +151,33 @@ Deno.serve(async req=>{
     const q=db.from("deela_books_sellers").select("id,shop_name,slug,bio,city,status,created_at").order("created_at",{ascending:false}).limit(70);
     if(!isOwner)q.eq("status","approved");
     const {data,error:e}=await q;
-    if(e)throw e;return respond(req,{shops:data||[]});
+    if(e)throw e;
+    const sellerIds=(data||[]).map(x=>x.id);
+    let follows:any[]=[];
+    if(sellerIds.length){
+      const fr=await db.from("deela_books_follows").select("seller_id").in("seller_id",sellerIds).limit(10000);
+      if(fr.error)throw fr.error;
+      follows=fr.data||[];
+    }
+    const counts=new Map<string,number>();
+    follows.forEach(x=>counts.set(x.seller_id,(counts.get(x.seller_id)||0)+1));
+    return respond(req,{shops:(data||[]).map(x=>({...x,follower_count:counts.get(x.id)||0}))});
   }
   if(!user)return fail(req,"سجّل الدخول أولًا",401);
   if(req.method==="GET"&&path==="/me"){
-    const [seller,favs,myOrders]=await Promise.all([
+    const [seller,favs,likes,follows,myOrders]=await Promise.all([
       sellerFor(user.id),
       db.from("deela_books_favorites").select("listing_id").eq("user_id",user.id).limit(200),
+      db.from("deela_books_likes").select("listing_id").eq("user_id",user.id).limit(200),
+      db.from("deela_books_follows").select("seller_id").eq("user_id",user.id).limit(200),
       db.from("deela_books_orders").select("id,code,status,total_sar,created_at,tracking_number,owner_note").eq("buyer_id",user.id).order("created_at",{ascending:false}).limit(50)
     ]);
-    if(favs.error||myOrders.error)throw Error("customer profile unavailable");
+    if(favs.error||likes.error||follows.error||myOrders.error)throw Error("customer profile unavailable");
     return respond(req,{id:user.id,email:user.email||"",seller,
-      favorites:(favs.data||[]).map((x:any)=>x.listing_id),orders:myOrders.data||[],is_owner:isOwner});
+      favorites:(favs.data||[]).map((x:any)=>x.listing_id),
+      likes:(likes.data||[]).map((x:any)=>x.listing_id),
+      following:(follows.data||[]).map((x:any)=>x.seller_id),
+      orders:myOrders.data||[],is_owner:isOwner});
   }
   if(req.method==="POST"&&path==="/seller/apply"){
     const b=await req.json(),shop_name=str(b.shop_name,100),slug=str(b.slug,60).toLowerCase();
@@ -196,6 +243,44 @@ Deno.serve(async req=>{
     const signed=await db.storage.from("deela-books-private-files").createSignedUrl(r.data.file_path,90);
     if(signed.error)throw signed.error;
     return respond(req,{url:signed.data.signedUrl,expires_in:90});
+  }
+  if(req.method==="POST"&&path==="/like"){
+    const b=await req.json(),id=str(b.listing_id,60);
+    if(!uuid.test(id)||typeof b.liked!=="boolean")return fail(req,"إعجاب غير صالح",400);
+    const check=await db.from("deela_books_listings")
+      .select("id,status,deela_books_sellers!inner(status)").eq("id",id).maybeSingle();
+    if(check.error||!check.data)return fail(req,"الكتاب غير موجود",404);
+    if(!isOwner&&(check.data.status!=="published"||
+       (check.data.deela_books_sellers as any)?.status!=="approved"))
+      return fail(req,"الكتاب لم يُنشر بعد",403);
+    if(b.liked){
+      const r=await db.from("deela_books_likes").upsert({listing_id:id,user_id:user.id},{onConflict:"user_id,listing_id"});
+      if(r.error)throw r.error;
+    }else{
+      const r=await db.from("deela_books_likes").delete().eq("listing_id",id).eq("user_id",user.id);
+      if(r.error)throw r.error;
+    }
+    const count=await db.from("deela_books_likes").select("listing_id",{count:"exact",head:true}).eq("listing_id",id);
+    if(count.error)throw count.error;
+    return respond(req,{ok:true,liked:b.liked,like_count:count.count||0});
+  }
+  if(req.method==="POST"&&path==="/follow"){
+    const b=await req.json(),id=str(b.seller_id,60);
+    if(!uuid.test(id)||typeof b.following!=="boolean")return fail(req,"معرف متجر غير صالح");
+    const seller=await db.from("deela_books_sellers").select("id,status,user_id").eq("id",id).maybeSingle();
+    if(seller.error||!seller.data)return fail(req,"المتجر غير موجود",404);
+    if(!isOwner&&seller.data.status!=="approved")return fail(req,"المتجر غير معتمد",403);
+    if(seller.data.user_id===user.id)return fail(req,"لا تتابع متجرك الشخصي",400);
+    if(b.following){
+      const r=await db.from("deela_books_follows").upsert({user_id:user.id,seller_id:id},{onConflict:"user_id,seller_id"});
+      if(r.error)throw r.error;
+    }else{
+      const r=await db.from("deela_books_follows").delete().eq("user_id",user.id).eq("seller_id",id);
+      if(r.error)throw r.error;
+    }
+    const count=await db.from("deela_books_follows").select("seller_id",{count:"exact",head:true}).eq("seller_id",id);
+    if(count.error)throw count.error;
+    return respond(req,{ok:true,following:b.following,follower_count:count.count||0});
   }
   if(req.method==="POST"&&path==="/favorite"){
     const b=await req.json(),id=str(b.listing_id,60);
