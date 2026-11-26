@@ -248,6 +248,38 @@ td{color:#d0e2ec}
 .modal small{display:block;margin-top:12px;color:#9bb8c7;font-size:10px}
 .toast{z-index:90;position:fixed;bottom:27px;left:50%;transform:translateX(-50%);background:#24505b;color:#effffd;border:1px solid #a1e3d8;border-radius:12px;padding:11px 20px;font-size:12px;font-weight:800;box-shadow:var(--shadow);max-width:calc(100vw - 25px);text-align:center}
 .mobile-nav{display:none}
+
+/* Community and publisher controls */
+.community-strip{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:8px 0 9px}
+.like-chip,.rating-chip{display:inline-flex;align-items:center;gap:5px;min-height:27px;padding:3px 9px;border-radius:18px;border:1px solid #53788b;background:#233d53;color:#b9d9e6;font-size:10px;font-weight:800}
+button.like-chip{cursor:pointer}
+button.like-chip:hover,.like-chip.active{color:#ffe4d5;border-color:#d3a3a8;background:#5a384b}
+.rating-chip{color:#ffe5b2;border-color:#80694e;background:#3f3845}
+.detail-community{padding:11px 0;margin:8px 0}
+.detail-community .rating-chip,.detail-community .like-chip{font-size:12px;min-height:34px}
+.book-subtitle{font-size:13px;color:#c7d9e8;margin-bottom:8px}
+.compare-price{font-size:12px;color:#a8bccf;margin-top:-4px}
+.reader-review{padding:15px 0;border-bottom:1px solid #3d5b6c;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.reader-review:last-child{border-bottom:0}
+.reader-review p{width:100%;margin-top:2px;font-size:12px}
+.reader-review small{font-size:10px;color:#9ab4c6}
+.content-warning{margin-top:17px;background:#3b3544;border:1px solid #8a7883;border-radius:14px;padding:18px;color:#e9d5d3}
+.content-warning p{color:#e6d6d5;font-size:12px}
+.seller-price-tip{background:#1f4751;border:1px solid #609992;border-radius:12px;padding:13px 16px;color:#e3f8f1;font-size:12px}
+.shop-card .shop-actions{margin-right:auto;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.shop-card .shop-actions small{font-size:9px;color:#b1cad5}
+.shop-card .shop-actions button{margin-right:0}
+.shop-card .shop-actions button:hover{border-color:#a5e7d6}
+.book-card .book-info .community-strip{justify-content:space-between}
+.book-card .like-chip,.book-card .rating-chip{font-size:9px;padding:2px 6px}
+@media(max-width:720px){
+ .detail-community{margin:6px 0}
+ .book-card .book-info .community-strip{gap:3px}
+ .book-card .like-chip,.book-card .rating-chip{font-size:8px;padding:2px 5px}
+ .shop-card .shop-actions{max-width:140px;justify-content:flex-end}
+ .shop-card .shop-actions small{width:100%;text-align:left}
+}
+
 @media(max-width:1050px){.container{width:calc(100% - 34px)}.header-inner{gap:14px}.hero-text{padding:46px 33px}.books-grid{grid-template-columns:repeat(3,1fr)}.category-grid{grid-template-columns:repeat(3,1fr)}.footer-grid{grid-template-columns:1.5fr 1fr 1fr}.footer-grid>div:last-child{grid-column:1/-1}.trust-bar{grid-template-columns:repeat(2,1fr);gap:14px}.trust-bar>div:nth-child(2){border-left:0}}
 @media(max-width:720px){
  body{padding-bottom:68px;font-size:12px}
