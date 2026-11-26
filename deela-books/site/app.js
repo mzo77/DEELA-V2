@@ -268,7 +268,8 @@ function sellerPage(){
  return heading("استوديو المؤلف: "+seller.shop_name,"إدارة منتجاتك وأغلفة الكتب والمراجعة والنشر.","SELLER STUDIO")+
  '<div class="panel"><div class="row-top"><div><h2>'+esc(seller.shop_name)+'</h2><p>'+esc(seller.slug)+'</p></div><span class="status '+(available?"":"muted")+'">'+esc(statusNames[seller.status])+'</span></div>'+
  '<p>الموافقة على المتجر والكتب تصدر من مركز المالك. يمكنك إدارة الملفات بعد اعتماد المتجر.</p></div>'+
- (available?'<div class="toolbar">'+(enabled("enable_book_submissions")?'<button class="btn btn-primary" data-editor="new">+ أضف كتابًا</button>':'<span class="status muted">رفع الكتب متوقف حاليًا</span>')<button class="btn btn-outline" data-owner-tab="listings" data-route="owner">مراجعة الكتب (مالك)</button></div>'+
+ (available?'<div class="toolbar">'+(enabled("enable_book_submissions")?'<button class="btn btn-primary" data-editor="new">+ أضف كتابًا</button>':'<span class="status muted">رفع الكتب متوقف حاليًا</span>')+
+ '<button class="btn btn-outline" data-owner-tab="listings" data-route="owner">مراجعة الكتب (مالك)</button></div>'+
  '<div id="sellerEditor"></div><div class="panel"><h2>كتبي المرفوعة</h2><div class="list-rows">'+
  (state.sellerListings.length?state.sellerListings.map(l=>
  '<div class="row-card"><div class="row-top"><div><h3>'+esc(l.title)+'</h3><p>'+esc(kinds[l.format])+' · '+sar(l.price_sar)+'</p>'+
