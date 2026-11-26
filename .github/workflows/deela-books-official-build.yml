@@ -1,0 +1,238 @@
+name: DEELA v0.9.15 Official Identity Private Books Marketplace Build
+on:
+  push:
+    branches:
+      - release/deela-0915-private-commerce
+    paths:
+      - "app/**"
+      - "gradle/**"
+      - "gradlew"
+      - "settings.gradle.kts"
+      - ".github/workflows/deela-0915-private-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deela-0915-private-build
+  cancel-in-progress: true
+
+jobs:
+  verify-private-books:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate official app integration and runtime resources
+        run: |
+          set -euo pipefail
+          node --check deela-books/site/app.js
+          node --check app/src/main/assets/books/app.js
+          diff -q deela-books/site/index.html app/src/main/assets/books/index.html
+          diff -q deela-books/site/style.css app/src/main/assets/books/style.css
+          diff -q deela-books/site/app.js app/src/main/assets/books/app.js
+          diff -q deela-books/site/icon.svg app/src/main/assets/books/icon.svg
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          class Extract(HTMLParser):
+            def __init__(self): super().__init__();self.ids=set();self.duplicates=set()
+            def handle_starttag(self,tag,attrs):
+              d=dict(attrs)
+              if 'id' in d:
+                if d['id'] in self.ids:self.duplicates.add(d['id'])
+                self.ids.add(d['id'])
+          source=Path("deela-books/site/index.html").read_text()
+          x=Extract();x.feed(source)
+          assert not x.duplicates,x.duplicates
+          assert len(x.ids)>=18
+          owner=Path("app/src/main/java/dev/aurastore/store/auth/DeelaOwnerScreen.kt").read_text()
+          manifest=Path("app/src/main/AndroidManifest.xml").read_text()
+          activity=Path("app/src/main/java/dev/aurastore/store/auth/DeelaBooksOwnerActivity.kt").read_text()
+          gradle=Path("app/build.gradle.kts").read_text()
+          assert 'val appVersionName = "0.9.15"' in gradle
+          assert 'applicationId = "com.deela.apps"' in gradle
+          assert "ديلا بوكس 📚" in owner and "DeelaBooksOwnerActivity.EXTRA_TOKEN" in owner
+          assert 'android:name=".auth.DeelaBooksOwnerActivity"' in manifest
+          assert 'android:exported="false"' in manifest
+          assert 'WebViewAssetLoader' in activity and 'JSONObject.quote(token)' in activity
+          assert 'onShowFileChooser' in activity and "deela-books-token" in activity
+          print("DEELA Books source, HTML IDs, and owner integration verified")
+          PY
+                    node --check app/src/main/assets/store/app.js
+          node --check app/src/main/assets/store/admin/admin.js
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path("app/src/main")
+          android=(root/"AndroidManifest.xml").read_text()
+          owner=(root/"java/dev/aurastore/store/auth/DeelaOwnerScreen.kt").read_text()
+          page=(root/"java/dev/aurastore/store/auth/DeelaShopOwnerActivity.kt").read_text()
+          gradle=Path("app/build.gradle.kts").read_text()
+          customer=(root/"assets/store/app.js").read_text()
+          assert 'val appVersionName = "0.9.15"' in gradle
+          assert 'applicationId = "com.deela.apps"' in gradle
+          assert "DeelaShopOwnerActivity" in android and 'android:exported="false"' in android
+          assert '"المتجر الإلكتروني"' in owner and '"شهادات Apple"' in owner
+          assert 'DeelaShopOwnerActivity.EXTRA_TOKEN' in owner
+          assert 'WebViewAssetLoader' in page and 'JSONObject.quote(ownerToken)' in page
+          assert 'deela-shop-token' in page and 'deela-shop-owner-session' in page
+          assert 'if(token)headers.Authorization="Bearer "+token;' in customer
+          assert len(list((root/"assets/store").glob("*.html"))) == 2
+          assert len(list((root/"assets/store/admin").glob("*"))) == 3
+          print("Signed official package integration and private authorization are intact")
+          PY
+      - name: Verify the private HTTPS site and public denial
+        run: |
+          set -euo pipefail
+          HOST="https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-private-store"
+          curl --retry 4 --retry-delay 3 --fail-with-body --max-time 30 "$HOST/health" \
+            -o /tmp/private-health.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/private-health.json'))
+          assert d.get('ok') and d.get('owner_only') and not d.get('published_publicly')
+          print("Private store service is healthy")
+          PY
+          curl --retry 3 --max-time 30 --fail-with-body "$HOST/" -o /tmp/login.html
+          grep -Fq 'هذه النسخة الحقيقية' /tmp/login.html
+          ! grep -q 'product-grid' /tmp/login.html
+          for path in style.css app.js admin/index.html admin/admin.js api/shop/catalog; do
+            code="$(curl -sS -o /tmp/private-block -w '%{http_code}' "$HOST/$path")"
+            test "$code" = "403" || { echo "::error::Unauthenticated store asset accessible: $path -> $code"; exit 1; }
+          done
+          public="$(curl -sS -o /tmp/public-block -w '%{http_code}' \
+            https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-shop/catalog)"
+          test "$public" = "403"
+          echo "No unauthenticated visitor can load storefront assets or catalog"
+
+      - name: Verify live DEELA Books privacy and browser-ready login
+        run: |
+          set -euo pipefail
+          BASE="https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1"
+          PORTAL="https://mzo77.github.io/DEELA-V2/books-private/"
+          curl -fsSL --retry 8 --retry-all-errors --retry-delay 3 --max-time 25 "$PORTAL" -o /tmp/deela-books-portal.html
+          grep -Fq 'بوابة ديلا للكتب' /tmp/deela-books-portal.html
+          ! grep -Fq 'id="homeListings"' /tmp/deela-books-portal.html
+          curl -fsS -D /tmp/deela-books-header -o /dev/null "$PORTAL"
+          grep -qi '^content-type: text/html' /tmp/deela-books-header
+          python3 - <<'PY'
+          from pathlib import Path
+          source=Path("/tmp/deela-books-portal.html").read_text()
+          assert source.count('<script>')==1
+          extracted=source.split('<script>',1)[1].split('</script>',1)[0]
+          Path('/tmp/deela-books-login.js').write_text(extracted)
+          PY
+          node --check /tmp/deela-books-login.js
+          curl -fsS --retry 4 "$BASE/deela-books/health" -o /tmp/deela-books-health.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/deela-books-health.json'))
+          assert d['ok'] and d['owner_only'] and not d['payments_live'] and not d['shipping_live']
+          PY
+          for route in "deela-books/catalog" "deela-books/owner/overview" \
+            "deela-books-vault/protected/index.html" "deela-books-vault/protected/app.js"; do
+            status="$(curl -sS -o /tmp/private-denial -w '%{http_code}' "$BASE/$route")"
+            test "$status" = "403" || { echo "::error::$route HTTP $status (expected 403)"; exit 1; }
+          done
+          curl -sS -D /tmp/books-cors -o /dev/null -X OPTIONS \
+            -H 'Origin: https://mzo77.github.io' \
+            -H 'Access-Control-Request-Method: GET' \
+            -H 'Access-Control-Request-Headers: authorization' \
+            "$BASE/deela-books-vault/protected/index.html"
+          grep -qi '^access-control-allow-origin: https://mzo77.github.io' /tmp/books-cors
+          echo "Private DEELA Books web portal, API and asset security passed"
+  build-official-private-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 85
+    steps:
+      - name: Verify official signing secrets exist
+        env:
+          KEY_PRESENT: ${{ secrets.DEELA_RELEASE_KEYSTORE_BASE64 != '' }}
+          PASSWORD_PRESENT: ${{ secrets.DEELA_RELEASE_KEYSTORE_PASSWORD != '' }}
+        run: |
+          set -euo pipefail
+          test "$KEY_PRESENT" = "true" || { echo "::error::Official permanent keystore missing"; exit 1; }
+          test "$PASSWORD_PRESENT" = "true" || { echo "::error::Official keystore password missing"; exit 1; }
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install official Android build tools
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --channel=3 --install "platforms;android-37.0" "build-tools;36.1.0"
+      - name: Build official DEELA 0.9.15 without access to signing secrets
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon :app:assembleRelease
+          test -s app/build/outputs/apk/release/app-release-unsigned.apk
+      - name: Decode permanent signing key into temporary runner directory
+        env:
+          DEELA_RELEASE_KEYSTORE_BASE64: ${{ secrets.DEELA_RELEASE_KEYSTORE_BASE64 }}
+          DEELA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.DEELA_RELEASE_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          umask 077
+          python3 - <<'PY'
+          import os,base64,pathlib,re,sys
+          raw=os.environ["DEELA_RELEASE_KEYSTORE_BASE64"]
+          cleaned="".join(ch for ch in raw if not ch.isspace() and ord(ch) not in (0x200b,0x200c,0x200d,0xfeff))
+          candidates=[cleaned]+sorted(re.findall(r'[A-Za-z0-9+/]{500,}={0,2}',cleaned),key=len,reverse=True)
+          decoded=None
+          for token in candidates:
+            try:
+              data=base64.b64decode(token,validate=True)
+              if 1024<=len(data)<=65536 and data[0]==0x30:
+                decoded=data
+                break
+            except (ValueError,base64.binascii.Error):pass
+          if decoded is None:
+            print("::error::Permanent signing key could not be decoded");sys.exit(1)
+          pathlib.Path(os.environ["RUNNER_TEMP"],"deela-release.p12").write_bytes(decoded)
+          print("Permanent PKCS12 keystore validated without exposure")
+          PY
+          openssl pkcs12 -info -noout -in "$RUNNER_TEMP/deela-release.p12" \
+            -passin env:DEELA_RELEASE_KEYSTORE_PASSWORD >/dev/null
+      - name: Sign, pin-check, and package the official APK (no public release)
+        env:
+          DEELA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.DEELA_RELEASE_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          APK="dist/DEELA-v0.9.15-Official-Private-Books.apk"
+          "$ANDROID_HOME/build-tools/36.1.0/zipalign" -f 4 \
+            app/build/outputs/apk/release/app-release-unsigned.apk \
+            "$RUNNER_TEMP/DEELA-aligned.apk"
+          "$ANDROID_HOME/build-tools/36.1.0/apksigner" sign \
+            --ks "$RUNNER_TEMP/deela-release.p12" --ks-type PKCS12 \
+            --ks-key-alias deela_release \
+            --ks-pass env:DEELA_RELEASE_KEYSTORE_PASSWORD \
+            --key-pass env:DEELA_RELEASE_KEYSTORE_PASSWORD \
+            --out "$APK" "$RUNNER_TEMP/DEELA-aligned.apk"
+          "$ANDROID_HOME/build-tools/36.1.0/apksigner" verify --verbose --print-certs "$APK" \
+            > "$RUNNER_TEMP/deela-cert.txt"
+          SIGNER="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' \
+            "$RUNNER_TEMP/deela-cert.txt" | tr -d ':' | tr '[:upper:]' '[:lower:]' | head -n 1)"
+          EXPECTED="83698bc6e21ddabb83eaf45d3386170d676dcf96270081c163f8b2e107fdef3c"
+          test "$SIGNER" = "$EXPECTED" || { echo "::error::Not official DEELA signing identity"; exit 1; }
+          BADGING="$("$ANDROID_HOME/build-tools/36.1.0/aapt" dump badging "$APK" | head -n 1)"
+          echo "$BADGING" | grep -F "name='com.deela.apps'"
+          echo "$BADGING" | grep -F "versionName='0.9.15'"
+          (cd dist && sha256sum *.apk > SHA256SUMS.txt)
+          echo "This signed build is private: no GitHub Release or subscriber update has been published"
+      - name: Upload private official-signature test APK for owner review
+        uses: actions/upload-artifact@v4
+        with:
+          name: DEELA-v0.9.15-Official-Private-Books-APK
+          path: dist/
+          retention-days: 30
+          if-no-files-found: error
+      - name: Erase the temporary signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/deela-release.p12"
