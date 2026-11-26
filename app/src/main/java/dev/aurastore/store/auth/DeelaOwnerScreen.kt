@@ -124,6 +124,12 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                 .putExtra(DeelaShopOwnerActivity.EXTRA_PAGE,page)
         )
     }
+    val openBooks = {
+        activityContext.startActivity(
+            Intent(activityContext,DeelaBooksOwnerActivity::class.java)
+                .putExtra(DeelaBooksOwnerActivity.EXTRA_TOKEN,session.token)
+        )
+    }
     val scope=rememberCoroutineScope()
     var page by remember { mutableStateOf("الرئيسية") }
     var selectedPlatform by remember { mutableStateOf("android") }
@@ -236,7 +242,7 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
             ) {
-                listOf("الرئيسية", "المتجر الإلكتروني", "الطلبات", "المشتركون", "التطبيقات", "شهادات Apple", "التحديثات", "القوة الغاشمة ⚡", "مركز الذكاء 🤖", "مختبر الأمان 🛡️", "الرسائل", "السجل").forEach { tab ->
+                listOf("الرئيسية", "المتجر الإلكتروني", "ديلا بوكس 📚", "الطلبات", "المشتركون", "التطبيقات", "شهادات Apple", "التحديثات", "القوة الغاشمة ⚡", "مركز الذكاء 🤖", "مختبر الأمان 🛡️", "الرسائل", "السجل").forEach { tab ->
                     FilterChip(
                         selected = page == tab,
                         onClick = { page = tab },
@@ -267,6 +273,28 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                 }
             } else {
                 when (page) {
+                    "ديلا بوكس 📚" -> {
+                        Column(
+                            modifier = Modifier.weight(1f).fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(13.dp)
+                        ) {
+                            Text("DEELA Books — منصة الكتب والروايات",style=MaterialTheme.typography.titleLarge)
+                            Text("موقع مستقل داخل تطبيق ديلا الرسمي. سوق كتب جديد ومستعمل ورقمي، نشر المؤلفين، إدارة المتاجر، الطلبات والمراجعات.",
+                                color=MaterialTheme.colorScheme.onSurfaceVariant,
+                                style=MaterialTheme.typography.bodyMedium)
+                            Button(onClick=openBooks,modifier=Modifier.fillMaxWidth()) {
+                                Text("فتح DEELA Books ولوحة إدارتها")
+                            }
+                            ElevatedCard(
+                                modifier=Modifier.fillMaxWidth(),
+                                colors=CardDefaults.elevatedCardColors(containerColor=Color(0xFF1A3546))
+                            ) {
+                                Text("🔒 الموقع خاص بحساب المالك حتى الإطلاق. لا يتم تحصيل دفع أو تشغيل شحن آلي قبل ربط مزودي الخدمة.",
+                                    modifier=Modifier.padding(17.dp),
+                                    style=MaterialTheme.typography.bodyMedium)
+                            }
+                        }
+                    }
                     "المتجر الإلكتروني" -> {
                         Column(
                             modifier = Modifier.weight(1f).fillMaxWidth(),
