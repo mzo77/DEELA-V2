@@ -16,7 +16,7 @@ const statusNames={draft:"مسودة",pending:"بانتظار المراجعة",
  paid:"تم تأكيد الدفع",preparing:"جارٍ التجهيز",shipped:"تم الشحن",delivered:"تم التسليم",cancelled:"ملغي"};
 const state={token:window.__DEELA_BOOKS_TOKEN||sessionStorage.getItem("deela-books-token")||sessionStorage.getItem("deela-shop-owner-session")||"",
  email:"",view:"home",listings:[],shops:[],cart:[],me:null,settings:{},
- current:null,category:"الكل",format:"all",search:"",ownerTab:"overview",sellerTab:"books",
+ current:null,category:"الكل",format:"all",sort:"newest",search:"",ownerTab:"overview",sellerTab:"books",
  sellerListings:[],ownerData:null,editing:null,formNote:"",loading:false};
 try{let c=JSON.parse(localStorage.getItem("deela-books-cart-v1")||"[]");if(Array.isArray(c))state.cart=c.filter(x=>typeof x.id==="string"&&Number.isInteger(x.qty)&&x.qty>0&&x.qty<=10).slice(0,10)}catch{}
 let noticeTimer;
@@ -117,10 +117,19 @@ function catalogPage(){
   const query=!state.search||[b.title,b.author,b.description,b.category,b.deela_books_sellers?.shop_name].some(t=>String(t||"").toLocaleLowerCase().includes(state.search));
   return category&&format&&query;
  });
+ const sorters={
+  newest:(a,b)=>new Date(b.created_at)-new Date(a.created_at),
+  popular:(a,b)=>Number(b.like_count||0)-Number(a.like_count||0),
+  rated:(a,b)=>Number(b.average_rating||0)-Number(a.average_rating||0),
+  price_low:(a,b)=>Number(a.price_sar)-Number(b.price_sar),
+  price_high:(a,b)=>Number(b.price_sar)-Number(a.price_sar)
+ };
+ books=books.sort(sorters[state.sort]||sorters.newest);
  return heading("مكتبة ديلا","اختر كتابًا يناسب ذوقك من الكتب الحقيقية المعتمدة.","EXPLORE OUR BOOKS")+
  '<div class="filters">'+categories.map(c=>'<button class="filter '+(state.category===c?"active":"")+'" data-category="'+esc(c)+'">'+esc(c)+'</button>').join("")+'</div>'+
  '<div class="catalog-toolbar"><p>عدد الكتب: '+books.length+' '+(state.me?.is_owner?"(تظهر كتب المراجعة للمالك فقط)":"")+'</p>'+
- '<select id="formatFilter" aria-label="تصفية نوع الكتاب"><option value="all">جميع الأنواع</option><option value="physical">ورقي</option><option value="ebook">رقمي</option><option value="audiobook">صوتي</option></select></div>'+
+ '<div class="filter-selects"><select id="formatFilter" aria-label="تصفية نوع الكتاب"><option value="all">جميع الأنواع</option><option value="physical">ورقي</option><option value="ebook">رقمي</option><option value="audiobook">صوتي</option></select>'+
+ '<select id="sortFilter" aria-label="ترتيب الكتب"><option value="newest">الأحدث</option><option value="popular">الأكثر إعجابًا</option><option value="rated">الأعلى تقييمًا</option><option value="price_low">الأقل سعرًا</option><option value="price_high">الأعلى سعرًا</option></select></div></div>'+
  listingGrid(books,!state.listings.length);
 }
 function detailPage(){
@@ -248,7 +257,9 @@ function sellerPage(){
  (available?'<div class="toolbar"><button class="btn btn-primary" data-editor="new">+ أضف كتابًا</button><button class="btn btn-outline" data-owner-tab="listings" data-route="owner">مراجعة الكتب (مالك)</button></div>'+
  '<div id="sellerEditor"></div><div class="panel"><h2>كتبي المرفوعة</h2><div class="list-rows">'+
  (state.sellerListings.length?state.sellerListings.map(l=>
- '<div class="row-card"><div class="row-top"><div><h3>'+esc(l.title)+'</h3><p>'+esc(kinds[l.format])+' · '+sar(l.price_sar)+'</p></div>'+
+ '<div class="row-card"><div class="row-top"><div><h3>'+esc(l.title)+'</h3><p>'+esc(kinds[l.format])+' · '+sar(l.price_sar)+'</p>'+
+ '<div class="community-strip"><span class="like-chip">♥ '+Number(l.like_count||0)+' إعجاب</span>'+
+ '<span class="rating-chip">★ '+(l.review_count?Number(l.average_rating||0).toFixed(1):"جديد")+' · '+Number(l.review_count||0)+' تقييم</span></div></div>'+
  '<span class="status '+(l.status==="published"?"":"muted")+'">'+esc(statusNames[l.status])+'</span></div>'+
  '<div class="form-actions"><button class="btn btn-outline" data-editor="'+esc(l.id)+'">تعديل الكتاب</button>'+
  (state.me?.is_owner?'<button class="btn btn-soft" data-owner-status="'+esc(l.id)+'" data-status="published">اعتماد الكتاب</button>':"")+
@@ -309,7 +320,8 @@ function ownerPage(){
  if(tab==="listings"){
   const arr=state.ownerData?.listings||[];
   return top+'<div class="list-rows">'+(arr.length?arr.map(b=>
-  '<div class="row-card"><div class="row-top"><div><h3>'+esc(b.title)+'</h3><p>'+esc(b.deela_books_sellers?.shop_name||"")+' · '+esc(kinds[b.format])+' · '+sar(b.price_sar)+'</p></div>'+
+  '<div class="row-card"><div class="row-top"><div><h3>'+esc(b.title)+'</h3><p>'+esc(b.deela_books_sellers?.shop_name||"")+' · '+esc(kinds[b.format])+' · '+sar(b.price_sar)+'</p>'+
+ '<span class="like-chip">♥ '+Number(b.like_count||0)+' إعجاب</span></div>'+
   '<span class="status '+(b.status==="published"?"":"muted")+'">'+esc(statusNames[b.status])+'</span></div><p>'+esc(b.description.slice(0,140))+'</p>'+
   '<div class="toolbar"><button class="btn btn-primary" data-owner-status="'+esc(b.id)+'" data-status="published">نشر</button>'+
   '<button class="btn btn-outline" data-owner-status="'+esc(b.id)+'" data-status="rejected">رفض</button>'+
@@ -386,7 +398,7 @@ async function route(view,push=true){
    view==="orders"?ordersPage():view==="seller"?sellerPage():view==="owner"?ownerPage():"";
   if(view==="messages")markup=messagesPage(await messagesData());
   $("pageContent").innerHTML=markup;
-  if(view==="catalog")$("formatFilter").value=state.format;
+  if(view==="catalog"){$("formatFilter").value=state.format;$("sortFilter").value=state.sort}
  }
  window.scrollTo({top:0,behavior:"instant"});
 }
@@ -632,6 +644,7 @@ function bind(){
  });
  document.addEventListener("change",ev=>{
   if(ev.target?.id==="formatFilter"){state.format=ev.target.value;route("catalog",false)}
+  if(ev.target?.id==="sortFilter"){state.sort=ev.target.value;route("catalog",false)}
  });
  window.addEventListener("hashchange",()=>{
   const hash=location.hash.slice(1);
