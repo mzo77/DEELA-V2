@@ -4,6 +4,8 @@ const SUPABASE_URL=Deno.env.get("SUPABASE_URL")||"";
 const SERVICE_ROLE=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";
 const db=createClient(SUPABASE_URL,SERVICE_ROLE,{auth:{persistSession:false,autoRefreshToken:false}});
 const fn="/deela-books";
+const FEATURE_FLAGS=["enable_seller_registration","enable_book_submissions","enable_reader_likes","enable_favorites","enable_author_follows","enable_reviews","enable_messages","enable_orders","enable_discounts","enable_featured_section","show_book_prices"] as const;
+
 const trusted=new Set(["https://mzo77.github.io","https://appassets.androidplatform.net"]);
 const allowedOrigins=(req:Request)=>trusted.has(req.headers.get("origin")||"")?req.headers.get("origin")!:"https://mzo77.github.io";
 const respond=(req:Request,data:unknown,status=200)=>new Response(JSON.stringify(data),{
@@ -104,10 +106,11 @@ async function enrichBooks(books:any[]){
    reviews:r?.items||[]};
  });
 }
-async function currentListings(isOwner:boolean,search:URLSearchParams){
+async function currentListings(isOwner:boolean,search:URLSearchParams,featureEnabled=true){
  let q=db.from("deela_books_listings")
-  .select("*,deela_books_sellers!inner(id,shop_name,slug,status,city)")
-  .order("featured",{ascending:false}).order("created_at",{ascending:false}).limit(80);
+  .select("*,deela_books_sellers!inner(id,shop_name,slug,status,city)");
+ if(featureEnabled)q=q.order("featured",{ascending:false});
+ q=q.order("created_at",{ascending:false}).limit(80);
  if(!isOwner)q=q.eq("status","published").eq("deela_books_sellers.status","approved");
  else if(search.get("only_public")==="1")q=q.eq("status","published");
  if(search.get("format")&&["physical","ebook","audiobook"].includes(search.get("format")!))
@@ -120,15 +123,29 @@ async function currentListings(isOwner:boolean,search:URLSearchParams){
  return await enrichBooks(selected);
 }
 async function ownerOverview(req:Request){
- const [s,l,o,r,m]=await Promise.all([
-  db.from("deela_books_sellers").select("id",{count:"exact",head:true}),
-  db.from("deela_books_listings").select("id",{count:"exact",head:true}),
-  db.from("deela_books_orders").select("id",{count:"exact",head:true}),
-  db.from("deela_books_reports").select("id",{count:"exact",head:true}).eq("status","open"),
-  db.from("deela_books_messages").select("id",{count:"exact",head:true})
- ]);
- if([s,l,o,r,m].some(x=>x.error))throw Error("owner overview unavailable");
- return respond(req,{shops:s.count||0,books:l.count||0,orders:o.count||0,open_reports:r.count||0,messages:m.count||0});
+ const checks=[
+  ["shops",db.from("deela_books_sellers").select("id",{count:"exact",head:true})],
+  ["pending_shops",db.from("deela_books_sellers").select("id",{count:"exact",head:true}).eq("status","pending")],
+  ["books",db.from("deela_books_listings").select("id",{count:"exact",head:true})],
+  ["pending_books",db.from("deela_books_listings").select("id",{count:"exact",head:true}).eq("status","pending")],
+  ["published_books",db.from("deela_books_listings").select("id",{count:"exact",head:true}).eq("status","published")],
+  ["orders",db.from("deela_books_orders").select("id",{count:"exact",head:true})],
+  ["pending_orders",db.from("deela_books_orders").select("id",{count:"exact",head:true}).in("status",["pending_review","awaiting_payment"])],
+  ["open_reports",db.from("deela_books_reports").select("id",{count:"exact",head:true}).eq("status","open")],
+  ["messages",db.from("deela_books_messages").select("id",{count:"exact",head:true})],
+  ["likes",db.from("deela_books_likes").select("listing_id",{count:"exact",head:true})],
+  ["reviews",db.from("deela_books_reviews").select("id",{count:"exact",head:true})],
+  ["followers",db.from("deela_books_follows").select("seller_id",{count:"exact",head:true})]
+ ] as const;
+ const all=await Promise.all(checks.map(async ([name,query])=>({name,res:await query})));
+ if(all.some(x=>x.res.error))throw Error("Owner dashboard counters unavailable");
+ const totals=Object.fromEntries(all.map(x=>[x.name,x.res.count||0]));
+ const paid=await db.from("deela_books_orders")
+  .select("total_sar").not("payment_confirmed_at","is",null).limit(1000);
+ if(paid.error)throw paid.error;
+ const confirmed_amount_sar=(paid.data||[]).reduce((sum,x)=>sum+Number(x.total_sar||0),0);
+ return respond(req,{...totals,confirmed_amount_sar,confirmed_amount_note:"مبالغ أكّد المالك استلامها يدويًا، وليست تحصيلًا إلكترونيًا",
+   confirmed_amount_limited:(paid.data||[]).length===1000});
 }
 Deno.serve(async req=>{
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers:{
@@ -142,9 +159,12 @@ Deno.serve(async req=>{
   // Launch gate is always enforced: no public marketplace until the owner explicitly authorizes launch.
   if(!isOwner&&!conf.site_public)return fail(req,"موقع DEELA Books خاص بالمالك ولم يُفتح للجمهور بعد",403);
   if(req.method==="GET"&&path==="/catalog")return respond(req,{
-    listings:await currentListings(isOwner,parsed.searchParams),
+    listings:(await currentListings(isOwner,parsed.searchParams,conf.enable_featured_section)).map((x:any)=>!isOwner&&!conf.show_book_prices?
+      {...x,price_sar:null,compare_at_sar:null}:x),
     settings:{name:conf.name,hero_title:conf.hero_title,hero_subtitle:conf.hero_subtitle,
-      announcement:conf.announcement,support_url:conf.support_url,site_public:conf.site_public},
+      announcement:conf.announcement,support_url:conf.support_url,site_public:conf.site_public,
+      home_promo_title:conf.home_promo_title,home_promo_description:conf.home_promo_description,
+      ...Object.fromEntries(FEATURE_FLAGS.map(k=>[k,conf[k]]))},
     payments_live:false,shipping_live:false,currency:"SAR"
   });
   if(req.method==="GET"&&path==="/shops"){
@@ -180,6 +200,7 @@ Deno.serve(async req=>{
       orders:myOrders.data||[],is_owner:isOwner});
   }
   if(req.method==="POST"&&path==="/seller/apply"){
+    if(!conf.enable_seller_registration)return fail(req,"فتح المتاجر مقفل مؤقتًا من لوحة المالك",403);
     const b=await req.json(),shop_name=str(b.shop_name,100),slug=str(b.slug,60).toLowerCase();
     if(shop_name.length<3||!slugRE.test(slug))return fail(req,"أدخل اسم متجر ورابطًا صحيحًا بالإنجليزية");
     if(await sellerFor(user.id))return fail(req,"يوجد طلب متجر مرتبط بهذا الحساب بالفعل",409);
@@ -195,12 +216,19 @@ Deno.serve(async req=>{
     if(!seller)return respond(req,{listings:[]});
     const r=await db.from("deela_books_listings").select("*").eq("seller_id",seller.id).order("created_at",{ascending:false}).limit(120);
     if(r.error)throw r.error;
-    return respond(req,{listings:await Promise.all((r.data||[]).map(async p=>({...(await signedCovers([p]))[0],file_path:p.file_path,rights_confirmed:p.rights_confirmed})))});
+    const enriched=await enrichBooks(r.data||[]);
+    const original=new Map((r.data||[]).map(p=>[p.id,p]));
+    return respond(req,{listings:enriched.map(p=>({...p,
+      file_path:original.get(p.id)?.file_path,
+      rights_confirmed:original.get(p.id)?.rights_confirmed}))});
   }
   if(req.method==="POST"&&path==="/listing"){
+    if(!conf.enable_book_submissions)return fail(req,"استقبال الكتب متوقف مؤقتًا",403);
     const b=await req.json(),seller=await sellerFor(user.id);
     if(!seller||(!isOwner&&seller.status!=="approved"))return fail(req,"يجب أن يكون متجرك معتمدًا لإضافة الكتب",403);
     const values=itemInput(b),id=str(b.id,60);
+    if(!conf.enable_discounts&&values.compare_at_sar!==null)
+      return fail(req,"خصومات الأسعار معطلة من مركز المالك",403);
     // File ownership is always tied to the authenticated upload identity.
     if(values.cover_path&&!values.cover_path.startsWith(user.id+"/covers/"))return fail(req,"ملف الغلاف ليس ملك حسابك",403);
     if(values.file_path&&!values.file_path.startsWith(user.id+"/books/"))return fail(req,"ملف الكتاب ليس ملك حسابك",403);
@@ -217,6 +245,7 @@ Deno.serve(async req=>{
     return respond(req,{ok:true,listing:r.data,requires_approval:true},id?200:201);
   }
   if(req.method==="POST"&&path==="/upload/sign"){
+    if(!conf.enable_book_submissions)return fail(req,"رفع الكتب متوقف مؤقتًا",403);
     const b=await req.json(),type=str(b.type,16),extension=str(b.extension,12).toLowerCase();
     const seller=await sellerFor(user.id);
     if(!seller||(!isOwner&&seller.status!=="approved"))return fail(req,"حساب متجر معتمد مطلوب",403);
@@ -245,6 +274,7 @@ Deno.serve(async req=>{
     return respond(req,{url:signed.data.signedUrl,expires_in:90});
   }
   if(req.method==="POST"&&path==="/like"){
+    if(!conf.enable_reader_likes)return fail(req,"الإعجابات معطلة حاليًا",403);
     const b=await req.json(),id=str(b.listing_id,60);
     if(!uuid.test(id)||typeof b.liked!=="boolean")return fail(req,"إعجاب غير صالح",400);
     const check=await db.from("deela_books_listings")
@@ -265,6 +295,7 @@ Deno.serve(async req=>{
     return respond(req,{ok:true,liked:b.liked,like_count:count.count||0});
   }
   if(req.method==="POST"&&path==="/follow"){
+    if(!conf.enable_author_follows)return fail(req,"متابعة المؤلفين معطلة حاليًا",403);
     const b=await req.json(),id=str(b.seller_id,60);
     if(!uuid.test(id)||typeof b.following!=="boolean")return fail(req,"معرف متجر غير صالح");
     const seller=await db.from("deela_books_sellers").select("id,status,user_id").eq("id",id).maybeSingle();
@@ -283,6 +314,7 @@ Deno.serve(async req=>{
     return respond(req,{ok:true,following:b.following,follower_count:count.count||0});
   }
   if(req.method==="POST"&&path==="/favorite"){
+    if(!conf.enable_favorites)return fail(req,"المفضلة معطلة حاليًا",403);
     const b=await req.json(),id=str(b.listing_id,60);
     if(!uuid.test(id))return fail(req,"الكتاب غير صحيح");
     if(b.liked===true){
@@ -295,6 +327,8 @@ Deno.serve(async req=>{
     return respond(req,{ok:true,liked:b.liked===true});
   }
   if(req.method==="POST"&&path==="/order"){
+    if(!conf.show_book_prices)return fail(req,"الشراء غير متاح أثناء إخفاء الأسعار",403);
+    if(!conf.enable_orders)return fail(req,"استقبال الطلبات معطل حاليًا",403);
     const b=await req.json(),items=Array.isArray(b.items)?b.items:[];
     if(items.length<1||items.length>10)return fail(req,"السلة يجب أن تحتوي من 1 إلى 10 كتب");
     const ids=new Set<string>(),basket:{id:string;qty:number}[]=[];
@@ -348,12 +382,14 @@ Deno.serve(async req=>{
     if(r.error)throw r.error;return respond(req,{orders:r.data||[]});
   }
   if(req.method==="GET"&&path==="/messages"){
+    if(!conf.enable_messages)return fail(req,"الرسائل متوقفة حاليًا",403);
     const r=await db.from("deela_books_messages").select("id,listing_id,sender_id,recipient_id,body,created_at")
       .or("sender_id.eq."+user.id+",recipient_id.eq."+user.id)
       .order("created_at",{ascending:false}).limit(100);
     if(r.error)throw r.error;return respond(req,{messages:r.data||[]});
   }
   if(req.method==="POST"&&path==="/messages"){
+    if(!conf.enable_messages)return fail(req,"الرسائل متوقفة حاليًا",403);
     const b=await req.json(),id=str(b.listing_id,60),body=str(b.body,1000);
     if(!uuid.test(id)||body.length<2)return fail(req,"اكتب رسالة صحيحة");
     const listing=await db.from("deela_books_listings").select("seller_id,deela_books_sellers(user_id)").eq("id",id).maybeSingle();
@@ -364,6 +400,7 @@ Deno.serve(async req=>{
     if(r.error)throw r.error;return respond(req,{ok:true});
   }
   if(req.method==="POST"&&path==="/messages/reply"){
+    if(!conf.enable_messages)return fail(req,"الردود متوقفة حاليًا",403);
     const b=await req.json(),id=str(b.id,60),body=str(b.body,1000);
     if(!uuid.test(id)||body.length<2)return fail(req,"رسالة غير صحيحة");
     const orig=await db.from("deela_books_messages").select("id,listing_id,sender_id,recipient_id").eq("id",id).maybeSingle();
@@ -384,6 +421,7 @@ Deno.serve(async req=>{
     if(r.error)throw r.error;return respond(req,{ok:true,status:"open"});
   }
   if(req.method==="POST"&&path==="/reviews"){
+    if(!conf.enable_reviews)return fail(req,"التقييمات معطلة حاليًا",403);
     const b=await req.json(),id=str(b.listing_id,60),rating=Number(b.rating),body=str(b.body,1000);
     if(!uuid.test(id)||!Number.isInteger(rating)||rating<1||rating>5||body.length<8)return fail(req,"اكتب تقييمًا صحيحًا");
     const items=await db.from("deela_books_order_items").select("order_id,deela_books_orders!inner(buyer_id,status)")
@@ -401,7 +439,7 @@ Deno.serve(async req=>{
     }
     if(req.method==="GET"&&path==="/owner/listings"){
       const r=await db.from("deela_books_listings").select("*,deela_books_sellers(shop_name,slug)").order("created_at",{ascending:false}).limit(200);
-      if(r.error)throw r.error;return respond(req,{listings:await signedCovers(r.data||[])});
+      if(r.error)throw r.error;return respond(req,{listings:await enrichBooks(r.data||[])});
     }
     if(req.method==="GET"&&path==="/owner/orders"){
       const r=await db.from("deela_books_orders").select("*,deela_books_order_items(*)").order("created_at",{ascending:false}).limit(150);
@@ -422,11 +460,14 @@ Deno.serve(async req=>{
       if(r.error)throw r.error;return r.data?respond(req,{ok:true,seller:r.data}):fail(req,"المتجر غير موجود",404);
     }
     if(req.method==="POST"&&path==="/owner/listing-status"){
+      if(!conf.enable_featured_section && (await req.clone().json()).featured===true)return fail(req,"ميزة الكتب المختارة معطلة من اللوحة",403);
       const b=await req.json(),id=str(b.id,60),status=str(b.status,20);
       if(!uuid.test(id)||!["draft","pending","published","rejected","archived"].includes(status))return fail(req,"حالة الكتاب غير صحيحة");
-      const r=await db.from("deela_books_listings").update({
-        status,moderation_note:str(b.note,350),featured:b.featured===true,updated_at:new Date().toISOString()
-      }).eq("id",id).select("id,title,status").maybeSingle();
+      const updates:Record<string,unknown>={status,updated_at:new Date().toISOString()};
+      if(typeof b.featured==="boolean")updates.featured=b.featured;
+      if(typeof b.note==="string")updates.moderation_note=str(b.note,350);
+      const r=await db.from("deela_books_listings").update(updates)
+        .eq("id",id).select("id,title,status,featured").maybeSingle();
       if(r.error)throw r.error;return r.data?respond(req,{ok:true,listing:r.data}):fail(req,"الكتاب غير موجود",404);
     }
     if(req.method==="POST"&&path==="/owner/order-status"){
@@ -462,17 +503,34 @@ Deno.serve(async req=>{
     }
     if(req.method==="POST"&&path==="/owner/settings"){
       const b=await req.json();
-      if(b.site_public===true)return fail(req,"النشر العام مقفل بأمر المالك الحالي. يلزم تصريح نشر مستقل.",403);
-      const {data,error:e}=await db.from("deela_books_settings").update({
+      if(b.site_public===true||b.payments_live===true)
+        return fail(req,"النشر للعامة وربط الدفع غير مسموحين من هذه اللوحة الخاصة",403);
+      const configured:Record<string,unknown>={
         name:str(b.name,100)||"DEELA Books",
         hero_title:str(b.hero_title,180)||"لكل كتاب حكاية، ولكل قارئ عالم",
         hero_subtitle:str(b.hero_subtitle,500),
         announcement:str(b.announcement,150),
         support_url:str(b.support_url,350),
+        contact_email:str(b.contact_email,254),
+        home_promo_title:str(b.home_promo_title,180),
+        home_promo_description:str(b.home_promo_description,450),
         site_public:false,payments_live:false,
-        commission_percent:Number.isFinite(Number(b.commission_percent))?Math.max(0,Math.min(50,Number(b.commission_percent))):10,
+        commission_percent:Number.isFinite(Number(b.commission_percent))
+          ?Math.max(0,Math.min(50,Number(b.commission_percent))):10,
         updated_at:new Date().toISOString()
-      }).eq("id",1).select("id,name,hero_title,hero_subtitle,announcement,support_url,commission_percent,site_public").single();
+      };
+      if(configured.support_url && !/^https:\/\//.test(String(configured.support_url)))
+        return fail(req,"رابط الدعم يجب أن يبدأ بـ https://",400);
+      if(configured.contact_email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(configured.contact_email)))
+        return fail(req,"بريد التواصل غير صحيح",400);
+      for(const key of FEATURE_FLAGS){
+        if(Object.prototype.hasOwnProperty.call(b,key)){
+          if(typeof b[key]!=="boolean")return fail(req,"قيمة مفتاح التحكم غير صحيحة: "+key,400);
+          configured[key]=b[key];
+        }
+      }
+      const {data,error:e}=await db.from("deela_books_settings").update(configured)
+        .eq("id",1).select("*").single();
       if(e)throw e;return respond(req,{ok:true,settings:data});
     }
     if(req.method==="GET"&&path==="/owner/settings")return respond(req,{settings:conf});
