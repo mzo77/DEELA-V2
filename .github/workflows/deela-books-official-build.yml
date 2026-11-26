@@ -2,20 +2,21 @@ name: DEELA v0.9.15 Official Identity Private Books Marketplace Build
 on:
   push:
     branches:
-      - release/deela-0915-private-commerce
+      - feature/deela-books-private-marketplace
     paths:
+      - "deela-books/**"
       - "app/**"
       - "gradle/**"
       - "gradlew"
       - "settings.gradle.kts"
-      - ".github/workflows/deela-0915-private-build.yml"
+      - ".github/workflows/deela-books-official-build.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: deela-0915-private-build
+  group: deela-books-0915-private
   cancel-in-progress: true
 
 jobs:
