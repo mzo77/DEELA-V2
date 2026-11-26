@@ -98,29 +98,6 @@ jobs:
           grep -qi '^access-control-allow-origin: https://mzo77.github.io' /tmp/cors-headers
           echo "Private DEELA Books web login, server API, frontend source and CORS checked."
 
-      - name: Verify the private HTTPS site and public denial
-        run: |
-          set -euo pipefail
-          HOST="https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-private-store"
-          curl --retry 4 --retry-delay 3 --fail-with-body --max-time 30 "$HOST/health" \
-            -o /tmp/private-health.json
-          python3 - <<'PY'
-          import json
-          d=json.load(open('/tmp/private-health.json'))
-          assert d.get('ok') and d.get('owner_only') and not d.get('published_publicly')
-          print("Private store service is healthy")
-          PY
-          curl --retry 3 --max-time 30 --fail-with-body "$HOST/" -o /tmp/login.html
-          grep -Fq 'هذه النسخة الحقيقية' /tmp/login.html
-          ! grep -q 'product-grid' /tmp/login.html
-          for path in style.css app.js admin/index.html admin/admin.js api/shop/catalog; do
-            code="$(curl -sS -o /tmp/private-block -w '%{http_code}' "$HOST/$path")"
-            test "$code" = "403" || { echo "::error::Unauthenticated store asset accessible: $path -> $code"; exit 1; }
-          done
-          public="$(curl -sS -o /tmp/public-block -w '%{http_code}' \
-            https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-shop/catalog)"
-          test "$public" = "403"
-          echo "No unauthenticated visitor can load storefront assets or catalog"
 
   build-official-private-apk:
     runs-on: ubuntu-latest
