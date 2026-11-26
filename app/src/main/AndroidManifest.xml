@@ -72,6 +72,12 @@
             </intent-filter>
         </activity>
 
+        <!-- Official DEELA Books owner marketplace. Not exported to other apps. -->
+        <activity
+            android:name=".auth.DeelaBooksOwnerActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <!-- Official DEELA commerce owner center, never launched from another app. -->
         <activity
             android:name=".auth.DeelaShopOwnerActivity"
