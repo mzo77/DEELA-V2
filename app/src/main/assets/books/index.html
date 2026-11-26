@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101b2d"><meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="description" content="DEELA Books — سوق الكتب والروايات، حيث يلتقي القراء بالمؤلفين والمتاجر.">
+<title>DEELA Books | عالم الكتب</title>
+<link rel="stylesheet" href="./style.css">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<script defer src="./app.js"></script>
+</head>
+<body>
+<div class="topline"><span>✦ DEELA BOOKS</span><span id="announcement">عالم ديلا للكتب والروايات — نسخة المالك الخاصة</span><span>✦ لكل كتاب حكاية</span></div>
+<header class="header">
+ <div class="header-inner">
+  <a class="brand" href="#home" data-route="home"><span class="brand-symbol">D<span>✦</span></span><span class="brand-words"><strong>DEELA</strong><small>BOOKS & STORIES</small></span></a>
+  <div class="header-search"><span class="search-icon">⌕</span><input id="search" type="search" placeholder="ابحث عن كتاب، رواية، مؤلف أو متجر..." aria-label="البحث في الكتب" autocomplete="off"><span class="search-hint">⌘ K</span></div>
+  <div class="header-actions">
+   <button type="button" class="icon-button" data-route="favorites" aria-label="المفضلة"><span>♡</span><small>المفضلة</small></button>
+   <button type="button" class="icon-button" data-route="orders" aria-label="طلباتي"><span>▤</span><small>طلباتي</small></button>
+   <button type="button" class="icon-button cart-button" data-route="cart" aria-label="السلة"><span>♧</span><b id="cartCount">0</b><small>السلة</small></button>
+   <button type="button" class="account-pill" id="accountButton">حسابي <span>◌</span></button>
+  </div>
+ </div>
+ <nav class="main-nav" aria-label="القائمة الرئيسية">
+  <div class="nav-inner">
+   <button type="button" data-route="home" class="nav-item active">الرئيسية</button>
+   <button type="button" data-route="catalog" class="nav-item">جميع الكتب</button>
+   <button type="button" data-route="shops" class="nav-item">المتاجر</button>
+   <button type="button" data-route="seller" class="nav-item">انشر كتابك</button>
+   <button type="button" data-route="messages" class="nav-item">الرسائل</button>
+   <button type="button" data-route="owner" class="nav-item owner-only">مركز المالك</button>
+   <span class="private-pill">🔒 معاينة خاصة بالمالك</span>
+  </div>
+ </nav>
+</header>
+<main id="main">
+ <section id="home" class="page active">
+  <div class="container">
+   <div class="hero">
+    <div class="hero-text">
+     <span class="eyebrow"><i class="eyebrow-dot"></i> A NEW CHAPTER BEGINS</span>
+     <h1 id="heroTitle">لكل كتاب حكاية، <em>ولكل قارئ عالم</em></h1>
+     <p id="heroSubtitle">سوق ديلا للكتب والروايات؛ اكتشف، اقرأ، وبع كتبك في مكان واحد.</p>
+     <div class="hero-buttons"><button class="btn btn-primary" data-route="catalog">استكشف الكتب <span>↖</span></button><button class="btn btn-outline" data-route="seller">افتح متجرك مجانًا</button></div>
+     <div class="hero-footer"><span>◈ كتب ورقية ورقمية</span><span>✦ متاجر ومؤلفون</span><span>♡ مفضلة وقوائم</span></div>
+    </div>
+    <div class="hero-composition" aria-hidden="true"><div class="book-halo"></div>
+     <div class="hero-book book-back"><span class="hero-cover-top">DEELA ORIGINALS</span><b>حكايات<br>لم تُروَ</b><span>✦</span></div>
+     <div class="hero-book book-middle"><span class="hero-cover-top">DIGITAL LIBRARY</span><b>على حافة<br>الخيال</b><span>◇</span></div>
+     <div class="hero-book book-front"><span class="hero-cover-top">DEELA BOOKS</span><b>بين السطور</b><span>✧</span><small>كل قصة تبدأ هنا</small></div>
+     <div class="floating-label label-one">✦ <span>عالم القصص</span></div><div class="floating-label label-two">▣ <span>مكتبتك الخاصة</span></div>
+    </div>
+   </div>
+   <div class="trust-bar"><div><span>✧</span><div><b>تجربة عربية</b><small>واجهات ومحتوى بالعربية</small></div></div><div><span>◉</span><div><b>متاجر مستقلة</b><small>لكل بائع صفحة خاصة</small></div></div><div><span>♧</span><div><b>كتب متنوعة</b><small>ورقية ورقمية وصوتية</small></div></div><div><span>▤</span><div><b>متابعة الطلب</b><small>من حسابك مباشرة</small></div></div></div>
+  </div>
+  <section class="container section">
+   <div class="section-title"><div><span class="eyebrow">FIND YOUR NEXT READ</span><h2>اكتشف عالمك المفضل</h2><p>تصفح الكتب حسب شغفك، من الروايات إلى المعرفة.</p></div><button class="text-button" data-route="catalog">عرض جميع التصنيفات ←</button></div>
+   <div class="category-grid" id="homeCategories">
+    <button data-category="روايات"><span class="cat-emoji">✦</span><strong>روايات</strong><small>قصص وعوالم</small></button>
+    <button data-category="أدب وشعر"><span class="cat-emoji">❞</span><strong>أدب وشعر</strong><small>كلمات ملهمة</small></button>
+    <button data-category="خيال ورعب"><span class="cat-emoji">◈</span><strong>خيال ورعب</strong><small>عبر المجهول</small></button>
+    <button data-category="تطوير الذات"><span class="cat-emoji">◉</span><strong>تطوير الذات</strong><small>أفكار تبنيك</small></button>
+    <button data-category="تاريخ"><span class="cat-emoji">⌛</span><strong>تاريخ</strong><small>حكايات الزمن</small></button>
+    <button data-category="كتب الأطفال"><span class="cat-emoji">★</span><strong>كتب الأطفال</strong><small>خيال الصغار</small></button>
+   </div>
+  </section>
+  <section class="container section book-section" id="bookSection">
+   <div class="section-title"><div><span class="eyebrow">CURATED FOR YOU</span><h2>كتب تستحق القراءة</h2><p>تظهر الكتب الحقيقية هنا بعد اعتمادها من المالك.</p></div><button class="text-button" data-route="catalog">تصفح المكتبة ←</button></div>
+   <div class="books-grid" id="homeListings"></div>
+  </section>
+  <section class="container feature-banner"><div class="feature-art"><span class="orbit one"></span><span class="orbit two"></span><span class="feature-letter">D</span></div><div><span class="eyebrow">WRITE YOUR STORY</span><h2>قصتك القادمة قد تغيّر عالم أحدهم.</h2><p>سواء كنت مؤلفًا أو صاحب مكتبة، افتح متجرك وشارك كتبك مع القراء، مع مراجعة المالك قبل النشر.</p><button class="btn btn-primary" data-route="seller">ابدأ رحلتك كبائع ←</button></div></section>
+  <section class="container section"><div class="section-title"><div><span class="eyebrow">COMMUNITY STORES</span><h2>متاجر من مجتمع ديلا</h2><p>تعرف على أصحاب الكتب والمكتبات والمؤلفين.</p></div><button class="text-button" data-route="shops">كل المتاجر ←</button></div><div class="shops-grid" id="featuredShops"></div></section>
+  <section class="container section faq-section"><div class="section-title"><div><span class="eyebrow">EVERYTHING YOU NEED</span><h2>أسئلة القراء والمؤلفين</h2></div></div>
+   <div class="faqs"><details><summary>كيف أبيع أو أنشر كتابي؟</summary><p>أنشئ حسابًا، افتح صفحة متجر، ثم ارفع بيانات الكتاب وغلافه. بعد تأكيد حقوق النشر وموافقة المالك يظهر للقراء.</p></details><details><summary>هل أقدر أبيع كتابًا مستعملًا؟</summary><p>نعم، حدد حالة الكتاب وعدد النسخ والمدينة ورسوم التوصيل اليدوية إن وجدت.</p></details><details><summary>متى يصلني الكتاب الرقمي؟</summary><p>بعد استلام الدفع وتأكيد حالة الطلب، يظهر رابط تحميل مؤقت في حسابك. لا تُفتح الملفات مباشرة للعامة.</p></details><details><summary>هل الدفع والشحن الإلكتروني متاحان الآن؟</summary><p>التسجيل وإدارة الطلبات جاهزان، لكن بوابة الدفع والشحن الآلي لم يتم ربطهما بعد. الطلب حاليًا للمراجعة.</p></details></div>
+  </section>
+ </section>
+ <section id="dynamicPage" class="page container page-content" hidden><div id="pageContent"></div></section>
+</main>
+<footer class="footer"><div class="container footer-grid"><div><div class="brand foot-brand"><span class="brand-symbol">D<span>✦</span></span><span class="brand-words"><strong>DEELA</strong><small>BOOKS & STORIES</small></span></div><p>سوق الكتب والروايات بهوية ديلا. مكان يلتقي فيه الكتاب بالقراء.</p></div><div><h3>تصفح</h3><button data-route="catalog">جميع الكتب</button><button data-route="shops">المتاجر</button><button data-route="seller">ابدأ البيع</button></div><div><h3>حسابي</h3><button data-route="orders">طلباتي</button><button data-route="favorites">المفضلة</button><button data-route="messages">الرسائل</button></div><div><h3>المساعدة</h3><p>المنصة في مرحلة خاصة. البيع الإلكتروني والتوصيل الآلي غير مفعلين.</p><span class="privacy-tag">🔒 سوق خاص قبل الإطلاق</span></div></div><div class="container footer-bottom"><span>© <span id="year">2026</span> DEELA Books — جميع الحقوق محفوظة.</span><span>تصميم أصلي لمنصة ديلا</span></div></footer>
+<nav class="mobile-nav" aria-label="شريط الجوال"><button data-route="home"><span>⌂</span>الرئيسية</button><button data-route="catalog"><span>▦</span>الكتب</button><button data-route="seller"><span>✎</span>بع كتابك</button><button data-route="cart"><span>♧</span>السلة</button><button data-route="owner" class="owner-only"><span>⚙</span>المالك</button></nav>
+<div id="shade" class="shade" hidden></div>
+<section class="modal" id="loginModal" hidden role="dialog" aria-modal="true" aria-labelledby="loginHeading"><button class="close" id="closeModal" aria-label="إغلاق">✕</button><div class="logo-big">D</div><span class="eyebrow">WELCOME TO DEELA</span><h2 id="loginHeading">دخول حساب ديلا</h2><p>استخدم حساب DEELA الموجود عندك للمتجر والمنصة.</p><form id="loginForm"><label>البريد الإلكتروني<input id="loginEmail" type="email" autocomplete="username" required></label><label>كلمة المرور<input id="loginPassword" type="password" autocomplete="current-password" required></label><button class="btn btn-primary wide" type="submit">تسجيل الدخول</button><p class="form-msg" id="loginMessage"></p></form><small>الموقع حاليًا خاص بحساب المالك، وفتح التسجيل للجمهور يكون عند الإطلاق.</small></section>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+</body></html>
