@@ -418,6 +418,7 @@ async function handleForm(ev){
  const button=form.querySelector('button[type="submit"]');if(button)button.disabled=true;
  const raw=formData(form);
  try{
+  if(id==="loginForm")return;
   if(id==="sellerApplyForm"){
     const d=await api("/seller/apply",{method:"POST",data:raw});
     toast("تم إنشاء صفحة متجرك: "+d.shop.shop_name);
@@ -504,11 +505,11 @@ function quickModal(title,formId,fields){
  document.body.append(shade,modal);
  const close=()=>{shade.remove();modal.remove()};
  shade.onclick=close;modal.querySelector("#quickClose").onclick=close;
- modal.querySelector("form").onsubmit=async e=>{await handleForm(e);close()};
+ modal.querySelector("form").onsubmit=async e=>{e.stopPropagation();await handleForm(e);close()};
 }
 function bind(){
  document.addEventListener("click",async ev=>{
-  const t=ev.target.closest("button,a");
+  const t=ev.target.closest("button,a,[data-book]");
   if(!t)return;
   if(t.dataset.book){ev.preventDefault();return book(t.dataset.book)}
   if(t.dataset.shop){ev.preventDefault();return openShop(t.dataset.shop)}
