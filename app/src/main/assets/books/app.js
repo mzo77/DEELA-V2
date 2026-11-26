@@ -59,6 +59,7 @@ async function reload(){
   }
   document.querySelectorAll('[data-route="messages"]').forEach(el=>el.hidden=!enabled("enable_messages"));
   document.querySelectorAll('[data-route="favorites"]').forEach(el=>el.hidden=!enabled("enable_favorites"));
+  document.querySelectorAll('[data-route="cart"]').forEach(el=>el.hidden=!enabled("enable_orders")||!enabled("show_book_prices"));
   $("accountButton").innerHTML=state.me?.is_owner?"حساب المالك ◌":"حسابي ◌";
   document.querySelectorAll(".owner-only").forEach(x=>x.hidden=!state.me?.is_owner);
   renderHome();route(state.view,false);
@@ -233,7 +234,7 @@ function ordersPage(){
  '<p>الكمية: '+x.quantity+'</p></div><div>'+
  (["paid","preparing","shipped","delivered"].includes(o.status)&&x.format_snapshot!=="physical"?
  '<button data-download="'+esc(x.listing_id)+'">تحميل الكتاب</button>':"")+
- (o.status==="delivered"?'<button data-review="'+esc(x.listing_id)+'">قيّم كتابك</button>':"")+
+ (enabled("enable_reviews")&&o.status==="delivered"?'<button data-review="'+esc(x.listing_id)+'">قيّم كتابك</button>':"")+
  '</div></div>').join("")+
  (o.tracking_number?'<p>رقم التتبع: '+esc(o.tracking_number)+'</p>':"")+
  (o.owner_note?'<p>ملاحظة الإدارة: '+esc(o.owner_note)+'</p>':"")+'</article>').join(""):
@@ -276,7 +277,7 @@ function sellerPage(){
  '<div class="community-strip"><span class="like-chip">♥ '+Number(l.like_count||0)+' إعجاب</span>'+
  '<span class="rating-chip">★ '+(l.review_count?Number(l.average_rating||0).toFixed(1):"جديد")+' · '+Number(l.review_count||0)+' تقييم</span></div></div>'+
  '<span class="status '+(l.status==="published"?"":"muted")+'">'+esc(statusNames[l.status])+'</span></div>'+
- '<div class="form-actions"><button class="btn btn-outline" data-editor="'+esc(l.id)+'">تعديل الكتاب</button>'+
+ '<div class="form-actions">'+(enabled("enable_book_submissions")?'<button class="btn btn-outline" data-editor="'+esc(l.id)+'">تعديل الكتاب</button>':"")+
  (state.me?.is_owner?'<button class="btn btn-soft" data-owner-status="'+esc(l.id)+'" data-status="published">اعتماد الكتاب</button>':"")+
  '</div></div>').join(""):
  '<p>لم ترفع كتبًا بعد. اضغط «أضف كتابًا» لبدء النشر.</p>')+'</div></div>':"");
@@ -295,7 +296,7 @@ function editorPage(b=null){
  '<option value="'+key+'" '+(b?.book_condition===key?"selected":"")+'>'+label+'</option>').join("")+'</select></label>'+
  '<div class="field full"><div class="seller-price-tip">💰 <strong>السعر يحدده صاحب الكتاب</strong>، وتظهر القيمة للقراء بالريال. يمكنك تعديل السعر، لكن أي تعديل يحتاج مراجعة جديدة.</div></div>'+
  field("سعر الكتاب الذي تختاره (ر.س)","price_sar","number",true,"35",b?.price_sar??"")+
- field("السعر قبل الخصم (اختياري)","compare_at_sar","number",false,"49",b?.compare_at_sar??"")+
+ (enabled("enable_discounts")?field("السعر قبل الخصم (اختياري)","compare_at_sar","number",false,"49",b?.compare_at_sar??""):"")+
  field("الكمية المتاحة","stock","number",true,"1",b?.stock??1)+
  field("تكلفة التوصيل (للكتاب الورقي)","shipping_fee_sar","number",false,"0",b?.shipping_fee_sar??0)+
  field("عدد الصفحات (اختياري)","page_count","number",false,"240",b?.page_count??"")+
@@ -412,7 +413,7 @@ function ownerPage(){
   '<button class="btn btn-primary" data-owner-status="'+esc(b.id)+'" data-status="published">اعتماد ونشر</button>'+
   '<button class="btn btn-outline" data-owner-status="'+esc(b.id)+'" data-status="rejected">رفض</button>'+
   '<button class="btn btn-outline" data-owner-status="'+esc(b.id)+'" data-status="archived">إخفاء</button>'+
-  (b.status==="published"?'<button class="btn btn-soft" data-feature-book="'+esc(b.id)+'" data-feature-status="'+esc(b.status)+'" data-featured="'+(b.featured===true?"false":"true")+'">'+
+  (enabled("enable_featured_section")&&b.status==="published"?'<button class="btn btn-soft" data-feature-book="'+esc(b.id)+'" data-feature-status="'+esc(b.status)+'" data-featured="'+(b.featured===true?"false":"true")+'">'+
   (b.featured?"★ إزالة من المميزة":"☆ تمييز الرواية")+'</button>':"")+
   '</div></div>').join(""):'<p class="empty-state">لا توجد كتب في لوحة المراجعة حاليًا.</p>')+'</div></div>';
  }
