@@ -176,10 +176,18 @@ function cartPage(){
  '<div class="empty-state"><h3>سلة الكتب فارغة</h3><p>ابحث عن الكتاب الذي يعجبك ثم أضفه إلى السلة.</p><button class="btn btn-primary" data-route="catalog">تصفح الكتب</button></div>');
 }
 function ordersPage(){
- return heading("طلباتي","راجع حالة طلبك والملاحظات وأرقام التتبع حين تتوفر.","MY PURCHASES")+
- '<div class="list-rows">'+(state.me?.orders?.length?state.me.orders.map(o=>
+ const orders=state.orders||[];
+ return heading("طلباتي","راجع حالة طلبك ومشتريات الكتب الرقمية والورقية.","MY PURCHASES")+
+ '<div class="list-rows">'+(orders.length?orders.map(o=>
  '<article class="row-card"><div class="row-top"><div><h3>'+esc(o.code)+'</h3><p>'+date(o.created_at)+'</p></div>'+
- '<span class="status">'+esc(statusNames[o.status]||o.status)+'</span></div><p>الإجمالي: '+sar(o.total_sar)+'</p>'+
+ '<span class="status">'+esc(statusNames[o.status]||o.status)+'</span></div>'+
+ '<p>الإجمالي: '+sar(o.total_sar)+'</p>'+
+ (o.deela_books_order_items||[]).map(x=>'<div class="cart-line"><div><strong>'+esc(x.title_snapshot)+'</strong>'+
+ '<p>الكمية: '+x.quantity+'</p></div><div>'+
+ (["paid","preparing","shipped","delivered"].includes(o.status)&&x.format_snapshot!=="physical"?
+ '<button data-download="'+esc(x.listing_id)+'">تحميل الكتاب</button>':"")+
+ (o.status==="delivered"?'<button data-review="'+esc(x.listing_id)+'">قيّم كتابك</button>':"")+
+ '</div></div>').join("")+
  (o.tracking_number?'<p>رقم التتبع: '+esc(o.tracking_number)+'</p>':"")+
  (o.owner_note?'<p>ملاحظة الإدارة: '+esc(o.owner_note)+'</p>':"")+'</article>').join(""):
  '<div class="empty-state"><h3>لا توجد طلبات</h3><p>بعد إرسال أول طلب ستتابعه هنا.</p><button class="btn btn-primary" data-route="catalog">تصفح المكتبة</button></div>')+'</div>';
@@ -187,7 +195,9 @@ function ordersPage(){
 function messagesPage(messages=[]){
  return heading("الرسائل","تواصل مع البائعين بشأن الكتب وتابع ردودهم هنا.","COMMUNITY MESSAGES")+
  '<div class="list-rows">'+(messages.length?messages.map(m=>'<article class="row-card"><p>'+esc(m.body)+'</p><small>'+
- date(m.created_at)+' · '+(m.sender_id===state.me?.id?"مرسلة":"واردة")+'</small></article>').join(""):
+ date(m.created_at)+' · '+(m.sender_id===state.me?.id?"مرسلة":"واردة")+'</small>'+
+ (m.recipient_id===state.me?.id?'<div class="toolbar"><button class="btn btn-outline" data-reply="'+esc(m.id)+'">رد على الرسالة</button></div>':"")+
+ '</article>').join(""):
  '<div class="empty-state"><h3>لا توجد محادثات</h3><p>ادخل صفحة أي كتاب واضغط «راسل البائع» لبدء التواصل.</p></div>')+'</div>';
 }
 function field(label,name,type="text",required=false,placeholder="",value=""){
@@ -335,6 +345,7 @@ async function route(view,push=true){
  if(view==="home")renderHome();
  else{
   if(view==="seller")await sellerData();
+  if(view==="orders"){const d=await api("/orders");state.orders=d.orders||[];}
   if(view==="owner")await ownerData();
   let markup=view==="catalog"?catalogPage():view==="detail"?detailPage():view==="shops"?shopsPage():
    view==="shop"?shopPage():view==="favorites"?favoritesPage():view==="cart"?cartPage():
@@ -450,6 +461,12 @@ async function handleForm(ev){
   }else if(id==="messageForm"){
     await api("/messages",{method:"POST",data:{listing_id:raw.listing_id,body:raw.body}});
     toast("تم إرسال رسالتك للبائع");await route("messages",false);
+  }else if(id==="replyForm"){
+    await api("/messages/reply",{method:"POST",data:{id:raw.id,body:raw.body}});
+    toast("تم إرسال الرد");await route("messages",false);
+  }else if(id==="reviewForm"){
+    await api("/reviews",{method:"POST",data:{listing_id:raw.listing_id,rating:Number(raw.rating),body:raw.body}});
+    toast("تم إرسال التقييم لمراجعة المالك");await route("orders",false);
   }else if(id==="reportForm"){
     await api("/reports",{method:"POST",data:{listing_id:raw.listing_id,reason:raw.reason}});
     toast("تم تسجيل البلاغ للمراجعة");await route("catalog",false);
@@ -529,6 +546,10 @@ function bind(){
   if(t.dataset.download){ev.preventDefault();return download(t.dataset.download)}
   if(t.dataset.ask){ev.preventDefault();return quickModal("راسل بائع الكتاب","messageForm",
    '<input type="hidden" name="listing_id" value="'+esc(t.dataset.ask)+'"><label class="field">رسالتك<textarea name="body" required minlength="2" maxlength="1000"></textarea></label>')}
+  if(t.dataset.reply){ev.preventDefault();return quickModal("الرد على رسالة","replyForm",
+   '<input type="hidden" name="id" value="'+esc(t.dataset.reply)+'"><label class="field">ردك<textarea name="body" required minlength="2" maxlength="1000"></textarea></label>')}
+  if(t.dataset.review){ev.preventDefault();return quickModal("تقييم كتاب قرأته","reviewForm",
+   '<input type="hidden" name="listing_id" value="'+esc(t.dataset.review)+'"><label class="field">التقييم<select name="rating"><option value="5">★★★★★</option><option value="4">★★★★</option><option value="3">★★★</option><option value="2">★★</option><option value="1">★</option></select></label><label class="field">رأيك<textarea name="body" required minlength="8" maxlength="1000"></textarea></label>')}
   if(t.dataset.report){ev.preventDefault();return quickModal("الإبلاغ عن كتاب","reportForm",
    '<input type="hidden" name="listing_id" value="'+esc(t.dataset.report)+'"><label class="field">سبب البلاغ<textarea name="reason" required minlength="10" maxlength="1000"></textarea></label>')}
   if(t.dataset.route){ev.preventDefault();return route(t.dataset.route)}
