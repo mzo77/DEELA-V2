@@ -10,6 +10,7 @@ on:
       - 'docs/recover/**'
       - 'docs/recover.html'
       - 'docs/download/**'
+      - 'docs/books-private/**'
       - '.github/workflows/deela-control-pages.yml'
   workflow_dispatch:
 permissions:
@@ -32,6 +33,8 @@ jobs:
           set -euo pipefail
           test ! -d docs/store-preview || { echo "::error::Private commerce preview must not exist in public docs"; exit 1; }
           test ! -d docs/store || { echo "::error::Private commerce storefront must not exist in public docs"; exit 1; }
+          test ! -f docs/books-private/app.js || { echo "::error::Book storefront code must not be publicly hosted"; exit 1; }
+          test ! -f docs/books-private/style.css || { echo "::error::Book storefront CSS must not be publicly hosted"; exit 1; }
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
