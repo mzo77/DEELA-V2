@@ -98,6 +98,14 @@ function materialFields(conf){
  return '<label class="field full">خامة خلفية المتجر<select name="theme_material">'+Object.entries(materials).map(([k,v])=>'<option value="'+k+'" '+(conf.theme_material===k?'selected':'')+'>'+v+'</option>').join("")+'</select></label><div class="field full material-preview" id="materialPreview" data-material="'+(Object.hasOwn(materials,conf.theme_material)?conf.theme_material:"none")+'" style="min-height:110px;padding:24px;border:1px solid var(--line);border-radius:18px;background-color:var(--bg)">معاينة الخامة والزخرفة</div>';
 }
 document.addEventListener("input",ev=>{
+ const priceInput=ev.target;
+ if(priceInput?.name==="price_sar"&&priceInput.closest("#listingForm")){
+  const amount=Math.max(0,Number(priceInput.value)||0),platform=Math.round(amount*20)/100,writer=Math.round((amount-platform)*100)/100;
+  const out=document.getElementById("commissionPreviewValue");
+  if(out)out.textContent=amount?("من "+sar(amount)+": حصة المنصة "+sar(platform)+"، وصافي المؤلف "+sar(writer)+"."):"أدخل السعر لعرض الحسبة.";
+ }
+});
+document.addEventListener("input",ev=>{
  const el=ev.target;if(!el.closest("#settingsForm"))return;
  const preview=document.getElementById("materialPreview");if(!preview)return;
  if(el.name==="theme_material"&&Object.hasOwn(materials,el.value))preview.dataset.material=el.value;
@@ -484,7 +492,7 @@ function editorPage(b=null){
  '<div class="field full"><span>اختر قسم الرواية</span><div class="category-pills">'+categoryOptions().filter(x=>x!=="الكل").map(x=>'<button type="button" data-editor-category="'+esc(x)+'" class="category-pill '+(selectedCategory===x?"active":"")+'">'+esc(x)+'</button>').join("")+'</div><select name="category" required class="category-select-hidden">'+categoryOptions().filter(x=>x!=="الكل").map(x=>'<option '+(selectedCategory===x?"selected":"")+'>'+esc(x)+'</option>').join("")+'</select></div>'+
  '<label class="field physical-only">حالة الكتاب الورقي<select name="book_condition">'+Object.entries(conditions).map(([key,label])=>
  '<option value="'+key+'" '+(b?.book_condition===key?"selected":"")+'>'+label+'</option>').join("")+'</select></label>'+
- '<div class="field full"><div class="seller-price-tip">💰 <strong>أدخل سعر البيع بالريال.</strong> ستُعرض نسبة المنصة وصافي مستحق المؤلف قبل تفعيل البيع والتحصيل الإلكتروني؛ التحويل التلقائي غير مفعّل حاليًا.</div></div>'+
+ '<div class="field full"><div class="seller-price-tip">💰 <strong>حسبة الاختبار: 20% للمنصة و80% للمؤلف.</strong> حسب المثال: إذا كان السعر 10 ريالات، فالحصة 2 ريال للمنصة و8 للمؤلف. <span id="commissionPreviewValue">أدخل السعر لعرض الحسبة.</span><br><small>هذه معاينة فقط؛ لن يتم خصم أو تحويل أي مبلغ قبل تفعيل الدفع بموافقتك.</small></div></div>'+
  field("سعر الكتاب الذي تختاره (ر.س)","price_sar","number",true,"35",b?.price_sar??"")+
  (enabled("enable_discounts")?field("السعر قبل الخصم (اختياري)","compare_at_sar","number",false,"49",b?.compare_at_sar??""):"")+
  field("الكمية المتاحة","stock","number",true,"1",b?.stock??1)+
