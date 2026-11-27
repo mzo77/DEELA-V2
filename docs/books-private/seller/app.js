@@ -121,13 +121,13 @@ document.addEventListener("input",ev=>{
  if(el.name==="theme_bg"&&/^#[0-9a-f]{6}$/i.test(el.value))preview.style.backgroundColor=el.value;
  if(el.name==="theme_white"&&/^#[0-9a-f]{6}$/i.test(el.value))preview.style.color=el.value;
 });
-const designDefaults={radius:18,font_size:14,banner_motion:"none",category_icon_size:36,nav_icon_size:20,book_action_icon_size:42,category_icon_shape:"soft",book_cover_height:251,book_card_radius:18};
+const designDefaults={radius:18,font_size:14,banner_motion:"none",category_icon_size:36,nav_icon_size:20,book_action_icon_size:42,category_icon_shape:"soft",book_cover_height:251,book_card_width:220,book_card_radius:18};
 function applyDesign(d){
  const root=document.documentElement,shape={round:"50%",square:"5px",soft:"17px"};
  root.style.setProperty("--radius",Math.max(0,Math.min(40,Number(d?.radius??18)||0))+"px");
  document.body.style.fontSize=Math.max(12,Math.min(22,Number(d?.font_size??14)||14))+"px";
  document.body.dataset.bannerMotion=d?.banner_motion==="glow"?"glow":"none";
- root.style.setProperty("--category-icon-size",Math.max(22,Math.min(72,Number(d?.category_icon_size??36)||36))+"px");
+ const categoryIconSize=Number(d?.category_icon_size);root.style.setProperty("--category-icon-size",Math.max(0,Math.min(500,Number.isFinite(categoryIconSize)?categoryIconSize:36))+"px");
  root.style.setProperty("--category-icon-radius",shape[d?.category_icon_shape]||shape.soft);
  root.style.setProperty("--nav-icon-size",Math.max(14,Math.min(32,Number(d?.nav_icon_size??20)||20))+"px");
  root.style.setProperty("--book-action-icon-size",Math.max(28,Math.min(52,Number(d?.book_action_icon_size??42)||42))+"px");
@@ -228,20 +228,18 @@ function cover(b){
 }
 function card(b){
  const isPublished=b.status==="published",fav=state.me?.favorites?.includes(b.id),liked=state.me?.likes?.includes(b.id);
+ const kind=kinds[b.format]||"كتاب",kindLabel=b.format==="physical"?"ورقي":b.format==="audiobook"?"صوتي":"رقمي";
  return '<article class="book-card"><div class="cover-wrap '+(b.format==="ebook"?"purple":b.format==="audiobook"?"teal":"gold")+'" data-book="'+esc(b.id)+'">'+
  (b.cover_url?'<img src="'+esc(b.cover_url)+'" alt="غلاف '+esc(b.title)+'" loading="lazy">':
  '<div class="cover-pseudo"><small>DEELA BOOKS</small><strong>'+esc(b.title.slice(0,38))+'</strong><em>✧</em></div>')+
- '<span class="book-badge">'+esc(kinds[b.format])+(isPublished?"":" · غير منشور")+'</span>'+
+ '<span class="book-badge">'+esc(kind)+(isPublished?"":" · غير منشور")+'</span>'+
  (enabled("enable_favorites")?'<button type="button" data-favorite="'+esc(b.id)+'" class="card-save '+(fav?"liked":"")+'" aria-label="حفظ في المفضلة">'+(fav?"▣":"♧")+'</button>':"")+
  (enabled("enable_reader_likes")?'<button type="button" data-like="'+esc(b.id)+'" class="card-love '+(liked?"active":"")+'" aria-label="أعجبني">'+(liked?"♥":"♡")+' <small>'+Number(b.like_count||0)+'</small></button>':"")+'</div>'+
- '<div class="book-info"><span class="book-meta">'+esc(b.category||"كتب")+'</span><h3 data-book="'+esc(b.id)+'">'+esc(b.title)+'</h3>'+
- '<p>'+esc(b.subtitle||b.author||"مؤلف مستقل")+'</p>'+
- '<div class="community-strip">'+
- (enabled("enable_reviews")?'<span class="rating-chip">★ '+(Number(b.review_count)>0?Number(b.average_rating||0).toFixed(1):"جديد")+' · '+Number(b.review_count||0)+' تقييم</span>':"")+
- '</div><div class="book-tags"><span>'+esc(kinds[b.format]||"كتاب")+'</span>'+
- '<span>'+esc(b.format==="physical"?conditions[b.book_condition]:"ملف رقمي")+'</span></div>'+
- '<div class="book-bottom">'+(enabled("show_book_prices")?'<span class="book-price">'+sar(b.price_sar)+'</span>':'<span class="status muted">السعر مخفي</span>')+
- (enabled("enable_orders")&&enabled("show_book_prices")&&isPublished&&(b.format!=="physical"||Number(b.stock)>0)?'<button class="card-action" data-add="'+esc(b.id)+'">أضف للسلة</button>':
+ '<div class="book-info"><h3 data-book="'+esc(b.id)+'">'+esc(b.title)+'</h3>'+
+ '<div class="book-price-row">'+(enabled("show_book_prices")?'<span class="book-price">'+sar(b.price_sar)+'</span>':'<span class="status muted">السعر مخفي</span>')+'</div>'+
+ '<div class="product-kind"><i class="'+(b.format==="physical"?"physical":"digital")+'"></i><span>'+kindLabel+(b.format==="physical"&&b.book_condition?" · "+esc(conditions[b.book_condition]||""):"")+'</span></div>'+
+ (enabled("enable_reviews")&&Number(b.review_count)>0?'<div class="book-rating">★ '+Number(b.average_rating||0).toFixed(1)+' · '+Number(b.review_count||0)+' تقييم</div>':'')+
+ '<div class="book-bottom">'+(enabled("enable_orders")&&enabled("show_book_prices")&&isPublished&&(b.format!=="physical"||Number(b.stock)>0)?'<button class="card-action" data-add="'+esc(b.id)+'">أضف للسلة</button>':
  '<span class="status muted">'+(b.status!=="published"?"بانتظار النشر":b.format==="physical"&&Number(b.stock)===0?"نفدت النسخ":"غير متاح للشراء")+'</span>')+
  '</div></div></article>';
 }
@@ -1216,17 +1214,28 @@ function openVisualEditor(kind){
  if(!state.me?.is_owner)return;
  const d={...designDefaults,...state.settings.theme_design},category=kind==="category",shade=document.createElement("div"),modal=document.createElement("section");
  shade.className="shade";shade.style.zIndex="100";modal.className="modal visual-editor-modal";modal.style.zIndex="101";
- modal.innerHTML='<button class="close" type="button" aria-label="إغلاق">✕</button><span class="eyebrow">تعديل مباشر للمالك</span><h2>'+(category?"أيقونات اكتشف عالمك":"شكل بطاقات الكتب")+'</h2><p class="muted">'+(category?"الحجم والشكل يطبّقان على جميع أيقونات الأقسام.":"الحجم والاستدارة يطبّقان على جميع الكتب.")+'</p>'+
- (category?'<label class="field">حجم الأيقونة <output id="visualSizeOut">'+d.category_icon_size+'px</output><input id="visualSize" type="range" min="22" max="72" value="'+d.category_icon_size+'"></label><label class="field">شكل الأيقونة<select id="visualShape"><option value="soft" '+(d.category_icon_shape==="soft"?"selected":"")+'>ناعم</option><option value="round" '+(d.category_icon_shape==="round"?"selected":"")+'>دائري</option><option value="square" '+(d.category_icon_shape==="square"?"selected":"")+'>مربع</option></select></label>':
- '<label class="field">ارتفاع غلاف الكتاب <output id="visualSizeOut">'+d.book_cover_height+'px</output><input id="visualSize" type="range" min="160" max="420" value="'+d.book_cover_height+'"></label><label class="field">استدارة بطاقة الكتاب <output id="visualShapeOut">'+d.book_card_radius+'px</output><input id="visualShape" type="range" min="0" max="36" value="'+d.book_card_radius+'"></label>')+
+ modal.innerHTML='<button class="close" type="button" aria-label="إغلاق">✕</button><span class="eyebrow">تعديل مباشر للمالك</span><h2>'+(category?"أيقونات اكتشف عالمك":"شكل بطاقات الكتب")+'</h2><p class="muted">'+(category?"الحجم والشكل يطبّقان على جميع أيقونات الأقسام.":"اسحب شريطي العرض والارتفاع وشاهد شكل الكتاب مباشرة. التغيير يعمّم على كل الكتب.")+'</p>'+
+ (category?'<label class="field">حجم الأيقونة <output id="visualSizeOut">'+d.category_icon_size+'px</output><input id="visualSize" type="range" min="0" max="500" value="'+d.category_icon_size+'"></label><label class="field">شكل الأيقونة<select id="visualShape"><option value="soft" '+(d.category_icon_shape==="soft"?"selected":"")+'>ناعم</option><option value="round" '+(d.category_icon_shape==="round"?"selected":"")+'>دائري</option><option value="square" '+(d.category_icon_shape==="square"?"selected":"")+'>مربع</option></select></label>':
+ '<div class="visual-book-preview"><article class="book-card" id="visualBookPreview"><div class="cover-wrap purple"><div class="cover-pseudo"><small>DEELA BOOKS</small><strong>عنوان الكتاب</strong><em>✧</em></div></div><div class="book-info"><h3>عنوان الكتاب</h3><div class="book-price-row"><span class="book-price">١٠ ر.س</span></div><div class="product-kind"><i class="digital"></i><span>رقمي</span></div></div></article></div>'+
+ '<label class="field">عرض بطاقة الكتاب <output id="visualWidthOut">'+d.book_card_width+'px</output><input id="visualWidth" type="range" min="0" max="1200" step="1" value="'+d.book_card_width+'"></label>'+
+ '<label class="field">ارتفاع غلاف الكتاب <output id="visualHeightOut">'+d.book_cover_height+'px</output><input id="visualHeight" type="range" min="0" max="1200" step="1" value="'+d.book_cover_height+'"></label>'+
+ '<label class="field">شكل البطاقة<select id="visualShape"><option value="18" '+(d.book_card_radius===18?"selected":"")+'>مستدير</option><option value="0" '+(d.book_card_radius===0?"selected":"")+'>مربع</option><option value="100" '+(d.book_card_radius===100?"selected":"")+'>دائري</option></select></label>')+
  '<div class="form-actions"><button type="button" class="btn btn-outline" data-visual-cancel>إلغاء</button><button type="button" class="btn btn-primary" data-visual-save>حفظ على الجميع</button></div>';
  const close=()=>{shade.remove();modal.remove();applyDesign({...designDefaults,...state.settings.theme_design})};
  shade.onclick=close;modal.querySelector(".close").onclick=close;modal.querySelector("[data-visual-cancel]").onclick=close;
- const size=modal.querySelector("#visualSize"),shape=modal.querySelector("#visualShape");
- const preview=()=>{const patch=category?{category_icon_size:Number(size.value),category_icon_shape:shape.value}:{book_cover_height:Number(size.value),book_card_radius:Number(shape.value)};modal.querySelector("#visualSizeOut").textContent=size.value+"px";const out=modal.querySelector("#visualShapeOut");if(out)out.textContent=shape.value+"px";applyDesign({...d,...patch})};
- size.oninput=preview;shape.oninput=preview;
- modal.querySelector("[data-visual-save]").onclick=async()=>{const patch=category?{category_icon_size:Number(size.value),category_icon_shape:shape.value}:{book_cover_height:Number(size.value),book_card_radius:Number(shape.value)};const b=modal.querySelector("[data-visual-save]");b.disabled=true;try{await saveVisualDesign(patch);shade.remove();modal.remove()}catch{b.disabled=false}};
- document.body.append(shade,modal);
+ const size=modal.querySelector("#visualSize"),shape=modal.querySelector("#visualShape"),width=modal.querySelector("#visualWidth"),height=modal.querySelector("#visualHeight"),previewCard=modal.querySelector("#visualBookPreview");
+ const preview=()=>{let patch;
+  if(category){patch={category_icon_size:Number(size.value),category_icon_shape:shape.value};modal.querySelector("#visualSizeOut").textContent=size.value+"px";}
+  else{patch={book_card_width:Number(width.value),book_cover_height:Number(height.value),book_card_radius:Number(shape.value)};
+   modal.querySelector("#visualWidthOut").textContent=width.value+"px";modal.querySelector("#visualHeightOut").textContent=height.value+"px";
+   previewCard.style.width=Math.min(Number(width.value),modal.querySelector(".visual-book-preview").clientWidth)+"px";
+   previewCard.style.setProperty("--book-cover-height",height.value+"px");previewCard.style.setProperty("--book-card-radius",shape.value+"px");
+  }
+  applyDesign({...d,...patch});
+ };
+ if(size)size.oninput=preview;if(width)width.oninput=preview;if(height)height.oninput=preview;if(shape)shape.oninput=preview;
+ modal.querySelector("[data-visual-save]").onclick=async()=>{const patch=category?{category_icon_size:Number(size.value),category_icon_shape:shape.value}:{book_card_width:Number(width.value),book_cover_height:Number(height.value),book_card_radius:Number(shape.value)};const b=modal.querySelector("[data-visual-save]");b.disabled=true;try{await saveVisualDesign(patch);shade.remove();modal.remove()}catch{b.disabled=false}};
+ document.body.append(shade,modal);preview();
 }
 function bind(){
  document.addEventListener("pointerdown",ev=>{const kind=visualEditTarget(ev.target);if(!kind)return;clearTimeout(visualPressTimer);visualPressTimer=setTimeout(()=>{visualLongPressed=true;openVisualEditor(kind)},650)},true);
