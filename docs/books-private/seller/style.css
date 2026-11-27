@@ -108,7 +108,7 @@ p{color:var(--muted)}
 .cat-emoji{height:var(--category-icon-size,54px);width:var(--category-icon-size,54px);border-radius:var(--category-icon-radius,17px);margin:0 auto 9px;display:grid;place-items:center;font:calc(var(--category-icon-size,54px)*.62) Georgia;color:#a6e9dc;background:#a6e9dc17;border:1px solid #9fe6df30;transition:height .18s,width .18s,border-radius .18s,font-size .18s}
 .category-grid strong{display:block;font-size:14px;font-weight:900}
 .category-grid small{display:block;color:#9eb9cd;font-size:10px;margin-top:2px}
-.books-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(var(--book-card-width,220px),100%),1fr));gap:17px}
+.books-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(var(--book-card-width,220px),100%),1fr));justify-content:center;gap:17px}
 .book-card{width:min(var(--book-card-width,220px),100%);justify-self:center;background:#182a42;border:1px solid #36536c;border-radius:var(--book-card-radius,18px);overflow:hidden;display:flex;flex-direction:column;min-width:0}
 .book-card:hover{border-color:#89dcd9;transform:translateY(-3px);transition:.18s}
 .cover-wrap{height:var(--book-cover-height,251px);min-height:0;display:grid;place-items:center;background:radial-gradient(circle at 27% 24%,#b9cff144,transparent 67%),linear-gradient(140deg,#304b69,#1b2f48);position:relative;overflow:hidden}
@@ -429,7 +429,7 @@ button.like-chip:hover,.like-chip.active{color:#ffe4d5;border-color:#d3a3a8;back
  .category-grid button{min-height:106px;padding:10px 5px;border-radius:12px}
  .cat-emoji{height:37px;width:37px;font-size:24px;border-radius:11px;margin-bottom:7px}
  .category-grid strong{font-size:11px}.category-grid small{font-size:8px}
- .books-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+ .books-grid{grid-template-columns:repeat(3,minmax(0,1fr));justify-content:center;gap:10px}
  .book-card{border-radius:var(--book-card-radius,13px)}.cover-wrap{height:var(--book-cover-height,177px)}.cover-pseudo{width:90px;height:131px;padding:13px 6px}.cover-pseudo small{font-size:6px}.cover-pseudo strong{font-size:14px}.cover-pseudo em{font-size:17px}
  .book-info{padding:11px}.book-meta{font-size:9px}.book-info h3{font-size:12px;min-height:36px}.book-info>p{font-size:9px;min-height:23px}
  .book-tags{margin:8px 0}.book-tags span{font-size:8px;padding:1px 5px}
@@ -615,3 +615,6 @@ button.like-chip:hover,.like-chip.active{color:#ffe4d5;border-color:#d3a3a8;back
 .visual-editor-modal output{float:left;color:var(--teal);font-weight:900}
 body[data-owner-visual-edit="true"] #homeCategories button,body[data-owner-visual-edit="true"] .book-card{touch-action:manipulation}
 @media(max-width:520px){.deela-reader-modal iframe{height:62dvh;min-height:300px}}
+
+/* Keep a lone book centered instead of pinned to the RTL edge. */
+.books-grid:has(> .book-card:only-child){grid-template-columns:minmax(0,min(var(--book-card-width,220px),100%));justify-content:center}
