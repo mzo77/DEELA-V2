@@ -9,7 +9,7 @@ on:
       - "gradle/**"
       - "gradlew"
       - "settings.gradle.kts"
-      - ".github/workflows/deela-books-0916-official.yml"
+      - ".github/workflows/deela-books-0915-official.yml"
   workflow_dispatch:
 
 permissions:
