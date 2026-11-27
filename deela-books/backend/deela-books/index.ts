@@ -4,8 +4,8 @@ const SUPABASE_URL=Deno.env.get("SUPABASE_URL")||"";
 const SERVICE_ROLE=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";
 const db=createClient(SUPABASE_URL,SERVICE_ROLE,{auth:{persistSession:false,autoRefreshToken:false}});
 const fn="/deela-books";
-const FEATURE_FLAGS=["enable_seller_registration","enable_book_submissions","enable_reader_likes","enable_favorites","enable_author_follows","enable_reviews","enable_messages","enable_orders","enable_discounts","enable_featured_section","show_book_prices"] as const;
-const PRIVATE_SELLER_ROUTES=new Set(["GET /catalog","GET /shops","GET /me","GET /my/listings","GET /seller/notifications","POST /seller/notifications/read","POST /listing","POST /upload/sign"]);
+const FEATURE_FLAGS=["enable_seller_registration","enable_book_submissions","enable_reader_likes","enable_favorites","enable_author_follows","enable_reviews","enable_messages","enable_orders","enable_discounts","enable_featured_section","enable_launch_alerts","show_book_prices"] as const;
+const PRIVATE_SELLER_ROUTES=new Set(["GET /catalog","GET /shops","GET /me","GET /my/listings","GET /seller/notifications","POST /seller/notifications/read","GET /seller/launch-alerts","POST /seller/launch-alerts/request","GET /launch-alerts/feed","POST /listing","POST /upload/sign"]);
 
 const trusted=new Set(["https://mzo77.github.io","https://appassets.androidplatform.net"]);
 const allowedOrigins=(req:Request)=>trusted.has(req.headers.get("origin")||"")?req.headers.get("origin")!:"https://mzo77.github.io";
@@ -283,6 +283,39 @@ Deno.serve(async req=>{
     const r=await q.select("id");if(r.error)throw r.error;
     return respond(req,{ok:true,updated:r.data?.length||0});
   }
+  if(req.method==="GET"&&path==="/seller/launch-alerts"){
+    const seller=await sellerFor(user.id);if(!seller||seller.status!=="approved")return fail(req,"خدمة التنبيه متاحة للمتاجر المعتمدة فقط",403);
+    const r=await db.from("deela_books_launch_alerts").select("id,listing_id,amount_sar,payment_reference,status,payment_confirmed_at,published_at,created_at,deela_books_listings(title,category,format)").eq("seller_id",seller.id).order("created_at",{ascending:false}).limit(100);
+    if(r.error)throw r.error;return respond(req,{campaigns:r.data||[],price_sar:Number(conf.launch_alert_price_sar||0),enabled:conf.enable_launch_alerts===true&&Number(conf.launch_alert_price_sar||0)>0,payments_live:false,push_background_enabled:false});
+  }
+  if(req.method==="POST"&&path==="/seller/launch-alerts/request"){
+    const seller=await sellerFor(user.id);if(!seller||seller.status!=="approved")return fail(req,"يجب اعتماد متجرك أولًا",403);
+    const b=await req.json(),price=Number(conf.launch_alert_price_sar||0),reference=str(b.payment_reference,160),listingId=str(b.listing_id,60);
+    if(conf.enable_launch_alerts!==true||!Number.isFinite(price)||price<=0)return fail(req,"طلبات التنبيه المدفوع غير مفعّلة حاليًا",403);
+    if(reference.length<3)return fail(req,"أدخل مرجع التحويل البنكي بعد إتمامه خارج المنصة");
+    if(!uuid.test(listingId))return fail(req,"اختر رواية منشورة صحيحة");
+    const listing=await db.from("deela_books_listings").select("id,title,status,seller_id").eq("id",listingId).eq("seller_id",seller.id).maybeSingle();
+    if(listing.error||!listing.data||listing.data.status!=="published")return fail(req,"يمكن طلب التنبيه لكتابك المنشور فقط",404);
+    const r=await db.from("deela_books_launch_alerts").insert({seller_id:seller.id,listing_id:listingId,amount_sar:price,payment_reference:reference,status:"payment_review"}).select("id,status,amount_sar").single();
+    if(r.error)throw r.error;return respond(req,{ok:true,campaign:r.data,payment_recorded:false,message:"أُرسل المرجع للمراجعة. لا يُرسل الإعلان إلا بعد التحقق اليدوي من وصول المبلغ."});
+  }
+  if(req.method==="GET"&&path==="/launch-alerts/feed"){
+    if(!conf.site_public&&!isOwner)return fail(req,"التنبيهات العامة مغلقة ما دامت المنصة خاصة",403);
+    const r=await db.from("deela_books_launch_alerts").select("id,listing_id,published_at,deela_books_sellers(shop_name,slug),deela_books_listings(title,category,format)").eq("status","published").order("published_at",{ascending:false}).limit(100);
+    if(r.error)throw r.error;return respond(req,{alerts:r.data||[],push_background_enabled:false});
+  }
+  if(req.method==="POST"&&path==="/owner/launch-alert-status"){
+    if(!isOwner)return fail(req,"حساب المالك فقط",403);
+    const b=await req.json(),id=str(b.id,60),status=str(b.status,20);
+    if(!uuid.test(id)||!["published","rejected"].includes(status))return fail(req,"حالة التنبيه غير صحيحة");
+    const existing=await db.from("deela_books_launch_alerts").select("id,status,payment_reference").eq("id",id).maybeSingle();
+    if(existing.error)throw existing.error;if(!existing.data)return fail(req,"الطلب غير موجود",404);
+    if(status==="published"&&(conf.enable_launch_alerts!==true||Number(conf.launch_alert_price_sar||0)<=0||existing.data.status!=="payment_review"||str(existing.data.payment_reference,160).length<3))return fail(req,"لا يمكن نشر الإعلان قبل تفعيل الخدمة ومراجعة مرجع الدفع",403);
+    const now=new Date().toISOString();
+    const update=status==="published"?{status,payment_confirmed_by:user.id,payment_confirmed_at:now,published_at:now,updated_at:now}:{status,updated_at:now};
+    const saved=await db.from("deela_books_launch_alerts").update(update).eq("id",id).select("id,status,published_at").single();
+    if(saved.error)throw saved.error;return respond(req,{ok:true,campaign:saved.data,payment_live:false,push_background_enabled:false});
+  }
   if(req.method==="POST"&&path==="/view"){
     const b=await req.json(),id=str(b.listing_id,60);
     if(!uuid.test(id))return fail(req,"معرّف الرواية غير صحيح");
@@ -534,6 +567,10 @@ Deno.serve(async req=>{
   if(path.startsWith("/owner/")){
     if(!isOwner)return fail(req,"حساب المالك فقط",403);
     if(req.method==="GET"&&path==="/owner/overview")return await ownerOverview(req);
+    if(req.method==="GET"&&path==="/owner/launch-alerts"){
+      const r=await db.from("deela_books_launch_alerts").select("id,listing_id,amount_sar,payment_reference,status,payment_confirmed_at,published_at,created_at,deela_books_sellers(shop_name,slug),deela_books_listings(title,category,format)").order("created_at",{ascending:false}).limit(500);
+      if(r.error)throw r.error;return respond(req,{campaigns:r.data||[],price_sar:Number(conf.launch_alert_price_sar||0),enabled:conf.enable_launch_alerts===true,payments_live:false,push_background_enabled:false});
+    }
     if(req.method==="GET"&&path==="/owner/sections"){
       const r=await db.from("deela_books_sections").select("*").order("sort_order").limit(1000);
       if(r.error)throw r.error;return respond(req,{sections:await signedMerchandising(r.data||[])});
@@ -727,6 +764,10 @@ Deno.serve(async req=>{
       if(Object.prototype.hasOwnProperty.call(b,"theme_material")){
         if(!["none","ceramic","marble","ornament","pearl","metal","velvet","neon","heritage","aurora","granite","wood","floral","sandstone","crystal","geometric","goldleaf","watercolor","leather","linen","mosaic","stars"].includes(b.theme_material))return fail(req,"خامة غير صحيحة",400);
         configured.theme_material=b.theme_material;
+      }
+      if(Object.prototype.hasOwnProperty.call(b,"launch_alert_price_sar")){
+        const price=Number(b.launch_alert_price_sar);if(!Number.isFinite(price)||price<0||price>10000||Math.round(price*100)!==price*100)return fail(req,"سعر التنبيه يجب أن يكون من 0 إلى 10000 ريال وبحد أقصى منزلتان عشريتان",400);
+        configured.launch_alert_price_sar=price;
       }
       if(Object.prototype.hasOwnProperty.call(b,"theme_design")){
         const d=b.theme_design;
