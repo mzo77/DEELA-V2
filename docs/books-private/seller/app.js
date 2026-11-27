@@ -18,7 +18,7 @@ const statusNames={draft:"مسودة",pending:"بانتظار المراجعة",
 const enabled=key=>state.settings?.[key]!==false;
 const state={token:window.__DEELA_BOOKS_TOKEN||sessionStorage.getItem("deela-books-token")||"",refreshToken:sessionStorage.getItem("deela-books-refresh")||"",
  email:"",view:"home",listings:[],shops:[],cart:[],me:null,settings:{},
- current:null,category:"الكل",format:"all",sort:"newest",search:"",condition:"all",shippingOnly:false,discountOnly:false,cityFilter:"",minPrice:"",maxPrice:"",ownerTab:"overview",sellerTab:"books",
+ current:null,category:"الكل",format:"all",sort:"newest",search:"",couponCode:"",condition:"all",shippingOnly:false,discountOnly:false,cityFilter:"",minPrice:"",maxPrice:"",ownerTab:"overview",sellerTab:"books",
  sellerListings:[],sellerActivity:[],sellerNotifications:[],sellerNotificationIds:new Set(),contestIds:new Set(),contestTimer:null,sellerNotificationsReady:false,sellerNotificationTimer:null,sellerLaunchAlerts:[],sellerPromotions:[],contests:[],ownerContests:[],launchAlertPrice:0,launchAlertFeed:[],launchAlertIds:new Set(),launchAlertTimer:null,launchAlertsReady:false,ownerData:null,editing:null,formNote:"",loading:false,sections:[],banners:[]};
 try{let c=JSON.parse(localStorage.getItem("deela-books-cart-v1")||"[]");if(Array.isArray(c))state.cart=c.filter(x=>typeof x.id==="string"&&Number.isInteger(x.qty)&&x.qty>0&&x.qty<=10).slice(0,10)}catch{}
 let noticeTimer;
@@ -403,12 +403,13 @@ function cartPage(){
  const subtotal=items.reduce((n,x)=>n+(Number(x.b.price_sar)||0)*x.qty,0);
  const method=x=>x.b.format!=="physical"?"digital":(x.fulfillment||((x.b.shipping_available===false&&x.b.pickup_available)?"pickup":"delivery"));
  const shipping=items.reduce((n,x)=>n+(x.b.format==="physical"&&method(x)==="delivery"?(Number(x.b.shipping_fee_sar)||0)*x.qty:0),0);
+ const discount=state.couponCode==="FIRST20"?Math.round(subtotal*0.2*100)/100:0;
  const deliveryNeeded=items.some(x=>x.b.format==="physical"&&method(x)==="delivery");
  const email=state.me?.email||"",profileName=state.me?.display_name||email.split("@")[0]||(state.me?.phone?"قارئ ديلا":""),phone=state.me?.phone||"";
  const methodLabel={delivery:"توصيل",pickup:"استلام من البائع",digital:"كتاب رقمي"};
  return heading("إتمام الطلب","بيانات حسابك جاهزة. هذا طلب اختبار بلا تحصيل، والدفع الحقيقي غير مفعّل.","YOUR ORDER")+
  (items.length?'<div class="panel checkout-items"><h2>سلتك · '+items.length+' منتج</h2>'+items.map(x=>'<div class="cart-line"><div><strong>'+esc(x.b.title)+'</strong><p>'+esc(kinds[x.b.format])+' · '+sar(x.b.price_sar)+'</p>'+(x.b.format==="physical"?'<label class="field">طريقة الاستلام<select data-fulfillment="'+esc(x.b.id)+'">'+(x.b.shipping_available!==false?'<option value="delivery" '+(method(x)==="delivery"?"selected":"")+'>توصيل · '+sar(x.b.shipping_fee_sar||0)+'</option>':"")+(x.b.pickup_available?'<option value="pickup" '+(method(x)==="pickup"?"selected":"")+'>استلام من البائع · مجانًا</option>':"")+'</select></label>':'<span class="status">يفتح تلقائيًا بعد إتمام الاختبار</span>')+'</div><div><strong>'+sar(Number(x.b.price_sar)*x.qty)+'</strong><div><button data-cart-minus="'+esc(x.b.id)+'">−</button> '+x.qty+' <button data-cart-plus="'+esc(x.b.id)+'">+</button> <button data-cart-remove="'+esc(x.b.id)+'">حذف</button></div></div></div>').join("")+
- '<div class="checkout-summary"><div><span>المنتجات</span><strong>'+sar(subtotal)+'</strong></div><div><span>التوصيل</span><strong>'+sar(shipping)+'</strong></div><div class="checkout-grand"><span>الإجمالي التقديري</span><strong>'+sar(subtotal+shipping)+'</strong></div></div>'+
+ '<div class="coupon-box"><label for="couponCode">رمز الخصم</label><div><input id="couponCode" value="'+esc(state.couponCode)+'" placeholder="اكتب FIRST20"><button type="button" class="btn btn-soft" data-coupon-apply>تطبيق</button></div>'+(discount?'<small class="status">FIRST20 · خصم 20% (-'+sar(discount)+')</small>':'<small>جرّب الرمز FIRST20 في مساحة الاختبار.</small>')+'</div><div class="checkout-summary"><div><span>المنتجات</span><strong>'+sar(subtotal)+'</strong></div>'+(discount?'<div><span>الخصم</span><strong>− '+sar(discount)+'</strong></div>':'')+'<div><span>التوصيل</span><strong>'+sar(shipping)+'</strong></div><div class="checkout-grand"><span>الإجمالي التقديري</span><strong>'+sar(subtotal-discount+shipping)+'</strong></div></div>'+
  '<p class="test-mode-note">تجربة فقط: لا يوجد تحصيل أو بوابة دفع. بعد إتمام الطلب يفتح الكتاب الرقمي تلقائيًا في مكتبتك.</p></div>'+
  '<form id="checkoutForm" class="panel"><h2>بيانات المشتري</h2><p class="muted">معبأة تلقائيًا من حسابك ويمكن تحديث الاسم والجوال قبل الإتمام.</p><div class="form-grid">'+
  (email?'<label class="field">البريد الإلكتروني<input type="email" value="'+esc(email)+'" readonly autocomplete="email"></label>':'')+
@@ -1031,7 +1032,7 @@ async function handleForm(ev){
   }else if(id==="checkoutForm"){
     const d=await api("/order",{method:"POST",data:{
       items:state.cart,buyer_name:raw.buyer_name,phone:raw.buyer_phone,
-      country:raw.buyer_country,city:raw.buyer_city,address:raw.address,note:raw.note,fulfillment:state.cart.map(x=>({id:x.id,method:x.fulfillment||"delivery"}))
+      country:raw.buyer_country,city:raw.buyer_city,address:raw.address,note:raw.note,fulfillment:state.cart.map(x=>({id:x.id,method:x.fulfillment||"delivery"})),coupon_code:state.couponCode
     }});
     state.cart=[];saveCart();
     toast(d.test_access?"تم الشراء التجريبي بلا خصم. الكتاب مفتوح في مكتبتك.":"تم إرسال الطلب "+d.order.code+" دون تحصيل دفع.");
@@ -1264,6 +1265,7 @@ function bind(){
   if(t.dataset.gallery){ev.preventDefault();const b=state.listings.find(x=>x.id===state.current),urls=b?.image_urls||[];const img=document.querySelector("#productGalleryMain img");if(img&&urls[Number(t.dataset.gallery)])img.src=urls[Number(t.dataset.gallery)];return}
   if(t.dataset.shop){ev.preventDefault();return openShop(t.dataset.shop)}
   if(t.dataset.add){ev.preventDefault();return cartChange(t.dataset.add,1)}
+  if(t.hasAttribute("data-coupon-apply")){ev.preventDefault();const code=(document.getElementById("couponCode")?.value||"").trim().toUpperCase();if(code==="FIRST20"){state.couponCode=code;toast("تم تطبيق خصم الاختبار 20%");return route("cart",false)}state.couponCode="";toast("رمز الخصم غير صالح. جرّب FIRST20.");return}
   if(t.dataset.like){ev.preventDefault();return toggleLike(t.dataset.like)}
   if(t.dataset.favorite){ev.preventDefault();return toggleFavorite(t.dataset.favorite)}
   if(t.dataset.follow){ev.preventDefault();return toggleFollow(t.dataset.follow)}
