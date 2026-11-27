@@ -638,20 +638,23 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
     const due=await db.from("deela_books_contests").select("id,question_text").eq("status","announced").lte("starts_at",now).neq("question_text","");
     if(due.error)throw due.error;
     if(due.data?.length)await db.from("deela_books_contests").update({status:"open",updated_at:now}).in("id",due.data.map(x=>x.id));
-    let contestsQuery=db.from("deela_books_contests").select("id,title,announcement,starts_at,status,question_text,created_at").in("status",["announced","open"]);
+    let contestsQuery=db.from("deela_books_contests").select("id,title,announcement,starts_at,status,question_text,poll_options,created_at").in("status",["announced","open"]);
     if(conf.site_public)contestsQuery=contestsQuery.eq("is_test",false);
     const r=await contestsQuery.order("starts_at",{ascending:true}).limit(20);
     if(r.error)throw r.error;
-    const ids=(r.data||[]).map(x=>x.id);let answers:any[]=[];
+    const ids=(r.data||[]).map(x=>x.id);let answers:any[]=[];const pollCounts:Record<string,Record<string,number>>={};
     if(ids.length){const own=await db.from("deela_books_contest_answers").select("contest_id,answer,is_correct").eq("user_id",user.id).in("contest_id",ids);if(own.error)throw own.error;answers=own.data||[];}
-    return respond(req,{contests:(r.data||[]).map(x=>({...x,my_answer:answers.find(y=>y.contest_id===x.id)||null}))});
+    const pollIds=(r.data||[]).filter(x=>Array.isArray(x.poll_options)&&x.poll_options.length>=2).map(x=>x.id);
+    if(pollIds.length){const votes=await db.from("deela_books_contest_answers").select("contest_id,answer").in("contest_id",pollIds).limit(10000);if(votes.error)throw votes.error;for(const vote of votes.data||[]){const group=pollCounts[vote.contest_id]||(pollCounts[vote.contest_id]={});group[vote.answer]=(group[vote.answer]||0)+1;}}
+    return respond(req,{contests:(r.data||[]).map(x=>({...x,my_answer:answers.find(y=>y.contest_id===x.id)||null,poll_counts:pollCounts[x.id]||{}}))});
   }
   if(req.method==="POST"&&path==="/contests/answer"){
     const b=await req.json(),id=str(b.contest_id,60),answer=str(b.answer,1000).trim();
     if(!uuid.test(id)||!answer)return fail(req,"اكتب إجابتك");
-    const c=await db.from("deela_books_contests").select("id,status,starts_at,question_text").eq("id",id).maybeSingle();
+    const c=await db.from("deela_books_contests").select("id,status,starts_at,question_text,poll_options").eq("id",id).maybeSingle();
     if(c.error||!c.data)return fail(req,"المسابقة غير موجودة",404);
     if(c.data.status!=="open"||!c.data.question_text||(c.data.starts_at&&new Date(c.data.starts_at).getTime()>Date.now()))return fail(req,"لم يبدأ استقبال الإجابات بعد",409);
+    const pollOptions=Array.isArray(c.data.poll_options)?c.data.poll_options:[];if(pollOptions.length&& !pollOptions.includes(answer))return fail(req,"اختر خيارًا من خيارات الاستطلاع");
     const saved=await db.from("deela_books_contest_answers").upsert({contest_id:id,user_id:user.id,answer,is_correct:null,is_test:!conf.site_public},{onConflict:"contest_id,user_id"}).select("id,answer,created_at").single();
     if(saved.error)throw saved.error;return respond(req,{ok:true,answer:saved.data});
   }
@@ -668,10 +671,12 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
   if(req.method==="POST"&&path==="/owner/contest/save"){
     if(!isOwner)return fail(req,"حساب المالك فقط",403);
     const b=await req.json(),id=str(b.id,60),title=str(b.title,160),announcement=str(b.announcement,1000),question=str(b.question_text,1000),correct=str(b.correct_answer,500).trim(),startRaw=str(b.starts_at,40);
+    const pollOptions=Array.isArray(b.poll_options)?[...new Set(b.poll_options.map((x:unknown)=>str(x,100).trim()).filter(Boolean))]:[];
+    if(b.poll_options!==undefined&&(!Array.isArray(b.poll_options)||(pollOptions.length!==0&&(pollOptions.length<2||pollOptions.length>6))))return fail(req,"الاستطلاع يحتاج من خيارين إلى ستة خيارات");
     if(title.length<2)return fail(req,"أدخل اسم المسابقة");
     let startsAt:string|null=null;if(startRaw){const d=new Date(startRaw);if(Number.isNaN(d.getTime()))return fail(req,"موعد المسابقة غير صالح");startsAt=d.toISOString();}
     const now=new Date(),due=!startsAt||new Date(startsAt).getTime()<=now.getTime(),status=question&&due?"open":"announced";
-    const values={title,announcement,question_text:question,correct_answer:correct,starts_at:startsAt,status,updated_at:now.toISOString()};
+    const values={title,announcement,question_text:question,correct_answer:pollOptions.length?"":correct,poll_options:pollOptions,starts_at:startsAt,status,updated_at:now.toISOString()};
     let result;
     if(id){if(!uuid.test(id))return fail(req,"رقم المسابقة غير صالح");result=await db.from("deela_books_contests").update(values).eq("id",id).select("*").single();}
     else result=await db.from("deela_books_contests").insert({...values,created_by:user.id,is_test:!conf.site_public}).select("*").single();
