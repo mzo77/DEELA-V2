@@ -3,7 +3,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <application
         android:allowBackup="false"
-        android:icon="@drawable/ic_deela_admin"
+        android:icon="@mipmap/ic_deela_admin"
         android:label="DEELA ADMIN"
         android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true"
