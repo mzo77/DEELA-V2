@@ -88,12 +88,13 @@ jobs:
           done
           SELLER_PORTAL="https://mzo77.github.io/DEELA-V2/books-private/seller/"
           curl -fsS --retry 4 --retry-delay 3 --max-time 30 "$SELLER_PORTAL" -o /tmp/books-seller-portal.html
-          grep -Fq 'بوابة البائع الخاصة' /tmp/books-seller-portal.html
+          grep -Fq 'DEELA Books | عالم الكتب' /tmp/books-seller-portal.html
           grep -Fq 'noindex,nofollow,noarchive' /tmp/books-seller-portal.html
-          curl -fsS --retry 4 --max-time 30 -D /tmp/books-headers "$PORTAL" -o /tmp/books-login.html
-          grep -Eqi '^content-type: text/html' /tmp/books-headers
-          grep -Fq 'DEELA Books · PRIVATE LAUNCH' /tmp/books-login.html || grep -Fq 'DEELA BOOKS · PRIVATE LAUNCH' /tmp/books-login.html
-          ! grep -Fq 'class="books-grid"' /tmp/books-login.html
+          grep -Fq 'id="phoneSendForm"' /tmp/books-seller-portal.html
+          grep -Fq 'id="registerForm"' /tmp/books-seller-portal.html
+          curl -fsS --retry 4 --max-time 30 "$SELLER_PORTAL/app.js" -o /tmp/books-seller-app.js
+          grep -Fq 'auth/phone/send' /tmp/books-seller-app.js
+          grep -Fq 'data-editor-category' /tmp/books-seller-app.js
           curl -sS -D /tmp/cors-headers -o /dev/null -X OPTIONS \
             -H 'Origin: https://mzo77.github.io' \
             -H 'Access-Control-Request-Method: GET' \
