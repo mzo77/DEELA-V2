@@ -423,3 +423,6 @@ button.like-chip:hover,.like-chip.active{color:#ffe4d5;border-color:#d3a3a8;back
 [data-material="velvet"]{background-image:radial-gradient(ellipse at 30% 20%,#ffffff22,transparent 65%),linear-gradient(145deg,transparent,#00000055)}
 [data-material="neon"]{background-image:radial-gradient(ellipse at 10% 20%,#9c45ff55,transparent 55%),radial-gradient(ellipse at 90% 80%,#00d9ff44,transparent 60%)}
 [data-material="heritage"]{background-image:repeating-linear-gradient(45deg,#d6b47a22 0 1px,transparent 1px 12px),repeating-linear-gradient(-45deg,#d6b47a22 0 1px,transparent 1px 12px)}
+
+@keyframes deelaBannerGlow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.16)}}
+@media(prefers-reduced-motion:no-preference){body[data-banner-motion="glow"] .feature-banner{animation:deelaBannerGlow 5s ease-in-out infinite}}
