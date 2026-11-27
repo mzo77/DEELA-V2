@@ -632,3 +632,7 @@ body[data-owner-visual-edit="true"] #homeCategories button,body[data-owner-visua
 .book-card .book-info{text-align:center}
 .book-card .book-price-row,.book-card .product-kind,.book-card .book-rating,.book-card .book-bottom{justify-content:center;text-align:center}
 .book-card .product-type-label{display:block;margin-bottom:5px;color:var(--teal)}
+
+.catalog-discovery-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0}
+.catalog-discovery-tools select{min-height:42px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--white);padding:7px 12px}
+.catalog-discovery-tools .filter-check{display:flex;align-items:center;gap:8px}
