@@ -4,13 +4,17 @@ name: DEELA Official Signed Release
 # Never ship an unsigned or ephemeral debug-signed APK as an official update.
 # Release must be explicitly triggered after the owner confirms a persistent live runtime.
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/deela-release-request/official-release.txt'
   workflow_dispatch:
     inputs:
       source_ref:
         description: "Reviewed DEELA source branch or SHA to release"
         required: true
         type: string
-        default: release/deela-0913-source
+        default: main
       release_notes:
         description: "Short update notes shown to subscribers"
         required: false
@@ -47,7 +51,7 @@ jobs:
       - name: Check out the reviewed Android source
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_ref || '2ec2af0966284c40ad9c4c35dccdc3d86647e827' }}
+          ref: ${{ inputs.source_ref || github.sha }}
           persist-credentials: true
 
       - uses: actions/setup-java@v4
