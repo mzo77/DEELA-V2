@@ -866,11 +866,11 @@ async function requestPasswordReset(){const email=$("loginEmail").value.trim();i
 async function loadAuthProviders(){
  const buttons=[...document.querySelectorAll("[data-oauth]")];try{const d=await api("/auth/providers");
   for(const b of buttons){const active=d.enabled?.[b.dataset.oauth]===true;b.dataset.authEnabled=String(active);b.title=active?"متاح عبر حساب المزود المرتبط":"يلزم ربط بيانات المطوّر في إعدادات Supabase";b.textContent=({google:"Google",apple:"Apple",twitter:"X"}[b.dataset.oauth])+(active?"":" · غير مربوط")}
-  const active=buttons.filter(x=>x.dataset.authEnabled==="true").map(x=>x.dataset.oauth);$("authProviderNote").textContent=active.length?"الدخول المفعّل: "+active.map(x=>({google:"Google",apple:"Apple",twitter:"X"}[x])).join("، "):"الزر جاهز، لكن حساب Google وApple وX لم يُربط بمفاتيحه بعد.";
+  const active=buttons.filter(x=>x.dataset.authEnabled==="true").map(x=>x.dataset.oauth);$("authProviderNote").textContent=active.length?"الدخول المفعّل: "+active.map(x=>({google:"Google",apple:"Apple",twitter:"X"}[x])).join("، "):"الزر جاهز، لكن Google وApple لم يُربطا ببيانات المطوّر في Supabase بعد.";
  }catch{$("authProviderNote").textContent="يتطلب الدخول الاجتماعي ربط حساب المطوّر مرة واحدة."}
 }
 async function oauthLogin(ev){const b=ev.currentTarget,provider=b.dataset.oauth;if(b.dataset.authEnabled!=="true"){toast("يلزم أولًا ربط بيانات "+({google:"Google",apple:"Apple",twitter:"X"}[provider])+" في إعدادات Supabase");return}try{b.disabled=true;const client=await oauthClient();const {error}=await client.auth.signInWithOAuth({provider,options:{redirectTo:location.origin+location.pathname}});if(error)throw error}catch(e){toast(errorMessage(e))}finally{b.disabled=false}}
-function openLogin(message=""){ $("shade").hidden=false;$("loginModal").hidden=false;switchAuthMethod("phone");if(message)setAuthMessage("phoneMessage",message,true);void loadAuthProviders(); }
+function openLogin(message=""){ $("shade").hidden=false;$("loginModal").hidden=false;switchAuthMethod("email");if(message)setAuthMessage("emailMessage",message,true);void loadAuthProviders(); }
 function closeLogin(){$("shade").hidden=true;$("loginModal").hidden=true;}
 function formData(form){return Object.fromEntries(new FormData(form).entries())}
 async function handleForm(ev){
