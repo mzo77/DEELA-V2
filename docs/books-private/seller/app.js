@@ -107,21 +107,32 @@ document.addEventListener("input",ev=>{
 });
 document.addEventListener("input",ev=>{
  const el=ev.target;if(!el.closest("#settingsForm"))return;
+ if(el.name?.startsWith("design_")){
+  const form=el.form,d={radius:Number(form.elements.design_radius.value),font_size:Number(form.elements.design_font_size.value),banner_motion:form.elements.design_banner_motion.value,category_icon_size:Number(form.elements.design_category_icon_size.value),nav_icon_size:Number(form.elements.design_nav_icon_size.value),book_action_icon_size:Number(form.elements.design_book_action_icon_size.value)};
+  applyDesign(d);
+  document.querySelectorAll("[data-icon-output]").forEach(out=>{const input=form.elements[out.dataset.iconOutput];if(input)out.value=input.value+"px"});
+ }
  const preview=document.getElementById("materialPreview");if(!preview)return;
  if(el.name==="theme_material"&&Object.hasOwn(materials,el.value))preview.dataset.material=el.value;
  if(el.name==="theme_bg"&&/^#[0-9a-f]{6}$/i.test(el.value))preview.style.backgroundColor=el.value;
  if(el.name==="theme_white"&&/^#[0-9a-f]{6}$/i.test(el.value))preview.style.color=el.value;
 });
-const designDefaults={radius:18,font_size:14,banner_motion:"none"};
+const designDefaults={radius:18,font_size:14,banner_motion:"none",category_icon_size:36,nav_icon_size:20,book_action_icon_size:42};
 function applyDesign(d){
  const root=document.documentElement;
  root.style.setProperty("--radius",Math.max(0,Math.min(40,Number(d?.radius??18)||0))+"px");
  document.body.style.fontSize=Math.max(12,Math.min(22,Number(d?.font_size??14)||14))+"px";
  document.body.dataset.bannerMotion=d?.banner_motion==="glow"?"glow":"none";
+ root.style.setProperty("--category-icon-size",Math.max(22,Math.min(64,Number(d?.category_icon_size??36)||36))+"px");
+ root.style.setProperty("--nav-icon-size",Math.max(14,Math.min(32,Number(d?.nav_icon_size??20)||20))+"px");
+ root.style.setProperty("--book-action-icon-size",Math.max(28,Math.min(52,Number(d?.book_action_icon_size??42)||42))+"px");
 }
 function designFields(conf){
  const d={...designDefaults,...conf.theme_design};
- return '<label class="field">استدارة البطاقات<input name="design_radius" type="number" min="0" max="40" value="'+Number(d.radius)+'"></label><label class="field">حجم الخط<input name="design_font_size" type="number" min="12" max="22" value="'+Number(d.font_size)+'"></label><label class="field">حركة البنر<select name="design_banner_motion"><option value="none">ثابت</option><option value="glow" '+(d.banner_motion==="glow"?"selected":"")+'>لمعان متحرك</option></select></label>';
+ return '<label class="field">استدارة البطاقات<input name="design_radius" type="number" min="0" max="40" value="'+Number(d.radius)+'"></label><label class="field">حجم الخط<input name="design_font_size" type="number" min="12" max="22" value="'+Number(d.font_size)+'"></label><label class="field">حركة البنر<select name="design_banner_motion"><option value="none">ثابت</option><option value="glow" '+(d.banner_motion==="glow"?"selected":"")+'>لمعان متحرك</option></select></label>'+
+ '<label class="field icon-size-control">حجم أيقونات التصنيفات<input type="range" name="design_category_icon_size" min="22" max="64" step="1" value="'+Number(d.category_icon_size)+'"><output data-icon-output="design_category_icon_size">'+Number(d.category_icon_size)+'px</output></label>'+
+ '<label class="field icon-size-control">حجم أيقونات التنقل بالأسفل<input type="range" name="design_nav_icon_size" min="14" max="32" step="1" value="'+Number(d.nav_icon_size)+'"><output data-icon-output="design_nav_icon_size">'+Number(d.nav_icon_size)+'px</output></label>'+
+ '<label class="field icon-size-control">حجم أزرار الإعجاب والمفضلة على الغلاف<input type="range" name="design_book_action_icon_size" min="28" max="52" step="1" value="'+Number(d.book_action_icon_size)+'"><output data-icon-output="design_book_action_icon_size">'+Number(d.book_action_icon_size)+'px</output></label>';
 }
 const sectionDefs={categories:["التصنيفات","#homeCategories"],books:["الكتب","#homeListings"],shops:["المتاجر","#featuredShops"],faq:["الأسئلة الشائعة",".faq-section"],banner:["البنر",".feature-banner"]};
 function sectionFields(conf){
@@ -1006,7 +1017,7 @@ async function handleForm(ev){
     await reload();await route("owner",false);
   }else if(id==="settingsForm"){
     const payload={...state.settings,...state.ownerData?.settings,...raw,
-      theme_images:Object.fromEntries(Object.keys(imageKeys).map(k=>[k,raw['image_'+k+'_path']||''])),theme_sections:Object.fromEntries(Object.keys(sectionDefs).map(k=>[k,{title:raw["section_"+k+"_title"]||"",order:Number(raw["section_"+k+"_order"]),material:raw["section_"+k+"_material"],background_color:raw["section_"+k+"_background_color"]||"",accent_color:raw["section_"+k+"_accent_color"]||"",visible:raw["section_"+k+"_visible"]==="on"}])),theme_design:{radius:Number(raw.design_radius),font_size:Number(raw.design_font_size),banner_motion:raw.design_banner_motion},theme_material:raw.theme_material,theme_colors:Object.fromEntries(Object.keys(themeKeys).map(k=>[k,raw["theme_"+k]])),site_public:false,payments_live:false};
+      theme_images:Object.fromEntries(Object.keys(imageKeys).map(k=>[k,raw['image_'+k+'_path']||''])),theme_sections:Object.fromEntries(Object.keys(sectionDefs).map(k=>[k,{title:raw["section_"+k+"_title"]||"",order:Number(raw["section_"+k+"_order"]),material:raw["section_"+k+"_material"],background_color:raw["section_"+k+"_background_color"]||"",accent_color:raw["section_"+k+"_accent_color"]||"",visible:raw["section_"+k+"_visible"]==="on"}])),theme_design:{radius:Number(raw.design_radius),font_size:Number(raw.design_font_size),banner_motion:raw.design_banner_motion,category_icon_size:Number(raw.design_category_icon_size),nav_icon_size:Number(raw.design_nav_icon_size),book_action_icon_size:Number(raw.design_book_action_icon_size)},theme_material:raw.theme_material,theme_colors:Object.fromEntries(Object.keys(themeKeys).map(k=>[k,raw["theme_"+k]])),site_public:false,payments_live:false};
     await api("/owner/settings",{method:"POST",data:payload});
     toast("تم حفظ هوية المنصة والعروض");await reload();await route("owner",false);
   }else if(id==="sectionForm"){
