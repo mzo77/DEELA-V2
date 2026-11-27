@@ -414,8 +414,8 @@ function cartPage(){
  '<form id="checkoutForm" class="panel"><h2>بيانات المشتري</h2><p class="muted">معبأة تلقائيًا من حسابك ويمكن تحديث الاسم والجوال قبل الإتمام.</p><div class="form-grid">'+
  (email?'<label class="field">البريد الإلكتروني<input type="email" value="'+esc(email)+'" readonly autocomplete="email"></label>':'')+
  field("اسم العميل","buyer_name","text",true,"",profileName)+field("رقم الجوال","buyer_phone","tel",false,"",phone)+
- (deliveryNeeded?field("الدولة","buyer_country","text",false,"السعودية","السعودية")+field("المدينة","buyer_city","text",true)+
- '<label class="field full">عنوان التوصيل<textarea name="address" required autocomplete="street-address" placeholder="الحي، الشارع، تفاصيل العنوان"></textarea></label>':'<input type="hidden" name="buyer_country" value="السعودية"><input type="hidden" name="buyer_city" value="">')+
+ (deliveryNeeded?field("الدولة","buyer_country","text",false,"السعودية",state.me?.country||"السعودية")+field("المدينة","buyer_city","text",true,"",state.me?.city||"")+
+ '<label class="field full">عنوان التوصيل<textarea name="address" required autocomplete="street-address" placeholder="الحي، الشارع، تفاصيل العنوان">'+esc(state.me?.address||"")+'</textarea></label>':'<input type="hidden" name="buyer_country" value="السعودية"><input type="hidden" name="buyer_city" value="">')+
  '<label class="field full">ملاحظات الطلب<textarea name="note" placeholder="اختياري"></textarea></label></div>'+
  '<div class="form-actions"><button class="btn btn-primary wide" type="submit">إتمام الطلب التجريبي وفتح الكتاب ←</button></div><p class="form-msg" id="checkoutMessage"></p></form>':
  '<div class="empty-state"><h3>سلتك فارغة</h3><p>تصفح المكتبة وأضف الكتب التي تريدها.</p><button class="btn btn-primary" data-route="catalog">تصفح الكتب</button></div>');
