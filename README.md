@@ -7,8 +7,8 @@ Android store rebuilt on the open-source Aura Store Kotlin codebase.
 - Pinned source commit: 56423776c368d3b95bae266623f3fbeeca582c5c
 - Base license: MIT; see LICENSE. Original documentation: https://github.com/venudinesh/Aura-Store/blob/kotlin/README.md.
 - Original MultiStore prototype backed up at backup/multistore-before-aura.
-- Subscription system and DEELA Control Center API are planned but NOT yet implemented.
-- Android version 0.9.0 is a preview, not a production or security-certified release.
+- The DEELA Control Center subscription API is deployed on Supabase. The Android app includes a membership gate; the owner screen manages members and catalog visibility. This APK remains a preview and is not a production or security-certified release.
+- Android version 0.9.1 is a preview, not a production or security-certified release.
 
 ### Build
 
@@ -24,7 +24,7 @@ Third-party download providers operate independently; their current availability
 
 The original animated star is followed by the DEELA login screen. The store remains closed until the backend confirms an **active, unexpired membership**. A 24-hour trial is an entitlement issued by the owner/admin; the client never grants itself trial access. The session remains in memory and is rechecked every minute.
 
-Set the public GitHub repository Actions variable `DEELA_API_BASE_URL` to the HTTPS URL of the DEELA Control Center backend before building a usable subscriber APK. It is intentionally unset in the preview and **login will not work without that server**.
+The Android build defaults to the deployed HTTPS endpoint `https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-control`. `DEELA_API_BASE_URL` is an optional build-time override. Sign-in requires an active subscription or an owner-granted trial; the backend, not local APK state, decides access.
 
 - `POST /api/v1/auth/login` with JSON `{email,password,platform:"android"}` returns `{access_token}`.
 - `GET /api/v1/entitlements/me` with `Authorization: Bearer <token>` returns `{active:true,expires_at:"ISO-8601 UTC"}` or `{active:true,expires_at_epoch:UNIX_SECONDS}` for a valid paid or owner-granted trial subscription.
