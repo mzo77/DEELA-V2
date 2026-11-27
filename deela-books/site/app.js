@@ -48,7 +48,8 @@ async function reload(){
  try{
   const [catalog,shops,me]=await Promise.all([api("/catalog"),api("/shops"),api("/me")]);
   state.listings=catalog.listings||[];state.shops=shops.shops||[];state.me=me;state.settings=catalog.settings||{};
-  state.email=me.email||"";state.cart=state.cart.filter(x=>state.listings.some(b=>b.id===x.id));saveCart();
+  state.email=me.email||"";
+  applyTheme(state.settings.theme_colors);state.cart=state.cart.filter(x=>state.listings.some(b=>b.id===x.id));saveCart();
   $("heroTitle").textContent=state.settings.hero_title||"لكل كتاب حكاية، ولكل قارئ عالم";
   $("heroSubtitle").textContent=state.settings.hero_subtitle||"سوق ديلا للكتب والروايات.";
   $("announcement").textContent=state.settings.announcement||"DEELA Books";
@@ -64,6 +65,17 @@ async function reload(){
   document.querySelectorAll(".owner-only").forEach(x=>x.hidden=!state.me?.is_owner);
   renderHome();route(state.view,false);
  }catch(e){toast(errorMessage(e));openLogin(errorMessage(e))}
+}
+const themeKeys={"bg":"خلفية المتجر","panel":"البطاقات","white":"النص الرئيسي","muted":"النص الثانوي","teal":"اللون الأساسي","purple":"اللون المساعد","gold":"اللون الذهبي","line":"الحدود"};
+function applyTheme(colors){
+ for(const key of Object.keys(themeKeys)){
+  const value=colors?.[key];
+  if(typeof value==="string"&&/^#[0-9a-f]{6}$/i.test(value))document.documentElement.style.setProperty("--"+key,value);
+  else document.documentElement.style.removeProperty("--"+key);
+ }
+}
+function themeFields(conf){
+ return Object.entries(themeKeys).map(([key,label])=>'<label class="field">'+esc(label)+'<input type="color" name="theme_'+key+'" value="'+esc(/^#[0-9a-f]{6}$/i.test(conf.theme_colors?.[key]||"")?conf.theme_colors[key]:getComputedStyle(document.documentElement).getPropertyValue("--"+key).trim())+'"></label>').join("");
 }
 function demoCovers(){
  const samples=[
@@ -452,7 +464,7 @@ function ownerPage(){
   return top+'<form class="panel owner-settings" id="settingsForm"><h2>الهوية والعروض والعمولة</h2>'+
   '<p>غيّر عناوين الموقع وصفه ورسالة الإعلان ووسيلة التواصل دون تعديل أي كود.</p>'+
   '<div class="form-grid">'+
-  field("اسم المنصة","name","text",true,"DEELA Books",conf.name||"DEELA Books")+
+  themeFields(conf)+field("اسم المنصة","name","text",true,"DEELA Books",conf.name||"DEELA Books")+
   field("عنوان الواجهة الرئيسية","hero_title","text",true,"لكل كتاب حكاية",conf.hero_title||"")+
   field("الرسالة العلوية","announcement","text",false,"",conf.announcement||"")+
   field("عنوان الحملة أو العرض","home_promo_title","text",false,"أحدث إصدارات ديلا",conf.home_promo_title||"")+
@@ -652,7 +664,7 @@ async function handleForm(ev){
     await reload();await route("owner",false);
   }else if(id==="settingsForm"){
     const payload={...state.settings,...state.ownerData?.settings,...raw,
-      site_public:false,payments_live:false};
+      theme_colors:Object.fromEntries(Object.keys(themeKeys).map(k=>[k,raw["theme_"+k]])),site_public:false,payments_live:false};
     await api("/owner/settings",{method:"POST",data:payload});
     toast("تم حفظ هوية المنصة والعروض");await reload();await route("owner",false);
   }else if(id==="messageForm"){
