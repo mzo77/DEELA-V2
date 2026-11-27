@@ -164,6 +164,7 @@ Deno.serve(async req=>{
     settings:{name:conf.name,hero_title:conf.hero_title,hero_subtitle:conf.hero_subtitle,
       announcement:conf.announcement,support_url:conf.support_url,site_public:conf.site_public,
       home_promo_title:conf.home_promo_title,home_promo_description:conf.home_promo_description,
+      theme_colors:conf.theme_colors,theme_material:conf.theme_material,
       ...Object.fromEntries(FEATURE_FLAGS.map(k=>[k,conf[k]]))},
     payments_live:false,shipping_live:false,currency:"SAR"
   });
@@ -519,6 +520,20 @@ Deno.serve(async req=>{
           ?Math.max(0,Math.min(50,Number(b.commission_percent))):10,
         updated_at:new Date().toISOString()
       };
+      if(Object.prototype.hasOwnProperty.call(b,"theme_colors")){
+        const keys=["bg","panel","white","muted","teal","purple","gold","line"];
+        if(!b.theme_colors||typeof b.theme_colors!=="object"||Array.isArray(b.theme_colors))return fail(req,"ألوان غير صحيحة",400);
+        const colors:Record<string,string>={};
+        for(const [key,value] of Object.entries(b.theme_colors)){
+          if(!keys.includes(key)||typeof value!=="string"||!/^#[0-9a-f]{6}$/i.test(value))return fail(req,"لون غير صحيح",400);
+          colors[key]=value;
+        }
+        configured.theme_colors=colors;
+      }
+      if(Object.prototype.hasOwnProperty.call(b,"theme_material")){
+        if(!["none","ceramic","marble","ornament","pearl","metal","velvet","neon","heritage"].includes(b.theme_material))return fail(req,"خامة غير صحيحة",400);
+        configured.theme_material=b.theme_material;
+      }
       if(configured.support_url && !/^https:\/\//.test(String(configured.support_url)))
         return fail(req,"رابط الدعم يجب أن يبدأ بـ https://",400);
       if(configured.contact_email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(configured.contact_email)))
