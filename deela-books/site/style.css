@@ -413,3 +413,13 @@ button.like-chip:hover,.like-chip.active{color:#ffe4d5;border-color:#d3a3a8;back
 }
 @media(max-width:350px){.header-actions{gap:4px}.icon-button{min-width:23px}.account-pill{font-size:9px}.book-bottom{flex-wrap:wrap}.category-grid{gap:6px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}button{transition:none!important}}
+
+/* DEELA material presets — opt-in via data-material */
+[data-material="ceramic"]{background-image:linear-gradient(125deg,#ffffff22,transparent 45%,#ffffff16 48%,transparent 52%),repeating-linear-gradient(135deg,transparent 0 78px,#ffffff13 79px 81px,transparent 82px 160px)}
+[data-material="marble"]{background-image:repeating-linear-gradient(117deg,transparent 0 70px,#c9a66b33 71px,#c9a66b77 72px,transparent 75px 160px),radial-gradient(ellipse at 20% 30%,#ffffff18,transparent 65%)}
+[data-material="ornament"]{background-image:repeating-conic-gradient(from 45deg,#d8b47722 0deg 45deg,transparent 45deg 90deg);background-size:32px 32px}
+[data-material="pearl"]{background-image:linear-gradient(125deg,#e7c8ff44,#9ae9e944,#fff4d344,#f3c6de44)}
+[data-material="metal"]{background-image:repeating-linear-gradient(90deg,#ffffff09 0px,#00000009 1px,transparent 3px),linear-gradient(125deg,transparent,#ffffff33,transparent)}
+[data-material="velvet"]{background-image:radial-gradient(ellipse at 30% 20%,#ffffff22,transparent 65%),linear-gradient(145deg,transparent,#00000055)}
+[data-material="neon"]{background-image:radial-gradient(ellipse at 10% 20%,#9c45ff55,transparent 55%),radial-gradient(ellipse at 90% 80%,#00d9ff44,transparent 60%)}
+[data-material="heritage"]{background-image:repeating-linear-gradient(45deg,#d6b47a22 0 1px,transparent 1px 12px),repeating-linear-gradient(-45deg,#d6b47a22 0 1px,transparent 1px 12px)}
