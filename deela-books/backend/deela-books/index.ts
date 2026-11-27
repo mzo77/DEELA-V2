@@ -25,6 +25,13 @@ const slugRE=/^[a-z0-9][a-z0-9-]{2,59}$/;
 const error=(e:unknown)=>e instanceof Error?e.message:"unexpected";
 const currencies=(n:unknown)=>Number.isFinite(Number(n))&&Number(n)>=0&&Number(n)<=50000
  ?Math.round(Number(n)*100)/100:NaN;
+function saudiPhone(value:unknown){
+ let phone=str(value,24).replace(/[\s()-]/g,"");
+ if(/^05\d{8}$/.test(phone))phone="+966"+phone.slice(1);
+ else if(/^5\d{8}$/.test(phone))phone="+966"+phone;
+ else if(/^9665\d{8}$/.test(phone))phone="+"+phone;
+ return /^\+[1-9]\d{7,14}$/.test(phone)?phone:"";
+}
 async function getUser(req:Request){
  const header=req.headers.get("authorization")||"";
  if(!/^Bearer \S+$/.test(header)||header.length>8192)return null;
@@ -224,6 +231,32 @@ Deno.serve(async req=>{
     if(r.error||!r.data.session)return fail(req,"بيانات الدخول غير صحيحة أو لم يتم تأكيد البريد",401);
     return respond(req,{access_token:r.data.session.access_token,refresh_token:r.data.session.refresh_token,expires_at:r.data.session.expires_at,user:{id:r.data.user.id,email:r.data.user.email}});
   }
+  if(req.method==="POST"&&path==="/auth/refresh"){
+    const b=await req.json(),refresh_token=str(b.refresh_token,2048);if(!refresh_token)return fail(req,"جلسة الدخول منتهية. سجّل الدخول مرة أخرى.",401);
+    const r=await authGuest().auth.refreshSession({refresh_token});
+    if(r.error||!r.data.session)return fail(req,"انتهت صلاحية الجلسة. سجّل الدخول مرة أخرى.",401);
+    return respond(req,{access_token:r.data.session.access_token,refresh_token:r.data.session.refresh_token,expires_at:r.data.session.expires_at,user:{id:r.data.user.id,email:r.data.user.email,phone:r.data.user.phone}});
+  }
+  if(req.method==="POST"&&path==="/auth/phone/send"){
+    const conf=await settings();if(!conf.enable_seller_registration)return fail(req,"التسجيل مغلق مؤقتًا",403);
+    const b=await req.json(),phone=saudiPhone(b.phone),channel=str(b.channel,20)==="whatsapp"?"whatsapp":"sms";
+    if(!phone)return fail(req,"أدخل رقم جوال سعودي صحيحًا مثل 5XXXXXXXX",400);
+    const r=await authGuest().auth.signInWithOtp({phone,options:{channel,shouldCreateUser:true,data:{deela_books_account:true}}});
+    if(r.error){
+      const details=(r.error.message||"").toLowerCase();
+      if(/sms|phone|provider|twilio|whatsapp|not enabled|disabled/.test(details))return fail(req,channel==="whatsapp"?"إرسال واتساب يحتاج ربط Twilio Verify وقالب واتساب معتمد في Supabase؛ اختر SMS بعد ربط مشغل الرسائل.":"إرسال رمز الجوال يحتاج تفعيل مصادقة الهاتف وربط مشغل SMS في Supabase.",503);
+      if(r.error.status===429)return fail(req,"طلبات الرموز كثيرة. انتظر قليلًا قبل إعادة المحاولة.",429);
+      return fail(req,"تعذر إرسال رمز التحقق. تحقق من الرقم ومشغل الرسائل.",400);
+    }
+    return respond(req,{ok:true,phone,channel,message:channel==="whatsapp"?"أرسلنا رمزًا إلى واتساب إذا كان المشغل مهيأً.":"أرسلنا رمز التحقق إلى الجوال."});
+  }
+  if(req.method==="POST"&&path==="/auth/phone/verify"){
+    const b=await req.json(),phone=saudiPhone(b.phone),token=str(b.token,12);
+    if(!phone||!/^\d{6,8}$/.test(token))return fail(req,"أدخل رقم الجوال والرمز المكوّن من 6 أرقام",400);
+    const r=await authGuest().auth.verifyOtp({phone,token,type:"sms"});
+    if(r.error||!r.data.session)return fail(req,"الرمز غير صحيح أو انتهت صلاحيته. أعد إرسال رمز جديد.",400);
+    return respond(req,{access_token:r.data.session.access_token,refresh_token:r.data.session.refresh_token,expires_at:r.data.session.expires_at,user:{id:r.data.user.id,phone:r.data.user.phone}});
+  }
   if(req.method==="POST"&&path==="/auth/verify-email"){
     const b=await req.json(),email=str(b.email,254).toLowerCase(),token=str(b.token,20);
     if(!email||!/^\d{6,8}$/.test(token))return fail(req,"أدخل رمز التحقق المرسل إلى بريدك",400);
@@ -249,18 +282,20 @@ Deno.serve(async req=>{
   const conf=await settings();
   const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
   const privateSeller=!!sellerAccount&&sellerAccount.status==="approved"&&!conf.site_public;
+  const pendingSeller=!!sellerAccount&&sellerAccount.status==="pending"&&!conf.site_public;
   const privateApplicant=!!user&&!isOwner&&!sellerAccount&&!conf.site_public&&conf.enable_seller_registration===true;
   // The private marketplace permits only the signed-in applicant profile and application endpoints before owner approval.
   if(!isOwner&&!conf.site_public){
-    if(!privateSeller&&!privateApplicant)return fail(req,"موقع DEELA Books خاص، ويتطلب دخول المالك أو بائعًا معتمدًا",403);
-    const allowed=privateSeller?PRIVATE_SELLER_ROUTES.has(req.method+" "+path):new Set(["GET /me","POST /seller/apply"]).has(req.method+" "+path);
+    if(!privateSeller&&!pendingSeller&&!privateApplicant)return fail(req,"موقع DEELA Books خاص، ويتطلب دخول المالك أو بائعًا معتمدًا",403);
+    const pendingRoutes=new Set(["GET /catalog","GET /shops","GET /me","GET /my/listings","GET /seller/notifications","POST /seller/notifications/read","GET /seller/launch-alerts","POST /seller/launch-alerts/request","POST /listing","POST /upload/sign"]);
+    const allowed=privateSeller?PRIVATE_SELLER_ROUTES.has(req.method+" "+path):pendingSeller?pendingRoutes.has(req.method+" "+path):new Set(["GET /me","POST /seller/apply"]).has(req.method+" "+path);
     if(!allowed)return fail(req,"هذه الخاصية غير متاحة قبل اعتماد المتجر",403);
   }
   if(req.method==="GET"&&path==="/catalog"){
-    if(privateSeller){
+    if(privateSeller||pendingSeller){
       const categories=await db.from("deela_books_sections").select("id,title,description,kind,category,sort_order,visible").eq("kind","category").eq("visible",true).order("sort_order").limit(1000);
       if(categories.error)throw categories.error;
-      const sellerSettings={site_public:false,...Object.fromEntries(FEATURE_FLAGS.map(k=>[k,conf[k]]))};
+      const sellerSettings={site_public:false,seller_pending:pendingSeller,...Object.fromEntries(FEATURE_FLAGS.map(k=>[k,conf[k]]))};
       return respond(req,{listings:[],settings:sellerSettings,sections:categories.data||[],banners:[],payments_live:false,shipping_live:false,currency:"SAR"});
     }
     const [sectionRows,bannerRows,theme]=await Promise.all([
@@ -285,7 +320,7 @@ Deno.serve(async req=>{
     });
   }
   if(req.method==="GET"&&path==="/shops"){
-    if(privateSeller)return respond(req,{shops:[{id:sellerAccount.id,shop_name:sellerAccount.shop_name,slug:sellerAccount.slug,bio:sellerAccount.bio,city:sellerAccount.city,status:sellerAccount.status,follower_count:0}]});
+    if(privateSeller||pendingSeller)return respond(req,{shops:[{id:sellerAccount.id,shop_name:sellerAccount.shop_name,slug:sellerAccount.slug,bio:sellerAccount.bio,city:sellerAccount.city,status:sellerAccount.status,follower_count:0}]});
     const q=db.from("deela_books_sellers").select("id,shop_name,slug,bio,city,status,created_at").order("created_at",{ascending:false}).limit(70);
     if(!isOwner)q.eq("status","approved");
     const {data,error:e}=await q;
@@ -311,7 +346,7 @@ Deno.serve(async req=>{
       db.from("deela_books_orders").select("id,code,status,total_sar,created_at,tracking_number,owner_note").eq("buyer_id",user.id).order("created_at",{ascending:false}).limit(50)
     ]);
     if(favs.error||likes.error||follows.error||myOrders.error)throw Error("customer profile unavailable");
-    return respond(req,{id:user.id,email:user.email||"",seller,
+    return respond(req,{id:user.id,email:user.email||"",phone:user.phone||"",seller,
       favorites:(favs.data||[]).map((x:any)=>x.listing_id),
       likes:(likes.data||[]).map((x:any)=>x.listing_id),
       following:(follows.data||[]).map((x:any)=>x.seller_id),
@@ -319,7 +354,7 @@ Deno.serve(async req=>{
   }
   if(req.method==="POST"&&path==="/seller/apply"){
     if(!conf.enable_seller_registration)return fail(req,"فتح المتاجر مقفل مؤقتًا من لوحة المالك",403);
-    if(!isOwner&&!user.email_confirmed_at)return fail(req,"أكد بريدك الإلكتروني أولًا قبل طلب فتح المتجر",403);
+    if(!isOwner&&!user.email_confirmed_at&&!user.phone_confirmed_at)return fail(req,"أكد بريدك أو رقم جوالك أولًا قبل طلب فتح المتجر",403);
     const b=await req.json(),shop_name=str(b.shop_name,100),slug=str(b.slug,60).toLowerCase();
     if(shop_name.length<3||!slugRE.test(slug))return fail(req,"أدخل اسم متجر ورابطًا صحيحًا بالإنجليزية");
     if(await sellerFor(user.id))return fail(req,"يوجد طلب متجر مرتبط بهذا الحساب بالفعل",409);
@@ -355,7 +390,8 @@ Deno.serve(async req=>{
     return respond(req,{ok:true,updated:r.data?.length||0});
   }
   if(req.method==="GET"&&path==="/seller/launch-alerts"){
-    const seller=await sellerFor(user.id);if(!seller||seller.status!=="approved")return fail(req,"خدمة التنبيه متاحة للمتاجر المعتمدة فقط",403);
+    const seller=await sellerFor(user.id);if(!seller)return fail(req,"متجر الكاتب غير موجود",404);
+    if(seller.status!=="approved")return respond(req,{campaigns:[],price_sar:Number(conf.launch_alert_price_sar||0),enabled:false,payments_live:false,push_background_enabled:false});
     const r=await db.from("deela_books_launch_alerts").select("id,listing_id,amount_sar,payment_reference,status,payment_confirmed_at,published_at,created_at,deela_books_listings(title,category,format)").eq("seller_id",seller.id).order("created_at",{ascending:false}).limit(100);
     if(r.error)throw r.error;return respond(req,{campaigns:r.data||[],price_sar:Number(conf.launch_alert_price_sar||0),enabled:conf.site_public===true&&conf.enable_launch_alerts===true&&Number(conf.launch_alert_price_sar||0)>0,payments_live:false,push_background_enabled:false});
   }
@@ -416,7 +452,7 @@ Deno.serve(async req=>{
   if(req.method==="POST"&&path==="/listing"){
     if(!conf.enable_book_submissions)return fail(req,"استقبال الكتب متوقف مؤقتًا",403);
     const b=await req.json(),seller=await sellerFor(user.id);
-    if(!seller||(!isOwner&&seller.status!=="approved"))return fail(req,"يجب أن يكون متجرك معتمدًا لإضافة الكتب",403);
+    if(!seller||(!isOwner&&seller.status!=="approved"&&!(seller.status==="pending"&&!conf.site_public)))return fail(req,"يجب أن يكون متجرك معتمدًا لإضافة الكتب",403);
     const values=itemInput(b),id=str(b.id,60);
     const baseCategories=["روايات","أدب وشعر","خيال ورعب","تطوير الذات","تاريخ","كتب الأطفال","فلسفة","تقنية","ديني","أخرى"];
     if(!baseCategories.includes(values.category)){
@@ -446,7 +482,7 @@ Deno.serve(async req=>{
     if(type!=="branding"&&!conf.enable_book_submissions)return fail(req,"رفع الكتب متوقف مؤقتًا",403);
     if(type==="branding"&&!isOwner)return fail(req,"رفع صور الهوية متاح للمالك فقط",403);
     const seller=type==="branding"?null:await sellerFor(user.id);
-    if(type!=="branding"&&(!seller||(!isOwner&&seller.status!=="approved")))return fail(req,"حساب متجر معتمد مطلوب",403);
+    if(type!=="branding"&&(!seller||(!isOwner&&seller.status!=="approved"&&!(seller.status==="pending"&&!conf.site_public))))return fail(req,"حساب متجر معتمد مطلوب",403);
     const extOk=type==="branding"?["jpg","jpeg","png","webp"]:type==="cover"?["jpg","jpeg","png","webp"]:["pdf","epub","mp3"];
     if(!extOk.includes(extension))return fail(req,"نوع الملف غير مدعوم",400);
     const folder=type==="branding"?"branding":type==="cover"?"covers":"books";
