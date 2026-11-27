@@ -19,7 +19,7 @@ const statusNames={draft:"مسودة",pending:"بانتظار المراجعة",
 const enabled=key=>state.settings?.[key]!==false;
 const state={token:window.__DEELA_BOOKS_TOKEN||sessionStorage.getItem("deela-books-token")||"",refreshToken:sessionStorage.getItem("deela-books-refresh")||"",
  email:"",view:"home",listings:[],shops:[],cart:[],me:null,settings:{},
- current:null,category:"الكل",productType:"all",format:"all",sort:"newest",search:"",couponCode:"",condition:"all",shippingOnly:false,discountOnly:false,cityFilter:"",minPrice:"",maxPrice:"",ownerTab:"overview",sellerTab:"books",
+ current:null,category:"الكل",productType:"all",format:"all",sort:"newest",search:"",couponCode:"",condition:"all",freeShippingOnly:false,nearbyOnly:false,userCoords:null,radiusKm:25,shippingOnly:false,discountOnly:false,cityFilter:"",minPrice:"",maxPrice:"",ownerTab:"overview",sellerTab:"books",
  sellerListings:[],sellerActivity:[],sellerNotifications:[],sellerNotificationIds:new Set(),contestIds:new Set(),contestTimer:null,sellerNotificationsReady:false,sellerNotificationTimer:null,sellerLaunchAlerts:[],sellerPromotions:[],contests:[],ownerContests:[],launchAlertPrice:0,launchAlertFeed:[],launchAlertIds:new Set(),launchAlertTimer:null,launchAlertsReady:false,ownerData:null,editing:null,formNote:"",loading:false,sections:[],banners:[]};
 try{let c=JSON.parse(localStorage.getItem("deela-books-cart-v1")||"[]");if(Array.isArray(c))state.cart=c.filter(x=>typeof x.id==="string"&&Number.isInteger(x.qty)&&x.qty>0&&x.qty<=10).slice(0,10)}catch{}
 let noticeTimer;
@@ -303,6 +303,11 @@ function listingGrid(items,showSamples=false){
  return '<div class="books-grid">'+(items.length?items.map(card).join(""):showSamples?demoCovers():
  '<div class="empty-state"><h3>ما فيه كتب مطابقة حاليًا</h3><p>تظهر الكتب فور نشرها في مساحة الاختبار الخاصة.</p><button class="btn btn-outline" data-route="seller">أضف أول كتاب</button></div>')+'</div>';
 }
+function distanceKm(lat1,lon1,lat2,lon2){
+ if(![lat1,lon1,lat2,lon2].every(Number.isFinite))return null;
+ const rad=n=>n*Math.PI/180,dl=rad(lat2-lat1),dn=rad(lon2-lon1),a=Math.sin(dl/2)**2+Math.cos(rad(lat1))*Math.cos(rad(lat2))*Math.sin(dn/2)**2;
+ return 6371*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
 function catalogPage(){
  let books=state.listings.filter(b=>{
   const category=state.category==="الكل"||b.category===state.category;
@@ -313,8 +318,11 @@ function catalogPage(){
   const shipping=!state.shippingOnly||(b.format==="physical"&&b.shipping_available!==false);
   const discount=!state.discountOnly||(Number(b.compare_at_sar)>Number(b.price_sar));
   const city=!state.cityFilter||String(b.city||"").toLocaleLowerCase().includes(state.cityFilter.toLocaleLowerCase());
+  const freeShipping=!state.freeShippingOnly||(b.format==="physical"&&b.shipping_available!==false&&Number(b.shipping_fee_sar||0)===0);
+  const seller=b.deela_books_sellers||{},distance=state.userCoords?distanceKm(state.userCoords.lat,state.userCoords.lng,Number(seller.latitude),Number(seller.longitude)):null;
+  const nearby=!state.nearbyOnly||(distance!==null&&distance<=state.radiusKm);
   const min=!state.minPrice||Number(b.price_sar)>=Number(state.minPrice),max=!state.maxPrice||Number(b.price_sar)<=Number(state.maxPrice);
-  return category&&productType&&format&&query&&condition&&shipping&&discount&&city&&min&&max;
+  return category&&productType&&format&&query&&condition&&shipping&&discount&&city&&freeShipping&&nearby&&min&&max;
  });
  const sorters={
   newest:(a,b)=>new Date(b.created_at)-new Date(a.created_at),
@@ -322,14 +330,15 @@ function catalogPage(){
   rated:(a,b)=>Number(b.average_rating||0)-Number(a.average_rating||0),
   price_low:(a,b)=>Number(a.price_sar)-Number(b.price_sar),
   price_high:(a,b)=>Number(b.price_sar)-Number(a.price_sar),
-  bestselling:(a,b)=>Number(b.sales_count||0)-Number(a.sales_count||0)
+  bestselling:(a,b)=>Number(b.sales_count||0)-Number(a.sales_count||0),
+  nearest:(a,b)=>{const sellerA=a.deela_books_sellers||{},sellerB=b.deela_books_sellers||{};return (distanceKm(state.userCoords?.lat,state.userCoords?.lng,Number(sellerA.latitude),Number(sellerA.longitude))??Infinity)-(distanceKm(state.userCoords?.lat,state.userCoords?.lng,Number(sellerB.latitude),Number(sellerB.longitude))??Infinity)}
  };
  books=books.sort(sorters[state.sort]||sorters.newest);
  return heading("مكتبة ديلا","اختر كتابًا يناسب ذوقك من الكتب الحقيقية المعتمدة.","EXPLORE OUR BOOKS")+
  '<div class="filters">'+categoryOptions().map(c=>'<button class="filter '+(state.category===c?"active":"")+'" data-category="'+esc(c)+'">'+esc(c)+'</button>').join("")+'</div>'+
- '<div class="catalog-toolbar"><p>عدد الكتب: '+books.length+' '+(state.me?.is_owner?"(تظهر كتب المراجعة للمالك فقط)":"")+'</p>'+
- '<div class="filter-selects"><select id="productTypeFilter" aria-label="تصفية نوع المنتج"><option value="all">كل الأقسام</option>'+Object.entries(productTypes).map(([key,label])=>'<option value="'+key+'">'+label+'</option>').join("")+'</select><select id="formatFilter" aria-label="تصفية نوع الكتاب"><option value="all">جميع الأنواع</option><option value="physical">ورقي</option><option value="ebook">رقمي</option><option value="audiobook">صوتي</option></select>'+
- '<select id="sortFilter" aria-label="ترتيب الكتب"><option value="newest">الأحدث</option><option value="popular">الأكثر إعجابًا</option><option value="bestselling">الأكثر مبيعًا</option><option value="rated">الأعلى تقييمًا</option><option value="price_low">الأقل سعرًا</option><option value="price_high">الأعلى سعرًا</option></select><select id="conditionFilter" aria-label="حالة الكتاب"><option value="all">كل الحالات</option><option value="new">جديد</option><option value="like_new">شبه جديد</option><option value="good">جيد</option><option value="acceptable">مقبول</option></select><input id="minPriceFilter" type="number" min="0" placeholder="من ريال" value="'+esc(state.minPrice)+'"><input id="maxPriceFilter" type="number" min="0" placeholder="إلى ريال" value="'+esc(state.maxPrice)+'"><input id="cityFilter" type="search" placeholder="المدينة" value="'+esc(state.cityFilter)+'"><label class="filter-check"><input id="shippingFilter" type="checkbox" '+(state.shippingOnly?"checked":"")+ '> توصيل</label><label class="filter-check"><input id="discountFilter" type="checkbox" '+(state.discountOnly?"checked":"")+ '> خصومات</label></div></div>'+
+ '<div class="catalog-toolbar"><p>عدد المنتجات: '+books.length+' '+(state.me?.is_owner?"(تظهر كتب المراجعة للمالك فقط)":"")+'</p>'+
+ '<div class="catalog-discovery-tools"><button type="button" class="btn '+(state.nearbyOnly?"btn-primary":"btn-outline")+'" data-nearby>'+ (state.nearbyOnly?"قريب منك · إيقاف":"بالقرب مني")+'</button><select id="nearbyRadius" aria-label="نطاق البحث"><option value="5">5 كم</option><option value="10">10 كم</option><option value="25">25 كم</option><option value="50">50 كم</option><option value="100">100 كم</option></select><label class="filter-check"><input id="freeShippingFilter" type="checkbox" '+(state.freeShippingOnly?"checked":"")+'> شحن مجاني</label></div><div class="filter-selects"><select id="productTypeFilter" aria-label="تصفية نوع المنتج"><option value="all">كل الأقسام</option>'+Object.entries(productTypes).map(([key,label])=>'<option value="'+key+'">'+label+'</option>').join("")+'</select><select id="formatFilter" aria-label="تصفية نوع الكتاب"><option value="all">جميع الأنواع</option><option value="physical">ورقي</option><option value="ebook">رقمي</option><option value="audiobook">صوتي</option></select>'+
+ '<select id="sortFilter" aria-label="ترتيب الكتب"><option value="newest">الأحدث</option><option value="nearest" '+(state.nearbyOnly?"":"disabled")+' >الأقرب إليك</option><option value="popular">الأكثر إعجابًا</option><option value="bestselling">الأكثر مبيعًا</option><option value="rated">الأعلى تقييمًا</option><option value="price_low">الأقل سعرًا</option><option value="price_high">الأعلى سعرًا</option></select><select id="conditionFilter" aria-label="حالة الكتاب"><option value="all">كل الحالات</option><option value="new">جديد</option><option value="like_new">شبه جديد</option><option value="good">جيد</option><option value="acceptable">مقبول</option></select><input id="minPriceFilter" type="number" min="0" placeholder="من ريال" value="'+esc(state.minPrice)+'"><input id="maxPriceFilter" type="number" min="0" placeholder="إلى ريال" value="'+esc(state.maxPrice)+'"><input id="cityFilter" type="search" placeholder="المدينة" value="'+esc(state.cityFilter)+'"><label class="filter-check"><input id="shippingFilter" type="checkbox" '+(state.shippingOnly?"checked":"")+ '> توصيل</label><label class="filter-check"><input id="discountFilter" type="checkbox" '+(state.discountOnly?"checked":"")+ '> خصومات</label></div></div>'+
  listingGrid(books,!state.listings.length);
 }
 function detailPage(){
@@ -528,7 +537,7 @@ function sellerPage(){
  '<form id="sellerApplyForm" class="form-grid">'+
  field("اسم الكاتب الظاهر للقراء","shop_name","text",true,"اسمك أو اسمك الأدبي")+
  field("معرّف صفحة الكاتب بالإنجليزية","slug","text",true,"my-novels")+
- field("المدينة","city","text",false,"جدة")+
+ field("المدينة","city","text",false,"جدة")+'<button type="button" class="btn btn-outline" data-store-location>تحديد موقع المتجر على الخريطة</button><input type="hidden" name="latitude"><input type="hidden" name="longitude"><small class="field full">يُحفظ موقع المتجر بعد تقريبه؛ لا يُرسل موقع المشتري إلى الخادم.</small>'+
  '<label class="field full">شعار صفحة الكاتب (اختياري)<input id="sellerLogoFile" type="file" accept="image/png,image/jpeg,image/webp"></label>'+
  '<label class="field">الدولة<select name="country"><option>السعودية</option><option>الإمارات</option><option>الكويت</option><option>قطر</option><option>البحرين</option><option>عُمان</option><option>أخرى</option></select></label>'+
  '<label class="field full">نبذة قصيرة عنك وعن رواياتك<textarea name="bio" maxlength="1000" placeholder="عرّف القراء بأسلوبك ونوع الروايات التي تكتبها"></textarea></label>'+
@@ -539,7 +548,7 @@ function sellerPage(){
  return heading("حسابي","تابع رواياتك وتفاعل القراء من مكان واحد.","AUTHOR ACCOUNT")+
  '<section class="seller-profile-card"><div class="seller-avatar">'+(seller.logo_url?'<img src="'+esc(seller.logo_url)+'" alt="">':esc((seller.shop_name||"D").trim().slice(0,1)))+'</div><div><h2>'+esc(seller.shop_name)+(state.sellerPromotions.some(x=>x.kind==="premium"&&x.status==="active"&&x.is_test===false&&new Date(x.ends_at)>new Date())?'<span class="verified-badge" title="توثيق فعلي">✓</span>':"")+
  (state.sellerPromotions.some(x=>x.kind==="premium"&&x.status==="active"&&x.is_test===true&&new Date(x.ends_at)>new Date())?'<span class="premium-test-badge">✦ عضوية تجريبية</span>':"")+'</h2><p>@'+esc(seller.slug)+' · '+esc(state.email||state.me?.phone||"حساب DEELA Books")+'</p></div><span class="status '+(available?"":"muted")+'">'+(available?"كاتب معتمد":"طلب الكاتب قيد المراجعة")+'</span></section>'+
- '<details class="panel seller-profile-edit"><summary>تعديل واجهة متجري</summary><form id="sellerProfileForm" class="form-grid">'+field("اسم المتجر","shop_name","text",true,"",seller.shop_name)+field("المدينة","city","text",false,"",seller.city||"")+'<label class="field full">نبذة المتجر<textarea name="bio" maxlength="1000">'+esc(seller.bio||"")+'</textarea></label><label class="field full">تغيير الشعار<input id="sellerLogoFile" type="file" accept="image/png,image/jpeg,image/webp"></label><button class="btn btn-primary" type="submit">حفظ واجهة المتجر</button></form></details>'+
+ '<details class="panel seller-profile-edit"><summary>تعديل واجهة متجري</summary><form id="sellerProfileForm" class="form-grid">'+field("اسم المتجر","shop_name","text",true,"",seller.shop_name)+field("المدينة","city","text",false,"",seller.city||"")+'<button type="button" class="btn btn-outline" data-store-location>تحديث موقع المتجر</button><input type="hidden" name="latitude" value="'+esc(seller.latitude??"")+'"><input type="hidden" name="longitude" value="'+esc(seller.longitude??"")+'"><small class="field full">الموقع يُحفظ تقريبيًا لتحسين نتائج القرب فقط.</small>'+'<label class="field full">نبذة المتجر<textarea name="bio" maxlength="1000">'+esc(seller.bio||"")+'</textarea></label><label class="field full">تغيير الشعار<input id="sellerLogoFile" type="file" accept="image/png,image/jpeg,image/webp"></label><button class="btn btn-primary" type="submit">حفظ واجهة المتجر</button></form></details>'+
  '<div class="seller-stat-grid"><div class="seller-stat"><strong>'+published+'</strong><span>رواية منشورة</span></div><div class="seller-stat"><strong>'+novels+'</strong><span>إجمالي الروايات</span></div><div class="seller-stat"><strong>'+views+'</strong><span>مشاهدة</span></div><div class="seller-stat"><strong>'+likes+'</strong><span>إعجاب</span></div><div class="seller-stat"><strong>'+Number(state.sellerMetrics?.accepted||0)+'</strong><span>طلبات مقبولة</span></div></div>'+
  '<section class="seller-promo-card"><div><strong>روّج لروايتك في DEELA Books</strong><p>أضف غلافًا ووصفًا وسعرًا جذابًا، ثم أرسلها للمراجعة.</p></div>'+(enabled("enable_book_submissions")?'<button class="btn btn-primary" data-editor="new">＋ أضف رواية</button>':'<span class="status muted">استقبال الروايات متوقف</span>')+'</section>'+
  '<div class="toolbar"><span class="status '+(available?"":"muted")+'">'+(available?"صفحة الكاتب مفعّلة":"الحساب قيد مراجعة المتجر")+'</span><button class="btn btn-outline" data-route="seller">تحديث الحساب ↻</button></div>'+
@@ -877,7 +886,7 @@ async function route(view,push=true){
   if(view==="owner")markup+=accountLogoutPanel();
   $("pageContent").innerHTML=markup;
   if(view==="detail")trackBookView(state.current);
-  if(view==="catalog"){$("productTypeFilter").value=state.productType;$("formatFilter").value=state.format;$("sortFilter").value=state.sort;$("conditionFilter").value=state.condition}
+  if(view==="catalog"){$("productTypeFilter").value=state.productType;$("nearbyRadius").value=String(state.radiusKm);$("freeShippingFilter").checked=state.freeShippingOnly;$("formatFilter").value=state.format;$("sortFilter").value=state.sort;$("conditionFilter").value=state.condition}
  }
  window.scrollTo({top:0,behavior:"instant"});
 }
@@ -1317,7 +1326,9 @@ function bind(){
   }
   if(t.dataset.listingDelete){ev.preventDefault();return deleteSellerListing(t.dataset.listingDelete)}
   if(t.dataset.contestClose){ev.preventDefault();return closeContest(t.dataset.contestClose)}
-  if(t.dataset.category){ev.preventDefault();state.category=t.dataset.category;return route("catalog")}
+  if(t.hasAttribute("data-nearby")){ev.preventDefault();if(state.nearbyOnly){state.nearbyOnly=false;state.userCoords=null;state.sort="newest";return route("catalog",false)}if(!navigator.geolocation)return toast("خدمة الموقع غير متاحة في هذا المتصفح");navigator.geolocation.getCurrentPosition(pos=>{state.userCoords={lat:pos.coords.latitude,lng:pos.coords.longitude};state.nearbyOnly=true;state.sort="nearest";route("catalog",false)},()=>toast("اسمح بالموقع للبحث عن المتاجر القريبة"),{enableHighAccuracy:false,timeout:12000,maximumAge:300000});return}
+  if(t.hasAttribute("data-store-location")){ev.preventDefault();const form=t.closest("form");if(!navigator.geolocation)return toast("خدمة الموقع غير متاحة");navigator.geolocation.getCurrentPosition(pos=>{form.elements.latitude.value=pos.coords.latitude;form.elements.longitude.value=pos.coords.longitude;toast("تم تحديد موقع المتجر؛ يحفظ تقريبيًا فقط")},()=>toast("اسمح للموقع لتحديد موقع المتجر"),{enableHighAccuracy:false,timeout:12000,maximumAge:300000});return}
+    if(t.dataset.category){ev.preventDefault();state.category=t.dataset.category;return route("catalog")}
   if(t.dataset.editorCategory){ev.preventDefault();const form=t.closest("form"),select=form?.querySelector('[name="category"]');if(select){select.value=t.dataset.editorCategory;form.querySelectorAll("[data-editor-category]").forEach(x=>x.classList.toggle("active",x===t));}return}
   if(t.hasAttribute("data-logout")){ev.preventDefault();return logout()}
   if(t.dataset.ownerTab){ev.preventDefault();state.ownerTab=t.dataset.ownerTab;return route("owner")}
@@ -1397,6 +1408,8 @@ function bind(){
    const physical=ev.target.value==="physical";document.querySelectorAll("#listingForm .physical-only").forEach(x=>x.hidden=!physical);document.querySelectorAll("#listingForm .digital-only").forEach(x=>x.hidden=physical);
   }
   if(ev.target?.id==="productTypeFilter"){state.productType=ev.target.value;route("catalog",false)}
+  if(ev.target?.id==="freeShippingFilter"){state.freeShippingOnly=ev.target.checked;route("catalog",false)}
+  if(ev.target?.id==="nearbyRadius"){state.radiusKm=Number(ev.target.value)||25;route("catalog",false)}
   if(ev.target?.id==="formatFilter"){state.format=ev.target.value;route("catalog",false)}
   if(ev.target?.id==="sortFilter"){state.sort=ev.target.value;route("catalog",false)}
   if(ev.target?.id==="ownerStatusFilter"){
