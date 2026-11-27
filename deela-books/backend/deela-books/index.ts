@@ -286,12 +286,12 @@ Deno.serve(async req=>{
   if(req.method==="GET"&&path==="/seller/launch-alerts"){
     const seller=await sellerFor(user.id);if(!seller||seller.status!=="approved")return fail(req,"خدمة التنبيه متاحة للمتاجر المعتمدة فقط",403);
     const r=await db.from("deela_books_launch_alerts").select("id,listing_id,amount_sar,payment_reference,status,payment_confirmed_at,published_at,created_at,deela_books_listings(title,category,format)").eq("seller_id",seller.id).order("created_at",{ascending:false}).limit(100);
-    if(r.error)throw r.error;return respond(req,{campaigns:r.data||[],price_sar:Number(conf.launch_alert_price_sar||0),enabled:conf.enable_launch_alerts===true&&Number(conf.launch_alert_price_sar||0)>0,payments_live:false,push_background_enabled:false});
+    if(r.error)throw r.error;return respond(req,{campaigns:r.data||[],price_sar:Number(conf.launch_alert_price_sar||0),enabled:conf.site_public===true&&conf.enable_launch_alerts===true&&Number(conf.launch_alert_price_sar||0)>0,payments_live:false,push_background_enabled:false});
   }
   if(req.method==="POST"&&path==="/seller/launch-alerts/request"){
     const seller=await sellerFor(user.id);if(!seller||seller.status!=="approved")return fail(req,"يجب اعتماد متجرك أولًا",403);
     const b=await req.json(),price=Number(conf.launch_alert_price_sar||0),reference=str(b.payment_reference,160),listingId=str(b.listing_id,60);
-    if(conf.enable_launch_alerts!==true||!Number.isFinite(price)||price<=0)return fail(req,"طلبات التنبيه المدفوع غير مفعّلة حاليًا",403);
+    if(conf.site_public!==true||conf.enable_launch_alerts!==true||!Number.isFinite(price)||price<=0)return fail(req,"الخدمة لا تستقبل مدفوعات ما دام المتجر خاصًا أو الإعلان غير مفعّل",403);
     if(reference.length<3)return fail(req,"أدخل مرجع التحويل البنكي بعد إتمامه خارج المنصة");
     if(!uuid.test(listingId))return fail(req,"اختر رواية منشورة صحيحة");
     const listing=await db.from("deela_books_listings").select("id,title,status,seller_id").eq("id",listingId).eq("seller_id",seller.id).maybeSingle();
@@ -310,7 +310,7 @@ Deno.serve(async req=>{
     if(!uuid.test(id)||!["published","rejected"].includes(status))return fail(req,"حالة التنبيه غير صحيحة");
     const existing=await db.from("deela_books_launch_alerts").select("id,status,payment_reference").eq("id",id).maybeSingle();
     if(existing.error)throw existing.error;if(!existing.data)return fail(req,"الطلب غير موجود",404);
-    if(status==="published"&&(conf.enable_launch_alerts!==true||Number(conf.launch_alert_price_sar||0)<=0||existing.data.status!=="payment_review"||str(existing.data.payment_reference,160).length<3))return fail(req,"لا يمكن نشر الإعلان قبل تفعيل الخدمة ومراجعة مرجع الدفع",403);
+    if(status==="published"&&(conf.site_public!==true||conf.enable_launch_alerts!==true||Number(conf.launch_alert_price_sar||0)<=0||existing.data.status!=="payment_review"||str(existing.data.payment_reference,160).length<3))return fail(req,"لا يمكن نشر الإعلان قبل إطلاق المتجر وتفعيل الخدمة ومراجعة مرجع الدفع",403);
     const now=new Date().toISOString();
     const update=status==="published"?{status,payment_confirmed_by:user.id,payment_confirmed_at:now,published_at:now,updated_at:now}:{status,updated_at:now};
     const saved=await db.from("deela_books_launch_alerts").update(update).eq("id",id).select("id,status,published_at").single();
@@ -569,7 +569,7 @@ Deno.serve(async req=>{
     if(req.method==="GET"&&path==="/owner/overview")return await ownerOverview(req);
     if(req.method==="GET"&&path==="/owner/launch-alerts"){
       const r=await db.from("deela_books_launch_alerts").select("id,listing_id,amount_sar,payment_reference,status,payment_confirmed_at,published_at,created_at,deela_books_sellers(shop_name,slug),deela_books_listings(title,category,format)").order("created_at",{ascending:false}).limit(500);
-      if(r.error)throw r.error;return respond(req,{campaigns:r.data||[],price_sar:Number(conf.launch_alert_price_sar||0),enabled:conf.enable_launch_alerts===true,payments_live:false,push_background_enabled:false});
+      if(r.error)throw r.error;return respond(req,{campaigns:r.data||[],price_sar:Number(conf.launch_alert_price_sar||0),enabled:conf.site_public===true&&conf.enable_launch_alerts===true,payments_live:false,push_background_enabled:false});
     }
     if(req.method==="GET"&&path==="/owner/sections"){
       const r=await db.from("deela_books_sections").select("*").order("sort_order").limit(1000);
