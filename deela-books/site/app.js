@@ -1141,7 +1141,7 @@ function bind(){
 async function logout(){
  try{const client=await oauthClient();await client.auth.signOut({scope:"local"})}catch{}
  for(const key of ["deela-books-token","deela-books-refresh","deela-books-auth-v1","deela-books-pending-phone"])sessionStorage.removeItem(key);
- state.token="";state.refreshToken="";state.me=null;state.sellerListings=[];state.sellerNotifications=[];state.view="home";openLogin("تم تسجيل الخروج من DEELA Books.");
+ state.token="";state.refreshToken="";state.me=null;state.email="";state.sellerListings=[];state.sellerNotifications=[];state.sellerLaunchAlerts=[];state.listings=[];state.shops=[];state.sections=[];state.banners=[];state.ownerData=null;state.settings={};state.view="home";renderHome();openLogin("تم تسجيل الخروج من DEELA Books.");
 }
 async function boot(){
  bind();saveCart();$("year").textContent=new Date().getFullYear();
