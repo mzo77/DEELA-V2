@@ -539,3 +539,10 @@ button.like-chip:hover,.like-chip.active{color:#ffe4d5;border-color:#d3a3a8;back
 .format-card:focus-within{outline:2px solid #83d8ff;outline-offset:2px}
 .format-select-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
 @media(max-width:460px){.format-cards{gap:7px}.format-card{min-height:84px;padding:12px 9px}.format-card strong{font-size:11px}.format-card small{font-size:8px}}
+
+.category-grid{display:flex;gap:12px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scrollbar-width:none;padding:2px 2px 10px}
+.category-grid::-webkit-scrollbar{display:none}
+.category-grid button{flex:0 0 160px;scroll-snap-align:start}
+.shop-copy{flex:1;min-width:0}
+.shop-actions{display:flex;flex-direction:column;align-items:stretch;gap:7px;flex-shrink:0}
+.shop-card .shop-actions button{margin:0;white-space:nowrap}
