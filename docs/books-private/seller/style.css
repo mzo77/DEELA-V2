@@ -683,3 +683,37 @@ body[data-owner-visual-edit="true"] #homeCategories button,body[data-owner-visua
 .community-poll-result>i{display:block;height:8px;margin-top:5px;background:#ffffff16;border-radius:99px;overflow:hidden}
 .community-poll-result>i>span{display:block;height:100%;background:linear-gradient(90deg,var(--teal),var(--blue));border-radius:inherit;transition:width .35s ease}
 .community-poll-result.selected>div>span{color:var(--teal);font-weight:900}
+
+
+/* Owner-only inline controls for editing each visible storefront component. */
+.owner-setting-target{position:relative}
+.owner-setting-gear{
+ display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;
+ width:28px;height:28px;min-width:28px;padding:0;margin:0 5px;
+ border:1px solid rgba(131,223,208,.48);border-radius:50%;
+ background:rgba(5,18,38,.92);color:var(--teal);font-size:15px;
+ line-height:1;box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer;z-index:7;
+}
+.owner-setting-gear:hover,.owner-setting-gear:focus-visible{
+ background:var(--teal);color:#071424;outline:2px solid rgba(131,223,208,.38);outline-offset:2px;
+}
+.owner-setting-gear-overlay{position:absolute;inset-inline-start:9px;top:9px;margin:0}
+.owner-setting-gear-inline{vertical-align:middle}
+.owner-element-hidden{display:none!important}
+.owner-element-modal{max-width:760px;max-height:min(92vh,940px);overflow:auto}
+.owner-element-preview{
+ display:flex;justify-content:center;align-items:center;min-height:94px;margin:14px 0 20px;padding:14px;
+ border:1px solid var(--line);border-radius:var(--radius);background:var(--bg2);overflow:hidden
+}
+.owner-element-live-preview{
+ display:flex;justify-content:center;align-items:center;min-width:150px;max-width:100%;min-height:70px;
+ padding:12px 18px;border:1px solid var(--line2);border-radius:18px;background:var(--panel2);
+ color:var(--white);font-weight:800;overflow:hidden;overflow-wrap:anywhere;transition:all .12s ease
+}
+.owner-element-form input[type=range]{accent-color:var(--teal)}
+.owner-element-form .checkbox-field{font-size:14px}
+@media(max-width:600px){
+ .owner-setting-gear{width:25px;height:25px;min-width:25px;font-size:13px}
+ .owner-element-modal{width:min(96vw,680px);max-height:90vh}
+ .owner-element-preview{min-height:76px;padding:10px}
+}
