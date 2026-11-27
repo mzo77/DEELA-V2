@@ -49,7 +49,7 @@ async function reload(){
   const [catalog,shops,me]=await Promise.all([api("/catalog"),api("/shops"),api("/me")]);
   state.listings=catalog.listings||[];state.shops=shops.shops||[];state.me=me;state.settings=catalog.settings||{};
   state.email=me.email||"";
-  applyTheme(state.settings.theme_colors);applyMaterial(state.settings.theme_material);applyDesign(state.settings.theme_design);applySections(state.settings.theme_sections);state.cart=state.cart.filter(x=>state.listings.some(b=>b.id===x.id));saveCart();
+  applyTheme(state.settings.theme_colors);applyMaterial(state.settings.theme_material);applyDesign(state.settings.theme_design);applySections(state.settings.theme_sections);applyImages(state.settings.theme_images);state.cart=state.cart.filter(x=>state.listings.some(b=>b.id===x.id));saveCart();
   $("heroTitle").textContent=state.settings.hero_title||"لكل كتاب حكاية، ولكل قارئ عالم";
   $("heroSubtitle").textContent=state.settings.hero_subtitle||"سوق ديلا للكتب والروايات.";
   $("announcement").textContent=state.settings.announcement||"DEELA Books";
@@ -114,6 +114,18 @@ function applySections(config){
  return {node,order:Number(d.order)||i+1};
  }).filter(Boolean).sort((a,b)=>a.order-b.order);
  for(const {node} of sections)node.parentNode.appendChild(node);
+}
+const imageKeys={logo:"رابط صورة الشعار",background:"رابط خلفية المتجر",banner:"رابط صورة البنر"};
+function safeImage(value){try{const u=new URL(value);return u.protocol==="https:"&&!u.username&&!u.password?u.href:""}catch{return ""}}
+function imageFields(conf){return Object.entries(imageKeys).map(([k,label])=>field(label,"image_"+k,"url",false,"https://...",conf.theme_images?.[k]||"")).join("");}
+function applyImages(images){
+ for(const [key,selector] of [["background","body"],["banner",".feature-banner"]]){
+ const el=document.querySelector(selector),url=safeImage(images?.[key]);if(el)el.style.backgroundImage=url?'url('+JSON.stringify(url)+')':"";
+ }
+ document.querySelectorAll(".brand-symbol").forEach(el=>{
+ const url=safeImage(images?.logo);let img=el.querySelector("img");
+ if(url){if(!img){img=document.createElement("img");img.alt="DEELA";img.referrerPolicy="no-referrer";img.style.cssText="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;border-radius:inherit;background:var(--panel)";el.append(img)}img.src=url;}else img?.remove();
+ });
 }
 function themeFields(conf){
  return Object.entries(themeKeys).map(([key,label])=>'<label class="field">'+esc(label)+'<input type="color" name="theme_'+key+'" value="'+esc(/^#[0-9a-f]{6}$/i.test(conf.theme_colors?.[key]||"")?conf.theme_colors[key]:getComputedStyle(document.documentElement).getPropertyValue("--"+key).trim())+'"></label>').join("");
@@ -505,7 +517,7 @@ function ownerPage(){
   return top+'<form class="panel owner-settings" id="settingsForm"><h2>الهوية والعروض والعمولة</h2>'+
   '<p>غيّر عناوين الموقع وصفه ورسالة الإعلان ووسيلة التواصل دون تعديل أي كود.</p>'+
   '<div class="form-grid">'+
-  themeFields(conf)+materialFields(conf)+designFields(conf)+sectionFields(conf)+field("اسم المنصة","name","text",true,"DEELA Books",conf.name||"DEELA Books")+
+  themeFields(conf)+materialFields(conf)+designFields(conf)+sectionFields(conf)+imageFields(conf)+field("اسم المنصة","name","text",true,"DEELA Books",conf.name||"DEELA Books")+
   field("عنوان الواجهة الرئيسية","hero_title","text",true,"لكل كتاب حكاية",conf.hero_title||"")+
   field("الرسالة العلوية","announcement","text",false,"",conf.announcement||"")+
   field("عنوان الحملة أو العرض","home_promo_title","text",false,"أحدث إصدارات ديلا",conf.home_promo_title||"")+
@@ -705,7 +717,7 @@ async function handleForm(ev){
     await reload();await route("owner",false);
   }else if(id==="settingsForm"){
     const payload={...state.settings,...state.ownerData?.settings,...raw,
-      theme_sections:Object.fromEntries(Object.keys(sectionDefs).map(k=>[k,{title:raw["section_"+k+"_title"]||"",order:Number(raw["section_"+k+"_order"]),material:raw["section_"+k+"_material"],visible:raw["section_"+k+"_visible"]==="on"}])),theme_design:{radius:Number(raw.design_radius),font_size:Number(raw.design_font_size),banner_motion:raw.design_banner_motion},theme_material:raw.theme_material,theme_colors:Object.fromEntries(Object.keys(themeKeys).map(k=>[k,raw["theme_"+k]])),site_public:false,payments_live:false};
+      theme_images:Object.fromEntries(Object.keys(imageKeys).map(k=>[k,raw['image_'+k]||''])),theme_sections:Object.fromEntries(Object.keys(sectionDefs).map(k=>[k,{title:raw["section_"+k+"_title"]||"",order:Number(raw["section_"+k+"_order"]),material:raw["section_"+k+"_material"],visible:raw["section_"+k+"_visible"]==="on"}])),theme_design:{radius:Number(raw.design_radius),font_size:Number(raw.design_font_size),banner_motion:raw.design_banner_motion},theme_material:raw.theme_material,theme_colors:Object.fromEntries(Object.keys(themeKeys).map(k=>[k,raw["theme_"+k]])),site_public:false,payments_live:false};
     await api("/owner/settings",{method:"POST",data:payload});
     toast("تم حفظ هوية المنصة والعروض");await reload();await route("owner",false);
   }else if(id==="messageForm"){
