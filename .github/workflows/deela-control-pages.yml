@@ -1,16 +1,10 @@
-name: Publish DEELA Web Pages (Owner + iOS)
+name: Publish DEELA Owner Panel to GitHub Pages
 on:
   push:
     branches: [main]
     paths:
       - 'docs/control/**'
-      - 'docs/ios/**'
-      - 'docs/mzo/**'
-      - 'docs/store-preview/**'
-      - 'docs/recover/**'
-      - 'docs/recover.html'
-      - 'docs/download/**'
-      - 'docs/books-private/**'
+      - 'docs/books-private/seller/**'
       - '.github/workflows/deela-control-pages.yml'
   workflow_dispatch:
 permissions:
@@ -28,31 +22,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Never deploy private DEELA commerce to public GitHub Pages
-        run: |
-          set -euo pipefail
-          test ! -d docs/store-preview || { echo "::error::Private commerce preview must not exist in public docs"; exit 1; }
-          test ! -d docs/store || { echo "::error::Private commerce storefront must not exist in public docs"; exit 1; }
-          test ! -f docs/books-private/app.js || { echo "::error::Book storefront code must not be publicly hosted"; exit 1; }
-          test ! -f docs/books-private/style.css || { echo "::error::Book storefront CSS must not be publicly hosted"; exit 1; }
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs
-      - name: Wait for GitHub artifact registration
-        run: sleep 20
       - id: deployment
         uses: actions/deploy-pages@v4
-      - name: Verify working recovery URLs on GitHub Pages
-        run: |
-          set -euo pipefail
-          for path in recover.html recover/; do
-            curl --fail-with-body --location --retry 8 --retry-all-errors --retry-delay 4 --max-time 25 \
-              -H 'Cache-Control: no-cache' \
-              "https://mzo77.github.io/DEELA-V2/$path" -o "/tmp/recover-$(echo "$path" | tr '/' '_').html"
-            grep -q 'تعيين كلمة مرور جديدة' "/tmp/recover-$(echo "$path" | tr '/' '_').html"
-          done
-          # The owner-only commerce storefront is NOT deployed to GitHub Pages.
-          # Keep public Pages limited to the existing non-commerce URLs.
-          test ! -e docs/store-preview/index.html
-          test ! -e docs/store-preview/shop.html
