@@ -164,7 +164,7 @@ Deno.serve(async req=>{
     settings:{name:conf.name,hero_title:conf.hero_title,hero_subtitle:conf.hero_subtitle,
       announcement:conf.announcement,support_url:conf.support_url,site_public:conf.site_public,
       home_promo_title:conf.home_promo_title,home_promo_description:conf.home_promo_description,
-      theme_colors:conf.theme_colors,theme_material:conf.theme_material,theme_design:conf.theme_design,
+      theme_colors:conf.theme_colors,theme_material:conf.theme_material,theme_design:conf.theme_design,theme_sections:conf.theme_sections,
       ...Object.fromEntries(FEATURE_FLAGS.map(k=>[k,conf[k]]))},
     payments_live:false,shipping_live:false,currency:"SAR"
   });
@@ -538,6 +538,17 @@ Deno.serve(async req=>{
         const d=b.theme_design;
         if(!d||!Number.isInteger(d.radius)||d.radius<0||d.radius>40||!Number.isInteger(d.font_size)||d.font_size<12||d.font_size>22||!["none","glow"].includes(d.banner_motion))return fail(req,"إعدادات التصميم غير صحيحة",400);
         configured.theme_design={radius:d.radius,font_size:d.font_size,banner_motion:d.banner_motion};
+      }
+      if(Object.prototype.hasOwnProperty.call(b,"theme_sections")){
+        const sections=b.theme_sections;
+        if(!sections||typeof sections!=="object"||Array.isArray(sections))return fail(req,"إعدادات الأقسام غير صحيحة",400);
+        const clean:Record<string,unknown>={};
+        for(const [k,v] of Object.entries(sections)){
+          const d=v as any;
+          if(!["categories","books","shops","faq","banner"].includes(k)||!d||typeof d.title!=="string"||d.title.length>100||!Number.isInteger(d.order)||d.order<1||d.order>99||typeof d.visible!=="boolean"||!["none","ceramic","marble","ornament","pearl","metal","velvet","neon","heritage"].includes(d.material))return fail(req,"إعداد قسم غير صحيح",400);
+          clean[k]={title:d.title,order:d.order,visible:d.visible,material:d.material};
+        }
+        configured.theme_sections=clean;
       }
       if(configured.support_url && !/^https:\/\//.test(String(configured.support_url)))
         return fail(req,"رابط الدعم يجب أن يبدأ بـ https://",400);
