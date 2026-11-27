@@ -593,12 +593,13 @@ Deno.serve(async req=>{
       const controls=await db.from("deela_books_user_controls").select("user_id,blocked,note,changed_at").in("user_id",ids);
       if(controls.error)throw Error("تعذر قراءة إعدادات بائعي DEELA Books");
       const controlMap=new Map((controls.data||[]).map((x:any)=>[x.user_id,x]));
-      const out=[];for(const seller of sellers.data||[]){const auth=await db.auth.admin.getUserById(seller.user_id);if(auth.error)continue;const u=auth.data.user,c=controlMap.get(seller.user_id) as any;out.push({id:u.id,email:u.email||"",phone:u.phone||"",created_at:seller.created_at||u.created_at,last_sign_in_at:u.last_sign_in_at,is_owner:false,blocked:c?.blocked===true,note:c?.note||"",shop_name:seller.shop_name||"",slug:seller.slug||"",seller_status:seller.status||""});}
+      const out=[];for(const seller of sellers.data||[]){if(await owner(seller.user_id))continue;const auth=await db.auth.admin.getUserById(seller.user_id);if(auth.error)continue;const u=auth.data.user,c=controlMap.get(seller.user_id) as any;out.push({id:u.id,email:u.email||"",phone:u.phone||"",created_at:seller.created_at||u.created_at,last_sign_in_at:u.last_sign_in_at,is_owner:false,blocked:c?.blocked===true,note:c?.note||"",shop_name:seller.shop_name||"",slug:seller.slug||"",seller_status:seller.status||""});}
       return respond(req,{users:out});
     }
     if(req.method==="POST"&&path==="/owner/user-status"){
       const b=await req.json(),id=str(b.user_id,60),blocked=b.blocked===true,note=str(b.note,500);
       if(!uuid.test(id)||typeof b.blocked!=="boolean")return fail(req,"بيانات حالة الحساب غير صحيحة");
+      if(await owner(id))return fail(req,"حساب المالك محمي ولا يمكن إيقافه من هذه الشاشة",403);
       const seller=await db.from("deela_books_sellers").select("user_id").eq("user_id",id).maybeSingle();if(seller.error)throw seller.error;
       if(!seller.data)return fail(req,"إدارة الحسابات هنا مخصصة لبائعي DEELA Books فقط",403);
       const r=await db.from("deela_books_user_controls").upsert({user_id:id,blocked,note,changed_by:user.id,changed_at:new Date().toISOString()},{onConflict:"user_id"});
