@@ -127,12 +127,15 @@ function applyDesign(d){
  root.style.setProperty("--nav-icon-size",Math.max(14,Math.min(32,Number(d?.nav_icon_size??20)||20))+"px");
  root.style.setProperty("--book-action-icon-size",Math.max(28,Math.min(52,Number(d?.book_action_icon_size??42)||42))+"px");
 }
+function iconSizeFields(conf){
+ const d={...designDefaults,...conf.theme_design};
+ return '<label class="field icon-size-control">حجم أيقونات التصنيفات<input type="range" name="design_category_icon_size" min="22" max="64" step="1" value="'+Number(d.category_icon_size)+'"><output data-icon-output="design_category_icon_size">'+Number(d.category_icon_size)+'px</output></label>'+
+ '<label class="field icon-size-control">حجم أيقونات شريط التنقل<input type="range" name="design_nav_icon_size" min="14" max="32" step="1" value="'+Number(d.nav_icon_size)+'"><output data-icon-output="design_nav_icon_size">'+Number(d.nav_icon_size)+'px</output></label>'+
+ '<label class="field icon-size-control">حجم الإعجاب والمفضلة على غلاف الكتاب<input type="range" name="design_book_action_icon_size" min="28" max="52" step="1" value="'+Number(d.book_action_icon_size)+'"><output data-icon-output="design_book_action_icon_size">'+Number(d.book_action_icon_size)+'px</output></label>';
+}
 function designFields(conf){
  const d={...designDefaults,...conf.theme_design};
- return '<label class="field">استدارة البطاقات<input name="design_radius" type="number" min="0" max="40" value="'+Number(d.radius)+'"></label><label class="field">حجم الخط<input name="design_font_size" type="number" min="12" max="22" value="'+Number(d.font_size)+'"></label><label class="field">حركة البنر<select name="design_banner_motion"><option value="none">ثابت</option><option value="glow" '+(d.banner_motion==="glow"?"selected":"")+'>لمعان متحرك</option></select></label>'+
- '<label class="field icon-size-control">حجم أيقونات التصنيفات<input type="range" name="design_category_icon_size" min="22" max="64" step="1" value="'+Number(d.category_icon_size)+'"><output data-icon-output="design_category_icon_size">'+Number(d.category_icon_size)+'px</output></label>'+
- '<label class="field icon-size-control">حجم أيقونات التنقل بالأسفل<input type="range" name="design_nav_icon_size" min="14" max="32" step="1" value="'+Number(d.nav_icon_size)+'"><output data-icon-output="design_nav_icon_size">'+Number(d.nav_icon_size)+'px</output></label>'+
- '<label class="field icon-size-control">حجم أزرار الإعجاب والمفضلة على الغلاف<input type="range" name="design_book_action_icon_size" min="28" max="52" step="1" value="'+Number(d.book_action_icon_size)+'"><output data-icon-output="design_book_action_icon_size">'+Number(d.book_action_icon_size)+'px</output></label>';
+ return '<label class="field">استدارة البطاقات<input name="design_radius" type="number" min="0" max="40" value="'+Number(d.radius)+'"></label><label class="field">حجم الخط<input name="design_font_size" type="number" min="12" max="22" value="'+Number(d.font_size)+'"></label><label class="field">حركة البنر<select name="design_banner_motion"><option value="none">ثابت</option><option value="glow" '+(d.banner_motion==="glow"?"selected":"")+'>لمعان متحرك</option></select></label>';
 }
 const sectionDefs={categories:["التصنيفات","#homeCategories"],books:["الكتب","#homeListings"],shops:["المتاجر","#featuredShops"],faq:["الأسئلة الشائعة",".faq-section"],banner:["البنر",".feature-banner"]};
 function sectionFields(conf){
@@ -278,7 +281,7 @@ function renderManagedHome(){
 function shopCard(s){
  const following=state.me?.following?.includes(s.id),own=state.me?.seller?.id===s.id;
  return '<article class="shop-card"><span class="shop-avatar">'+esc((s.shop_name||"D").slice(0,1))+'</span>'+
- '<div class="shop-copy"><span class="shop-kicker">متجر مستقل</span><h3>'+esc(s.shop_name)+(s.premium_active?'<span class="verified-badge" title="عضوية مميزة فعّالة">✓</span>':"")+'</h3><p>'+esc(s.city||"متجر كتب مستقل")+'</p>'+
+ '<div class="shop-copy"><span class="shop-kicker">متجر مستقل</span><h3>'+esc(s.shop_name)+(s.premium_active?'<span class="verified-badge" title="توثيق فعلي">✓</span>':"")+(s.premium_test_active?'<span class="premium-test-badge">✦ عضوية تجريبية</span>':"")+'</h3><p>'+esc(s.city||"متجر كتب مستقل")+'</p>'+
  (enabled("enable_author_follows")?'<small class="shop-followers">♧ '+Number(s.follower_count||0)+' متابع</small>':"")+'</div>'+
  '<div class="shop-actions"><button type="button" class="shop-visit" data-shop="'+esc(s.slug)+'">تصفح المتجر <span aria-hidden="true">←</span></button>'+
  (enabled("enable_author_follows")&&!own?'<button type="button" class="shop-follow '+(following?"following":"")+'" data-follow="'+esc(s.id)+'">'+(following?"✓ تتابعه":"＋ متابعة")+'</button>':own?'<span class="status own-store-label">متجرك</span>':"")+'</div></article>';
@@ -369,7 +372,7 @@ function shopPage(){
  const s=state.shops.find(x=>x.slug===state.current);
  if(!s)return heading("المتجر غير موجود","قد يكون قيد المراجعة");
  return heading(s.shop_name,s.bio||"متجر كتب مستقل","AUTHOR & BOOKSELLER STORE")+
- '<div class="panel"><span class="shop-avatar">'+esc(s.shop_name.slice(0,1))+'</span><h2>'+esc(s.shop_name)+(s.premium_active?'<span class="verified-badge" title="عضوية مميزة فعّالة">✓</span>':"")+'</h2><p>'+esc(s.city||"")+'</p>'+
+ '<div class="panel"><span class="shop-avatar">'+esc(s.shop_name.slice(0,1))+'</span><h2>'+esc(s.shop_name)+(s.premium_active?'<span class="verified-badge" title="توثيق فعلي">✓</span>':"")+(s.premium_test_active?'<span class="premium-test-badge">✦ عضوية تجريبية</span>':"")+'</h2><p>'+esc(s.city||"")+'</p>'+
  (enabled("enable_author_follows")?'<div class="toolbar"><span class="status">'+Number(s.follower_count||0)+' متابع</span>'+
  (state.me?.seller?.id===s.id?'<span class="status own-store-label">هذا متجرك</span>':'<button class="btn btn-soft" data-follow="'+esc(s.id)+'">'+(state.me?.following?.includes(s.id)?"إلغاء متابعة المتجر":"متابعة المؤلف والمتجر +")+'</button>')+'</div>':"")+'</div>'+
  listingGrid(state.listings.filter(b=>b.deela_books_sellers?.slug===s.slug));
@@ -481,7 +484,8 @@ function sellerPage(){
  const views=state.sellerListings.reduce((n,x)=>n+Number(x.view_count||0),0),likes=state.sellerListings.reduce((n,x)=>n+Number(x.like_count||0),0);
  const published=state.sellerListings.filter(x=>x.status==="published").length;
  return heading("حسابي","تابع رواياتك وتفاعل القراء من مكان واحد.","AUTHOR ACCOUNT")+
- '<section class="seller-profile-card"><div class="seller-avatar">'+esc((seller.shop_name||"D").trim().slice(0,1))+'</div><div><h2>'+esc(seller.shop_name)+(state.sellerPromotions.some(x=>x.kind==="premium"&&x.status==="active"&&new Date(x.ends_at)>new Date())?'<span class="verified-badge" title="عضوية مميزة">✓</span>':"")+'</h2><p>@'+esc(seller.slug)+' · '+esc(state.email||state.me?.phone||"حساب DEELA Books")+'</p></div><span class="status '+(available?"":"muted")+'">'+(available?"كاتب معتمد":"طلب الكاتب قيد المراجعة")+'</span></section>'+
+ '<section class="seller-profile-card"><div class="seller-avatar">'+esc((seller.shop_name||"D").trim().slice(0,1))+'</div><div><h2>'+esc(seller.shop_name)+(state.sellerPromotions.some(x=>x.kind==="premium"&&x.status==="active"&&x.is_test===false&&new Date(x.ends_at)>new Date())?'<span class="verified-badge" title="توثيق فعلي">✓</span>':"")+
+ (state.sellerPromotions.some(x=>x.kind==="premium"&&x.status==="active"&&x.is_test===true&&new Date(x.ends_at)>new Date())?'<span class="premium-test-badge">✦ عضوية تجريبية</span>':"")+'</h2><p>@'+esc(seller.slug)+' · '+esc(state.email||state.me?.phone||"حساب DEELA Books")+'</p></div><span class="status '+(available?"":"muted")+'">'+(available?"كاتب معتمد":"طلب الكاتب قيد المراجعة")+'</span></section>'+
  '<div class="seller-stat-grid"><div class="seller-stat"><strong>'+published+'</strong><span>رواية منشورة</span></div><div class="seller-stat"><strong>'+novels+'</strong><span>إجمالي الروايات</span></div><div class="seller-stat"><strong>'+views+'</strong><span>مشاهدة</span></div><div class="seller-stat"><strong>'+likes+'</strong><span>إعجاب</span></div></div>'+
  '<section class="seller-promo-card"><div><strong>روّج لروايتك في DEELA Books</strong><p>أضف غلافًا ووصفًا وسعرًا جذابًا، ثم أرسلها للمراجعة.</p></div>'+(enabled("enable_book_submissions")?'<button class="btn btn-primary" data-editor="new">＋ أضف رواية</button>':'<span class="status muted">استقبال الروايات متوقف</span>')+'</section>'+
  '<div class="toolbar"><span class="status '+(available?"":"muted")+'">'+(available?"صفحة الكاتب مفعّلة":"الحساب قيد مراجعة المتجر")+'</span><button class="btn btn-outline" data-route="seller">تحديث الحساب ↻</button></div>'+
@@ -547,11 +551,11 @@ const FEATURE_GROUPS=[
 ];
 const ALL_FEATURE_KEYS=FEATURE_GROUPS.flatMap(g=>g.items.map(x=>x[0]));
 function ownerFeatureGroup(group,conf){
- return '<section class="owner-feature-group"><div class="owner-feature-heading"><h3>'+esc(group.title)+'</h3><p>'+esc(group.desc)+'</p></div>'+
+ return '<details class="owner-feature-group"><summary class="owner-feature-heading"><span>'+esc(group.title)+'</span><small>'+esc(group.desc)+'</small></summary><div class="owner-feature-list">'+
  group.items.map(([key,title,description])=>
  '<label class="owner-feature"><span class="owner-feature-copy"><strong>'+esc(title)+'</strong><small>'+esc(description)+'</small></span>'+
  '<span class="switch"><input type="checkbox" name="'+esc(key)+'" '+(conf[key]===true?"checked":"")+'><span class="switch-track"></span></span></label>'
- ).join("")+'</section>';
+ ).join("")+'</div></details>';
 }
 function managedOwnerTabs(){
  const rows=state.ownerData?.sections||[];
@@ -709,8 +713,12 @@ function ownerPage(){
   const conf=state.ownerData?.settings||state.settings;
   return top+'<form class="panel owner-settings" id="settingsForm"><h2>الهوية والعروض والعمولة</h2>'+
   '<p>غيّر عناوين الموقع وصفه ورسالة الإعلان ووسيلة التواصل دون تعديل أي كود.</p>'+
-  '<div class="form-grid">'+
-  themeFields(conf)+materialFields(conf)+designFields(conf)+sectionFields(conf)+imageFields(conf)+field("اسم المنصة","name","text",true,"DEELA Books",conf.name||"DEELA Books")+
+  '<div class="owner-settings-accordions">'+
+  '<details class="owner-setting-accordion icon-settings-accordion" open><summary><span>أحجام الأيقونات</span><small>غيّرها بالمنزلق وشاهد النتيجة فورًا</small></summary><div class="form-grid settings-accordion-body">'+iconSizeFields(conf)+'</div></details>'+
+  '<details class="owner-setting-accordion"><summary><span>الألوان والخامة</span><small>ألوان المتجر وخلفيته</small></summary><div class="form-grid settings-accordion-body">'+themeFields(conf)+materialFields(conf)+'</div></details>'+
+  '<details class="owner-setting-accordion"><summary><span>التصميم والخط</span><small>استدارة البطاقات وحجم الخط وحركة البنر</small></summary><div class="form-grid settings-accordion-body">'+designFields(conf)+'</div></details>'+
+  '<details class="owner-setting-accordion"><summary><span>الأقسام والبنرات والصور</span><small>ترتيب الأقسام ومحتواها البصري</small></summary><div class="form-grid settings-accordion-body">'+sectionFields(conf)+imageFields(conf)+'</div></details>'+
+  '<details class="owner-setting-accordion"><summary><span>بيانات الموقع والعروض</span><small>الاسم والرسائل وروابط التواصل والعمولة</small></summary><div class="form-grid settings-accordion-body">'+field("اسم المنصة","name","text",true,"DEELA Books",conf.name||"DEELA Books")+
   field("عنوان الواجهة الرئيسية","hero_title","text",true,"لكل كتاب حكاية",conf.hero_title||"")+
   field("الرسالة العلوية","announcement","text",false,"",conf.announcement||"")+
   field("عنوان الحملة أو العرض","home_promo_title","text",false,"أحدث إصدارات ديلا",conf.home_promo_title||"")+
@@ -720,7 +728,7 @@ function ownerPage(){
   field("سعر إعلان إطلاق الرواية (ريال) · صفر لإيقاف الخدمة","launch_alert_price_sar","number",false,"مثال: 25",conf.launch_alert_price_sar??0)+
   '<label class="field full">الوصف الرئيسي<textarea name="hero_subtitle">'+esc(conf.hero_subtitle||"")+'</textarea></label>'+
   '<label class="field full">تفاصيل الحملة أو العرض<textarea name="home_promo_description">'+esc(conf.home_promo_description||"")+'</textarea></label>'+
-  '</div><div class="owner-locked-panel"><strong>سياسة الخصوصية الحالية</strong>'+
+  '</div></details></div><div class="owner-locked-panel"><strong>سياسة الخصوصية الحالية</strong>'+
   '<p>🔒 الموقع غير منشور للعامة، والدفع والشحن الآلي غير متاحين.</p></div>'+
   '<div class="form-actions"><button class="btn btn-primary" type="submit">حفظ هوية ديلا والإعلانات</button>'+
   '<button type="button" class="btn btn-outline" data-owner-tab="features">إعدادات تشغيل المميزات</button></div>'+
