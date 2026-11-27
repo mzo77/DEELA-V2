@@ -351,7 +351,7 @@ function detailPage(){
  (enabled("enable_favorites")?'<button class="btn btn-outline" data-favorite="'+esc(b.id)+'">'+(state.me?.favorites?.includes(b.id)?"♥ محفوظ في المفضلة":"◇ حفظ للمفضلة")+'</button>':"")+
  (enabled("enable_messages")?'<button class="btn btn-outline" data-ask="'+esc(b.id)+'">راسل البائع ✉</button>':"")+
  '<button class="btn btn-outline" data-report="'+esc(b.id)+'">إبلاغ</button>'+
- (state.me?.is_owner&&b.format!=="physical?'<button class="btn btn-soft" data-reader="'+esc(b.id)+'">معاينة محتوى الكتاب للمالك</button><button class="btn danger" data-owner-archive="'+esc(b.id)+'">حذف / إخفاء الكتاب</button>':"")+
+ (state.me?.is_owner&&b.format!=="physical"?'<button class="btn btn-soft" data-reader="'+esc(b.id)+'">معاينة محتوى الكتاب للمالك</button><button class="btn danger" data-owner-archive="'+esc(b.id)+'">حذف / إخفاء الكتاب</button>':"")+
  '</div><p style="margin-top:16px;font-size:11px">الشراء يعتمد على مراجعة المالك؛ لا يوجد دفع أو شحن تلقائي حاليًا.</p></div></div>'+
  '<div class="detail-story"><h2>ملخص الرواية ومضمونها</h2><p>'+esc(b.description||"لم يضف البائع وصفًا بعد.")+'</p></div>'+
  (b.content_warning?'<div class="content-warning"><strong>تنبيه المحتوى</strong><p>'+esc(b.content_warning)+'</p></div>':"")+
