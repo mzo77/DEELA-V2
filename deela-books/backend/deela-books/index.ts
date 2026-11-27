@@ -5,6 +5,7 @@ const SERVICE_ROLE=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";
 const db=createClient(SUPABASE_URL,SERVICE_ROLE,{auth:{persistSession:false,autoRefreshToken:false}});
 const fn="/deela-books";
 const FEATURE_FLAGS=["enable_seller_registration","enable_book_submissions","enable_reader_likes","enable_favorites","enable_author_follows","enable_reviews","enable_messages","enable_orders","enable_discounts","enable_featured_section","show_book_prices"] as const;
+const PRIVATE_SELLER_ROUTES=new Set(["GET /catalog","GET /shops","GET /me","GET /my/listings","GET /seller/notifications","POST /seller/notifications/read","POST /listing","POST /upload/sign"]);
 
 const trusted=new Set(["https://mzo77.github.io","https://appassets.androidplatform.net"]);
 const allowedOrigins=(req:Request)=>trusted.has(req.headers.get("origin")||"")?req.headers.get("origin")!:"https://mzo77.github.io";
@@ -173,14 +174,25 @@ Deno.serve(async req=>{
   "Access-Control-Allow-Origin":allowedOrigins(req),"Access-Control-Allow-Methods":"GET,POST,OPTIONS",
   "Access-Control-Allow-Headers":"authorization,content-type,apikey","Vary":"Origin"}});
  const parsed=new URL(req.url),path=parsed.pathname.split(fn)[1]||"/";
- if(req.method==="GET"&&path==="/health")return respond(req,{ok:true,name:"DEELA Books",owner_only:true,payments_live:false,shipping_live:false});
+ if(req.method==="GET"&&path==="/health")return respond(req,{ok:true,name:"DEELA Books",owner_console_only:true,private_seller_portal:true,payments_live:false,shipping_live:false});
  try{
   const user=await getUser(req),isOwner=user?await owner(user.id):false;
   if(user&&!isOwner&&await userBlocked(user.id))return fail(req,"تم إيقاف هذا الحساب من إدارة DEELA Books",403);
   const conf=await settings();
-  // Launch gate is always enforced: no public marketplace until the owner explicitly authorizes launch.
-  if(!isOwner&&!conf.site_public)return fail(req,"موقع DEELA Books خاص بالمالك ولم يُفتح للجمهور بعد",403);
+  const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
+  const privateSeller=!!sellerAccount&&sellerAccount.status==="approved"&&!conf.site_public;
+  // Public marketplace stays closed. Only approved sellers get this isolated private management allowlist.
+  if(!isOwner&&!conf.site_public){
+    if(!privateSeller)return fail(req,"موقع DEELA Books خاص، ويتطلب دخول المالك أو بائعًا معتمدًا",403);
+    if(!PRIVATE_SELLER_ROUTES.has(req.method+" "+path))return fail(req,"هذه الخاصية غير متاحة في بوابة البائع الخاصة",403);
+  }
   if(req.method==="GET"&&path==="/catalog"){
+    if(privateSeller){
+      const categories=await db.from("deela_books_sections").select("id,title,description,kind,category,sort_order,visible").eq("kind","category").eq("visible",true).order("sort_order").limit(200);
+      if(categories.error)throw categories.error;
+      const sellerSettings={site_public:false,...Object.fromEntries(FEATURE_FLAGS.map(k=>[k,conf[k]]))};
+      return respond(req,{listings:[],settings:sellerSettings,sections:categories.data||[],banners:[],payments_live:false,shipping_live:false,currency:"SAR"});
+    }
     const [sectionRows,bannerRows,theme]=await Promise.all([
       db.from("deela_books_sections").select("id,title,description,kind,category,image_path,material,design,sort_order,visible").eq("visible",true).order("sort_order").limit(200),
       db.from("deela_books_banners").select("id,title,image_path,target_url,motion,active,starts_at,ends_at,sort_order").eq("active",true).or("starts_at.is.null,starts_at.lte."+new Date().toISOString()).or("ends_at.is.null,ends_at.gt."+new Date().toISOString()).order("sort_order").limit(50),
@@ -203,6 +215,7 @@ Deno.serve(async req=>{
     });
   }
   if(req.method==="GET"&&path==="/shops"){
+    if(privateSeller)return respond(req,{shops:[{id:sellerAccount.id,shop_name:sellerAccount.shop_name,slug:sellerAccount.slug,bio:sellerAccount.bio,city:sellerAccount.city,status:sellerAccount.status,follower_count:0}]});
     const q=db.from("deela_books_sellers").select("id,shop_name,slug,bio,city,status,created_at").order("created_at",{ascending:false}).limit(70);
     if(!isOwner)q.eq("status","approved");
     const {data,error:e}=await q;

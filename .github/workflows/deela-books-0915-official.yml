@@ -77,15 +77,19 @@ jobs:
           import json
           h=json.load(open("/tmp/books-health.json"))
           a=json.load(open("/tmp/books-assets.json"))
-          assert h["ok"] is True and h["owner_only"] and not h["payments_live"] and not h["shipping_live"]
-          assert a["ok"] is True and a["owner_only"] and not a["site_public"]
+          assert h["ok"] is True and h["owner_console_only"] and h["private_seller_portal"] and not h["payments_live"] and not h["shipping_live"]
+          assert a["ok"] is True and a["owner_console_only"] and a["approved_seller_portal"] and not a["site_public"]
           assert a["asset_count"]>=4
-          print("Private API and asset storage healthy")
+          print("Private API, approved seller portal, and protected asset storage healthy")
           PY
           for path in deela-books/catalog deela-books/shops deela-books/owner/overview                       deela-books-vault/protected/index.html                       deela-books-vault/protected/style.css                       deela-books-vault/protected/app.js; do
             status="$(curl -sS -o /tmp/books-denied -w '%{http_code}' "$BASE/$path")"
             test "$status" = 403 || { echo "::error::$path is not restricted: $status"; exit 1; }
           done
+          SELLER_PORTAL="https://mzo77.github.io/DEELA-V2/books-private/seller/"
+          curl -fsS --retry 4 --retry-delay 3 --max-time 30 "$SELLER_PORTAL" -o /tmp/books-seller-portal.html
+          grep -Fq 'بوابة البائع الخاصة' /tmp/books-seller-portal.html
+          grep -Fq 'noindex,nofollow,noarchive' /tmp/books-seller-portal.html
           curl -fsS --retry 4 --max-time 30 -D /tmp/books-headers "$PORTAL" -o /tmp/books-login.html
           grep -Eqi '^content-type: text/html' /tmp/books-headers
           grep -Fq 'DEELA Books · PRIVATE LAUNCH' /tmp/books-login.html || grep -Fq 'DEELA BOOKS · PRIVATE LAUNCH' /tmp/books-login.html

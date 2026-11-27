@@ -758,10 +758,13 @@ async function login(ev){
    credentials:"omit",signal:AbortSignal.timeout(22000)});
   const data=await response.json().catch(()=>({}));
   if(!response.ok||!data.access_token)throw Error(data.error||"تعذر تسجيل الدخول");
-  if(data.role!=="owner")throw Error("الموقع خاص بالمالك حتى إطلاقه");
-  state.token=data.access_token;sessionStorage.setItem("deela-books-token",state.token);
+  state.token=data.access_token;
+  const profile=await api("/me");
+  if(!profile.is_owner&&profile.seller?.status!=="approved")throw Error("بوابة البائعين خاصة بالحسابات المعتمدة فقط");
+  state.view=profile.is_owner?state.view:"seller";
+  sessionStorage.setItem("deela-books-token",state.token);
   $("loginPassword").value="";closeLogin();await reload();startSellerNotificationPolling();
- }catch(e){$("loginMessage").textContent=errorMessage(e)}
+ }catch(e){state.token="";sessionStorage.removeItem("deela-books-token");$("loginMessage").textContent=errorMessage(e)}
  finally{submit.disabled=false}
 }
 function openLogin(message=""){ $("shade").hidden=false;$("loginModal").hidden=false;$("loginMessage").textContent=message; }
