@@ -75,7 +75,7 @@ async function reload(){
   const who=state.me?.seller?.shop_name||"حسابي";
   $("accountButton").innerHTML='<span class="account-avatar">'+esc((who||"D").trim().slice(0,1))+'</span><span>حسابي</span><span aria-hidden="true">⌄</span>';
   document.querySelectorAll(".owner-only").forEach(x=>x.hidden=!state.me?.is_owner);
-  if(me.is_owner&&state.view==="seller")state.view="owner";
+  if(me.is_owner&&state.view==="seller")state.view="home";
   renderHome();route(state.view,false);
  }catch(e){openLogin(errorMessage(e))}
 }
@@ -232,7 +232,7 @@ function cover(b){
 function card(b){
  const isPublished=b.status==="published",isOwn=Boolean(state.me?.seller?.id&&state.me.seller.id===b.seller_id),fav=state.me?.favorites?.includes(b.id),liked=state.me?.likes?.includes(b.id);
  const kind=kinds[b.format]||"كتاب",kindLabel=b.format==="physical"?"ورقي":b.format==="audiobook"?"صوتي":"رقمي";
- return '<article class="book-card"><div class="cover-wrap '+(b.format==="ebook"?"purple":b.format==="audiobook"?"teal":"gold")+'" data-book="'+esc(b.id)+'">'+
+ return '<article class="book-card '+(state.me?.is_owner?"owner-book-inspect":"") +'">'+(state.me?.is_owner?'<button type="button" class="owner-inline-control owner-book-control" data-owner-book-settings="'+esc(b.id)+'" aria-label="إعدادات الكتاب">⚙</button>':"")+'<div class="cover-wrap '+(b.format==="ebook"?"purple":b.format==="audiobook"?"teal":"gold")+'" data-book="'+esc(b.id)+'">'+
  (b.cover_url?'<img src="'+esc(b.cover_url)+'" alt="غلاف '+esc(b.title)+'" loading="lazy">':
  '<div class="cover-pseudo"><small>DEELA BOOKS</small><strong>'+esc(b.title.slice(0,38))+'</strong><em>✧</em></div>')+
  '<span class="book-badge">'+esc(kind)+(isPublished?"":" · غير منشور")+'</span>'+
@@ -249,7 +249,7 @@ function card(b){
 function renderContestHome(){
  let host=document.getElementById("contestHome");if(!host){host=document.createElement("div");host.id="contestHome";$("home").append(host)}
  const rows=(state.contests||[]).filter(x=>["announced","open"].includes(x.status));
- host.innerHTML=rows.length?'<section class="container section contest-section"><div class="section-title"><div><span class="eyebrow">DEELA COMMUNITY</span><h2>مسابقات ديلا</h2><p>إعلانات المسابقات والأسئلة القادمة</p></div></div><div class="contest-grid">'+rows.map(c=>{
+ host.innerHTML=rows.length?'<section class="container section contest-section"><div class="section-title"><div><span class="eyebrow">DEELA COMMUNITY</span><h2>مجتمع ديلا</h2><p>إعلانات المالك، أسئلة القراء ومسابقات DEELA</p></div></div><div class="contest-grid">'+rows.map(c=>{
   const open=c.status==="open"&&c.question_text,answered=c.my_answer;
   return '<article class="contest-card"><span class="status">'+(open?"بدأت المسابقة":"قريبًا")+'</span><h3>'+esc(c.title)+'</h3><p>'+esc(c.announcement||"")+'</p>'+
    (c.starts_at?'<small>تبدأ: '+new Date(c.starts_at).toLocaleString("ar-SA",{dateStyle:"medium",timeStyle:"short"})+'</small>':"")+
@@ -271,20 +271,41 @@ async function refreshContests(){
 }
 function startContestPolling(){if(state.contestTimer)clearInterval(state.contestTimer);void refreshContests();state.contestTimer=setInterval(refreshContests,30000);}
 function renderHome(){
+ const heroText=document.querySelector(".hero-text");if(heroText){let welcome=document.getElementById("ownerWelcome");if(state.me?.is_owner){if(!welcome){welcome=document.createElement("span");welcome.id="ownerWelcome";welcome.className="owner-welcome";heroText.insertBefore(welcome,heroText.querySelector("#heroTitle"))}welcome.textContent="مرحباً بك في DEELA، "+(state.me?.seller?.shop_name||state.me?.display_name||"يا مالك المتجر");}else welcome?.remove();}
  const rail=document.getElementById("homeCategories");if(rail){const items=[["روايات","▤","عالم من القصص"],["أدب وشعر","❝","كلمات وأفكار"],["خيال ورعب","✦","خيال وغموض"],["تطوير الذات","◉","معرفة وعمل"],["كتب الأطفال","★","حكايات الصغار"],["تعليم","⌘","تعلم واكتشف"],["ألعاب فيديو","⌁","ألعاب ومغامرة"],["قرطاسية","✎","أدوات الكتابة"],["فنون وحرف","✿","اصنع بيدك"],["قهوة","☕","اختيارات المجتمع"],["موسيقى","♫","إيقاع ومزاج"],["أزياء","◇","ذوقك الخاص"]];rail.innerHTML=items.map(x=>'<button class="community-tile" data-category="'+esc(x[0])+'"><span>'+x[1]+'</span><strong>'+esc(x[0])+'</strong><small>'+esc(x[2])+'</small></button>').join("");}
  $("homeListings").innerHTML=state.listings.length?state.listings.slice(0,8).map(card).join(""):demoCovers();
  $("featuredShops").innerHTML=state.shops.length?state.shops.slice(0,6).map(shopCard).join(""):
  '<div class="empty-state"><h3>هنا تبدأ متاجر ديلا</h3><p>بمجرد اعتماد متجرك الأول، ستظهر هنا متاجر المؤلفين والناشرين الحقيقية.</p><button class="btn btn-outline" data-route="seller">سجّل أول متجر</button></div>';
  renderManagedHome();renderContestHome();
 }
+function openOwnerSectionSettings(id){
+ if(!state.me?.is_owner)return;
+ const s=(state.sections||[]).find(x=>String(x.id)===String(id));if(!s)return;
+ const shade=document.createElement("div"),modal=document.createElement("section"),d=s.design||{};
+ shade.className="shade";shade.style.zIndex="120";modal.className="modal owner-inline-modal";modal.style.zIndex="121";
+ modal.innerHTML='<button class="close" type="button" aria-label="إغلاق">✕</button><span class="eyebrow">إعدادات هذا القسم فقط</span><h2>'+esc(s.title||"القسم")+'</h2><form id="ownerInlineSectionForm" class="form-grid"><input type="hidden" name="id" value="'+esc(s.id)+'"><label class="field full">اسم القسم<input name="title" maxlength="120" required value="'+esc(s.title||"")+'"></label><label class="field full">وصف القسم<textarea name="description" maxlength="500">'+esc(s.description||"")+'</textarea></label><label class="field">لون الخلفية<input name="background_color" type="color" value="'+(/^#[0-9a-f]{6}$/i.test(d.background_color||"")?d.background_color:"#14283a")+'"></label><label class="field">لون التمييز<input name="accent_color" type="color" value="'+(/^#[0-9a-f]{6}$/i.test(d.accent_color||"")?d.accent_color:"#79d8ca")+'"></label><label class="field">الخامة<select name="pattern"><option value="none">بدون</option><option value="ceramic">سيراميك</option><option value="linen">كتان</option><option value="stars">نجوم</option></select></label><label class="field">ترتيب القسم<input name="sort_order" type="number" value="'+Number(s.sort_order||0)+'"></label><label class="checkbox-field full"><input name="visible" type="checkbox" '+(s.visible?"checked":"")+'> إظهار القسم للزوار</label><div class="form-actions full"><button class="btn btn-outline" type="button" data-owner-inline-close>إلغاء</button><button class="btn btn-primary" type="submit">حفظ التغييرات</button></div><p class="form-msg full"></p></form>';
+ const close=()=>{shade.remove();modal.remove()};shade.onclick=close;modal.querySelector(".close").onclick=close;modal.querySelector("[data-owner-inline-close]").onclick=close;
+ modal.querySelector("form").onsubmit=async e=>{e.preventDefault();const f=e.currentTarget,button=f.querySelector('[type="submit"]');button.disabled=true;const data=Object.fromEntries(new FormData(f));data.visible=f.elements.visible.checked;data.sort_order=Number(data.sort_order||0);data.kind=s.kind||"category";data.category=s.category||"";data.image_path=s.image_path||"";data.design={background_color:data.background_color,accent_color:data.accent_color,pattern:data.pattern};data.material=data.pattern;try{await api("/owner/sections/save",{method:"POST",data});const r=await api("/owner/sections");state.sections=r.sections||r.items||state.sections.map(x=>String(x.id)===String(id)?{...x,...data}:x);renderManagedHome();close();toast("تم تحديث القسم مباشرة");}catch(err){f.querySelector(".form-msg").textContent=errorMessage(err);button.disabled=false}};
+ document.body.append(shade,modal);
+}
+function openOwnerBookActions(id){
+ if(!state.me?.is_owner)return;
+ const b=state.listings.find(x=>String(x.id)===String(id));if(!b)return;
+ const shade=document.createElement("div"),modal=document.createElement("section");shade.className="shade";shade.style.zIndex="120";modal.className="modal owner-inline-modal";modal.style.zIndex="121";
+ modal.innerHTML='<button class="close" type="button" aria-label="إغلاق">✕</button><span class="eyebrow">إدارة سريعة داخل المتجر</span><h2>'+esc(b.title)+'</h2><p>الحالة الحالية: '+esc(statusNames[b.status]||b.status)+'</p><div class="owner-book-actions"><button class="btn btn-outline" type="button" data-owner-book-status="published">اعتماد وإظهار</button><button class="btn btn-outline" type="button" data-owner-book-status="archived">إخفاء من المتجر</button><button class="btn btn-primary" type="button" data-owner-book-open>معاينة الكتاب</button></div><p class="form-msg"></p>';
+ const close=()=>{shade.remove();modal.remove()};shade.onclick=close;modal.querySelector(".close").onclick=close;
+ modal.querySelector('[data-owner-book-open]').onclick=()=>{close();state.current=id;void route("detail")};
+ modal.querySelectorAll("[data-owner-book-status]").forEach(btn=>btn.onclick=async()=>{btn.disabled=true;try{await api("/owner/listing-status",{method:"POST",data:{id,status:btn.dataset.ownerBookStatus}});await reload();renderHome();toast(btn.dataset.ownerBookStatus==="published"?"تم اعتماد الكتاب وإظهاره":"تم إخفاء الكتاب");close()}catch(e){modal.querySelector(".form-msg").textContent=errorMessage(e);btn.disabled=false}});
+ document.body.append(shade,modal);
+}
 function renderManagedHome(){
  let host=document.getElementById("managedHomeSections");if(!host){host=document.createElement("div");host.id="managedHomeSections";$("home").append(host)}
- const banners=(state.banners||[]).filter(x=>x.image_url),sections=(state.sections||[]).filter(x=>x.visible);
+ const banners=(state.banners||[]).filter(x=>x.image_url),sections=(state.sections||[]).filter(x=>x.visible||state.me?.is_owner);
  host.innerHTML=(banners.length?'<section class="container section"><div class="managed-banner-grid">'+banners.map(b=>'<a class="managed-banner" href="'+(b.target_url?esc(b.target_url):"#home")+'" '+(b.target_url?'target="_blank" rel="noopener noreferrer"':'')+' style="background-image:linear-gradient(90deg,#071326aa,#07132622),url(&quot;'+esc(b.image_url)+'&quot;)"><strong>'+esc(b.title)+'</strong></a>').join("")+'</div></section>':"")+sections.map(s=>{
   const style=(s.image_url?'background-image:linear-gradient(90deg,#071326df,#07132655),url(&quot;'+esc(s.image_url)+'&quot;)':'background-color:'+( /^#[0-9a-f]{6}$/i.test(s.design?.background_color||"")?s.design.background_color:"var(--section-bg, var(--panel))"))+';--section-accent:'+( /^#[0-9a-f]{6}$/i.test(s.design?.accent_color||"")?s.design.accent_color:"var(--teal)");
   const detail=s.kind==="category"?' · '+esc(s.category):"";
   const books=s.kind==="category"?state.listings.filter(b=>b.category===s.category&&b.status==="published").slice(0,4):[];
-  return '<section class="container section managed-section" data-material="'+esc(s.design?.pattern||s.material||"none")+'" style="'+style+'"><div class="managed-section-copy"><span class="eyebrow">DEELA BOOKS</span><h2>'+esc(s.title)+detail+'</h2><p>'+esc(s.description||"")+'</p>'+(s.kind==="category"?'<button class="btn btn-outline" data-category="'+esc(s.category)+'">استكشف القسم ←</button>':"")+'</div>'+(books.length?'<div class="books-grid managed-section-books">'+books.map(card).join("")+'</div>':"")+'</section>';
+  return '<section class="container section managed-section '+(s.visible?"":"owner-section-hidden")+'" data-material="'+esc(s.design?.pattern||s.material||"none")+'" data-managed-section="'+esc(s.id)+'" style="'+style+'">'+(state.me?.is_owner?'<button type="button" class="owner-inline-control" data-owner-section-settings="'+esc(s.id)+'" aria-label="إعدادات هذا القسم">⚙ <span>إعدادات القسم</span></button>':"")+'<div class="managed-section-copy"><span class="eyebrow">DEELA BOOKS</span><h2>'+esc(s.title)+detail+'</h2><p>'+esc(s.description||"")+(s.visible?"":" · مخفي للزوار") +'</p>'+(s.kind==="category"?'<button class="btn btn-outline" data-category="'+esc(s.category)+'">استكشف القسم ←</button>':"")+'</div>'+(books.length?'<div class="books-grid managed-section-books">'+books.map(card).join("")+'</div>':"")+'</section>';
  }).join("");
 }
 function shopCard(s){
@@ -652,13 +673,13 @@ function accountOwnerPanel(){
 }
 function ownerContestsPanel(){
  const rows=state.ownerContests||[];
- return '<section class="panel"><h2>إنشاء مسابقة وجدولتها</h2><p>اكتب إعلان الانتظار وموعد فتح السؤال. عند وقت المسابقة يظهر السؤال للمستخدمين الذين يدخلون للموقع؛ تقدر تدخل الإجابة الصحيحة لاحقًا لترتيبها.</p>'+
+ return '<section class="panel"><h2>إعلان أو مسابقة للمجتمع</h2><p>أرسل إعلانًا للقراء، أو أضف سؤالًا تفاعليًا وحدد موعده. يظهر المحتوى في مجتمع ديلا وتصل رسالة تنبيه للمستخدمين.</p>'+
  '<form id="ownerContestForm" class="form-grid"><input type="hidden" name="id"><label class="field">اسم المسابقة<input name="title" required maxlength="160" placeholder="مسابقة DEELA"></label>'+
  '<label class="field">موعد فتح السؤال<input name="starts_at" type="datetime-local"></label>'+
  '<label class="field full">إعلان ينتظرونه القراء<textarea name="announcement" maxlength="1000" placeholder="انتظرونا الساعة 10 مساءً في مسابقة ديلا"></textarea></label>'+
  '<label class="field full">السؤال (يمكن إضافته الآن أو لاحقًا)<textarea name="question_text" maxlength="1000"></textarea></label>'+
  '<label class="field full">الإجابة الصحيحة (تستخدم لترتيب النتائج)<input name="correct_answer" maxlength="500"></label>'+
- '<button class="btn btn-primary" type="submit">حفظ وجدولة المسابقة</button><span class="form-msg"></span></form></section>'+
+ '<button class="btn btn-primary" type="submit">نشر الإعلان وجدولة السؤال</button><span class="form-msg"></span></form></section>'+
  '<section class="panel"><h2>المسابقات والإجابات</h2><div class="list-rows">'+(rows.length?rows.map(c=>'<article class="row-card"><div class="row-top"><strong>'+esc(c.title)+'</strong><span class="status">'+esc(c.status)+'</span></div><p>'+esc(c.announcement||"")+'</p><p>الموعد: '+date(c.starts_at)+' · الإجابات: '+(c.answers||[]).length+'</p>'+
  (c.question_text?'<p><strong>السؤال:</strong> '+esc(c.question_text)+'</p>':"")+
  '<div class="contest-answers">'+(c.answers||[]).map((x,i)=>'<div class="contest-answer '+(x.is_correct===true?"correct":x.is_correct===false?"incorrect":"")+'"><b>'+(i+1)+'.</b> '+esc(x.answer)+' <span>'+(x.is_correct===true?"✅ صحيح":x.is_correct===false?"✖ خطأ":"بانتظار التصحيح")+'</span><small>'+date(x.created_at)+'</small></div>').join("")+'</div>'+
@@ -670,14 +691,14 @@ function ownerPage(){
   ["overview","الرئيسية والإحصائيات"],["features","تشغيل المميزات"],
   ["sections","الأقسام والبنرات"],["payments","المدفوعات"],["users","الحسابات"],
   ["sellers","المؤلفون والمتاجر"],["listings","إدارة الكتب والعروض"],
-  ["orders","الطلبات والمبيعات"],["contests","المسابقات"],["alerts","تنبيهات الإطلاق"],["reports","التقييمات والبلاغات"],
+  ["orders","الطلبات والمبيعات"],["contests","المجتمع والمسابقات"],["alerts","تنبيهات الإطلاق"],["reports","التقييمات والبلاغات"],
   ["settings","الهوية والإعدادات"]
  ];
  const top=heading("مركز قيادة DEELA Books","كل إعدادات الكتب، المؤلفين، القراء والمبيعات في لوحة واحدة.","DEELA CONTROL CENTER")+
  '<div class="owner-private-banner"><div><strong>🔒 المنصة في الوضع الخاص</strong><p>تقدر تضيف الكتب وتجرب المميزات؛ النشر للعامة محجوب على مستوى الخادم حتى تصرح بذلك.</p></div>'+
  '<div class="owner-status-tags"><span>الموقع خاص</span><span>الدفع الآلي مغلق</span><span>الشحن الآلي مغلق</span></div></div>'+
- '<div class="tab-bar owner-tabs">'+tabs.map(([key,label])=>
- '<button class="'+(tab===key?"active":"")+'" data-owner-tab="'+key+'">'+esc(label)+'</button>').join("")+'</div>';
+ '<details class="owner-tools-menu" '+(tab!=="overview"?"open":"")+'><summary>خيارات المالك داخل المتجر <span>إعداد القسم والكتب والحسابات</span></summary><div class="owner-tools-grid">'+tabs.map(([key,label])=>
+ '<button class="owner-tool-link '+(tab===key?"active":"")+'" data-owner-tab="'+key+'">'+esc(label)+'</button>').join("")+'</div></details>';
  if(tab==="overview"){
   const d=state.ownerData||{};
   const metrics=[["المؤلفون والمتاجر",d.shops],["متاجر تنتظر الموافقة",d.pending_shops],
@@ -1148,7 +1169,7 @@ async function handleForm(ev){
   }else if(id==="ownerContestForm"){
     const start=raw.starts_at?new Date(raw.starts_at).toISOString():null;
     const result=await api("/owner/contest/save",{method:"POST",data:{...raw,starts_at:start}});
-    toast("تم حفظ المسابقة وإرسال إعلانها للمتابعين");
+    toast("تم نشر إعلان المجتمع وإشعار المستخدمين");
     state.ownerContests=(await api("/owner/contests")).contests||[];await route("owner",false);
   }else if(id==="contestAnswerForm"){
     const result=await api("/contests/answer",{method:"POST",data:{contest_id:raw.contest_id,answer:raw.answer}});
@@ -1328,6 +1349,8 @@ function bind(){
  document.addEventListener("click",async ev=>{
   const t=ev.target.closest("button,a,[data-book]");
   if(!t)return;
+  if(t.dataset.ownerSectionSettings){ev.preventDefault();ev.stopPropagation();return openOwnerSectionSettings(t.dataset.ownerSectionSettings)}
+  if(t.closest("[data-owner-book-settings]")){ev.preventDefault();ev.stopPropagation();return openOwnerBookActions(t.closest("[data-owner-book-settings]").dataset.ownerBookSettings)}
   if(t.dataset.book){ev.preventDefault();return book(t.dataset.book)}
   if(t.dataset.gallery){ev.preventDefault();const b=state.listings.find(x=>x.id===state.current),urls=b?.image_urls||[];const img=document.querySelector("#productGalleryMain img");if(img&&urls[Number(t.dataset.gallery)])img.src=urls[Number(t.dataset.gallery)];return}
   if(t.dataset.shop){ev.preventDefault();return openShop(t.dataset.shop)}
