@@ -415,6 +415,15 @@ button.like-chip:hover,.like-chip.active{color:#ffe4d5;border-color:#d3a3a8;back
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}button{transition:none!important}}
 
 /* DEELA material presets — opt-in via data-material */
+.managed-section{min-height:190px;border:1px solid var(--line);border-radius:var(--radius);padding:30px;background-color:var(--panel);background-size:cover;background-position:center;display:flex;align-items:center;overflow:hidden}
+.managed-section-copy{max-width:740px}.managed-section h2{font-size:clamp(22px,3vw,34px)}
+.managed-banner-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.managed-banner{min-height:150px;border:1px solid var(--line);border-radius:var(--radius);padding:20px;display:flex;align-items:end;background-color:var(--panel);background-position:center;background-size:cover;box-shadow:var(--shadow);font-size:20px;font-weight:900}
+.managed-admin-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin-top:18px}
+.owner-tabs{flex-wrap:wrap}
+.owner-tabs button{white-space:nowrap}
+.owner-settings input[type=file],.panel input[type=file]{width:100%;padding:10px;border:1px dashed var(--line2);border-radius:12px;background:#112238;color:var(--white)}
+[data-owner-hidden="true"]{display:none!important}
 [data-material="ceramic"]{background-image:linear-gradient(125deg,#ffffff22,transparent 45%,#ffffff16 48%,transparent 52%),repeating-linear-gradient(135deg,transparent 0 78px,#ffffff13 79px 81px,transparent 82px 160px)}
 [data-material="marble"]{background-image:repeating-linear-gradient(117deg,transparent 0 70px,#c9a66b33 71px,#c9a66b77 72px,transparent 75px 160px),radial-gradient(ellipse at 20% 30%,#ffffff18,transparent 65%)}
 [data-material="ornament"]{background-image:repeating-conic-gradient(from 45deg,#d8b47722 0deg 45deg,transparent 45deg 90deg);background-size:32px 32px}

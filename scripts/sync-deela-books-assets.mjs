@@ -1,0 +1,12 @@
+import {readFileSync,writeFileSync,copyFileSync} from 'node:fs';
+import {resolve} from 'node:path';
+const root=resolve(import.meta.dirname,'..');
+const names=['index.html','style.css','app.js','icon.svg'];
+for(const name of names) copyFileSync(resolve(root,'deela-books/site',name),resolve(root,'app/src/main/assets/books',name));
+const assets=Object.fromEntries(names.map(name=>[name,readFileSync(resolve(root,'deela-books/site',name),'utf8')]));
+const vault=resolve(root,'deela-books/backend/deela-books-vault/index.ts');
+const source=readFileSync(vault,'utf8');
+const replacement='const SOURCE:Record<string,string>='+JSON.stringify(assets)+';';
+const updated=source.replace(/const SOURCE:Record<string,string>=\{[\s\S]*?\};(?=\nconst ROOT)/,replacement);
+if(updated===source&&!source.includes(replacement)) throw new Error('Could not locate private asset registry in vault function');
+writeFileSync(vault,updated);

@@ -41,6 +41,27 @@ async function settings(){
  if(x.error)throw Error("books settings unavailable");
  return x.data;
 }
+async function userBlocked(userId:string){
+ const x=await db.from("deela_books_user_controls").select("blocked").eq("user_id",userId).maybeSingle();
+ if(x.error)throw Error("account status unavailable");
+ return x.data?.blocked===true;
+}
+async function signedBranding(conf:Record<string,any>){
+ const paths=conf.theme_images&&typeof conf.theme_images==="object"?conf.theme_images:{};
+ const urls:Record<string,string>={};
+ for(const key of ["logo","background","banner"]){
+  const path=typeof paths[key]==="string"?paths[key]:"";
+  if(path){const r=await db.storage.from("deela-books-covers").createSignedUrl(path,3600);if(!r.error)urls[key]=r.data.signedUrl;}
+ }
+ return {...conf,theme_images:urls,theme_image_paths:paths};
+}
+async function signedMerchandising(rows:any[],imageKey="image_path"){
+ return await Promise.all(rows.map(async row=>{
+  let image_url="";
+  if(row[imageKey]){const x=await db.storage.from("deela-books-covers").createSignedUrl(row[imageKey],3600);if(!x.error)image_url=x.data.signedUrl;}
+  return {...row,image_url};
+ }));
+}
 function itemInput(raw:Record<string,unknown>){
  const title=str(raw.title,180),author=str(raw.author,100),description=str(raw.description,5000);
  const subtitle=str(raw.subtitle,220),audience=str(raw.audience,30)||"عام";
@@ -155,19 +176,32 @@ Deno.serve(async req=>{
  if(req.method==="GET"&&path==="/health")return respond(req,{ok:true,name:"DEELA Books",owner_only:true,payments_live:false,shipping_live:false});
  try{
   const user=await getUser(req),isOwner=user?await owner(user.id):false;
+  if(user&&!isOwner&&await userBlocked(user.id))return fail(req,"تم إيقاف هذا الحساب من إدارة DEELA Books",403);
   const conf=await settings();
   // Launch gate is always enforced: no public marketplace until the owner explicitly authorizes launch.
   if(!isOwner&&!conf.site_public)return fail(req,"موقع DEELA Books خاص بالمالك ولم يُفتح للجمهور بعد",403);
-  if(req.method==="GET"&&path==="/catalog")return respond(req,{
-    listings:(await currentListings(isOwner,parsed.searchParams,conf.enable_featured_section)).map((x:any)=>!isOwner&&!conf.show_book_prices?
-      {...x,price_sar:null,compare_at_sar:null}:x),
-    settings:{name:conf.name,hero_title:conf.hero_title,hero_subtitle:conf.hero_subtitle,
+  if(req.method==="GET"&&path==="/catalog"){
+    const [sectionRows,bannerRows,theme]=await Promise.all([
+      db.from("deela_books_sections").select("id,title,description,kind,category,image_path,material,design,sort_order,visible").eq("visible",true).order("sort_order").limit(200),
+      db.from("deela_books_banners").select("id,title,image_path,target_url,motion,active,starts_at,ends_at,sort_order").eq("active",true).or("starts_at.is.null,starts_at.lte."+new Date().toISOString()).or("ends_at.is.null,ends_at.gt."+new Date().toISOString()).order("sort_order").limit(50),
+      signedBranding(conf)
+    ]);
+    if(sectionRows.error||bannerRows.error)throw Error("merchandising settings unavailable");
+    const publicSettings={name:conf.name,hero_title:conf.hero_title,hero_subtitle:conf.hero_subtitle,
       announcement:conf.announcement,support_url:conf.support_url,site_public:conf.site_public,
       home_promo_title:conf.home_promo_title,home_promo_description:conf.home_promo_description,
-      theme_colors:conf.theme_colors,theme_material:conf.theme_material,theme_design:conf.theme_design,theme_sections:conf.theme_sections,theme_images:conf.theme_images,
-      ...Object.fromEntries(FEATURE_FLAGS.map(k=>[k,conf[k]]))},
+      theme_colors:conf.theme_colors,theme_material:conf.theme_material,theme_design:conf.theme_design,
+      theme_sections:conf.theme_sections,theme_images:theme.theme_images,
+      ...Object.fromEntries(FEATURE_FLAGS.map(k=>[k,conf[k]]))};
+    return respond(req,{
+    listings:(await currentListings(isOwner,parsed.searchParams,conf.enable_featured_section)).map((x:any)=>!isOwner&&!conf.show_book_prices?
+      {...x,price_sar:null,compare_at_sar:null}:x),
+    settings:publicSettings,
+    sections:await signedMerchandising(sectionRows.data||[]),
+    banners:await signedMerchandising(bannerRows.data||[]),
     payments_live:false,shipping_live:false,currency:"SAR"
-  });
+    });
+  }
   if(req.method==="GET"&&path==="/shops"){
     const q=db.from("deela_books_sellers").select("id,shop_name,slug,bio,city,status,created_at").order("created_at",{ascending:false}).limit(70);
     if(!isOwner)q.eq("status","approved");
@@ -246,18 +280,19 @@ Deno.serve(async req=>{
     return respond(req,{ok:true,listing:r.data,requires_approval:true},id?200:201);
   }
   if(req.method==="POST"&&path==="/upload/sign"){
-    if(!conf.enable_book_submissions)return fail(req,"رفع الكتب متوقف مؤقتًا",403);
     const b=await req.json(),type=str(b.type,16),extension=str(b.extension,12).toLowerCase();
-    const seller=await sellerFor(user.id);
-    if(!seller||(!isOwner&&seller.status!=="approved"))return fail(req,"حساب متجر معتمد مطلوب",403);
-    const extOk=type==="cover"?["jpg","jpeg","png","webp"]:["pdf","epub","mp3"];
+    if(type!=="branding"&&!conf.enable_book_submissions)return fail(req,"رفع الكتب متوقف مؤقتًا",403);
+    if(type==="branding"&&!isOwner)return fail(req,"رفع صور الهوية متاح للمالك فقط",403);
+    const seller=type==="branding"?null:await sellerFor(user.id);
+    if(type!=="branding"&&(!seller||(!isOwner&&seller.status!=="approved")))return fail(req,"حساب متجر معتمد مطلوب",403);
+    const extOk=type==="branding"?["jpg","jpeg","png","webp"]:type==="cover"?["jpg","jpeg","png","webp"]:["pdf","epub","mp3"];
     if(!extOk.includes(extension))return fail(req,"نوع الملف غير مدعوم",400);
-    const folder=type==="cover"?"covers":"books";
-    const bucket=type==="cover"?"deela-books-covers":"deela-books-private-files";
+    const folder=type==="branding"?"branding":type==="cover"?"covers":"books";
+    const bucket=type==="file"?"deela-books-private-files":"deela-books-covers";
     const path=user.id+"/"+folder+"/"+crypto.randomUUID()+"."+extension;
     const result=await db.storage.from(bucket).createSignedUploadUrl(path);
     if(result.error)throw result.error;
-    return respond(req,{bucket,path,token:result.data.token,max_bytes:type==="cover"?5242880:52428800});
+    return respond(req,{bucket,path,token:result.data.token,max_bytes:type==="branding"?3145728:type==="cover"?5242880:52428800});
   }
   if(req.method==="GET"&&path==="/download"){
     const id=str(parsed.searchParams.get("id"),60);
@@ -434,6 +469,66 @@ Deno.serve(async req=>{
   if(path.startsWith("/owner/")){
     if(!isOwner)return fail(req,"حساب المالك فقط",403);
     if(req.method==="GET"&&path==="/owner/overview")return await ownerOverview(req);
+    if(req.method==="GET"&&path==="/owner/sections"){
+      const r=await db.from("deela_books_sections").select("*").order("sort_order").limit(500);
+      if(r.error)throw r.error;return respond(req,{sections:await signedMerchandising(r.data||[])});
+    }
+    if(req.method==="POST"&&path==="/owner/sections/save"){
+      const b=await req.json(),id=str(b.id,60),title=str(b.title,100),kind=str(b.kind,20),material=str(b.material,20),category=str(b.category,80),image=str(b.image_path,240),order=Number(b.sort_order);
+      if(title.length<1||!["category","promo"].includes(kind)||!Object.keys({none:1,ceramic:1,marble:1,ornament:1,pearl:1,metal:1,velvet:1,neon:1,heritage:1}).includes(material)||!Number.isInteger(order)||order<1||order>9999)return fail(req,"بيانات القسم غير صحيحة");
+      if(image&&!image.startsWith(user.id+"/branding/"))return fail(req,"صورة القسم ليست ضمن ملفات المالك",403);
+      const row={title,description:str(b.description,450),kind,category,image_path:image,material,design:b.design&&typeof b.design==="object"?b.design:{},sort_order:order,visible:b.visible===true,updated_by:user.id,updated_at:new Date().toISOString()};
+      const q=uuid.test(id)?await db.from("deela_books_sections").update(row).eq("id",id).select("*").single():await db.from("deela_books_sections").insert(row).select("*").single();
+      if(q.error)throw q.error;return respond(req,{ok:true,section:(await signedMerchandising([q.data]))[0]});
+    }
+    if(req.method==="POST"&&path==="/owner/sections/delete"){
+      const b=await req.json(),id=str(b.id,60);if(!uuid.test(id))return fail(req,"معرّف القسم غير صحيح");
+      const r=await db.from("deela_books_sections").delete().eq("id",id).select("id").maybeSingle();if(r.error)throw r.error;
+      return r.data?respond(req,{ok:true}):fail(req,"القسم غير موجود",404);
+    }
+    if(req.method==="GET"&&path==="/owner/banners"){
+      const r=await db.from("deela_books_banners").select("*").order("sort_order").limit(300);
+      if(r.error)throw r.error;return respond(req,{banners:await signedMerchandising(r.data||[])});
+    }
+    if(req.method==="POST"&&path==="/owner/banners/save"){
+      const b=await req.json(),id=str(b.id,60),title=str(b.title,120),image=str(b.image_path,240),motion=str(b.motion,16),order=Number(b.sort_order);
+      if(title.length<1||!image.startsWith(user.id+"/branding/")||!["none","glow","slide"].includes(motion)||!Number.isInteger(order)||order<1||order>9999)return fail(req,"تحقق من عنوان البنر وصورته وحركته وترتيبه");
+      const target=str(b.target_url,500);if(target){try{const u=new URL(target);if(u.protocol!=="https:"||u.username||u.password)throw Error();}catch{return fail(req,"رابط البنر يجب أن يكون HTTPS");}}
+      const starts=b.starts_at?new Date(String(b.starts_at)):null,ends=b.ends_at?new Date(String(b.ends_at)):null;
+      if((starts&&Number.isNaN(starts.getTime()))||(ends&&Number.isNaN(ends.getTime()))||(starts&&ends&&ends<=starts))return fail(req,"جدول ظهور البنر غير صحيح");
+      const row={title,image_path:image,target_url:target,motion,active:b.active===true,starts_at:starts?.toISOString()||null,ends_at:ends?.toISOString()||null,sort_order:order,updated_by:user.id,updated_at:new Date().toISOString()};
+      const q=uuid.test(id)?await db.from("deela_books_banners").update(row).eq("id",id).select("*").single():await db.from("deela_books_banners").insert(row).select("*").single();
+      if(q.error)throw q.error;return respond(req,{ok:true,banner:(await signedMerchandising([q.data]))[0]});
+    }
+    if(req.method==="POST"&&path==="/owner/banners/delete"){
+      const b=await req.json(),id=str(b.id,60);if(!uuid.test(id))return fail(req,"معرّف البنر غير صحيح");
+      const r=await db.from("deela_books_banners").delete().eq("id",id).select("id").maybeSingle();if(r.error)throw r.error;
+      return r.data?respond(req,{ok:true}):fail(req,"البنر غير موجود",404);
+    }
+    if(req.method==="GET"&&path==="/owner/payments")return respond(req,{config:conf.payment_test_config||{mode:"test",live_enabled:false,provider:"",tax_percent:0,refund_window_days:7,discounts_enabled:false}});
+    if(req.method==="POST"&&path==="/owner/payments"){
+      const b=await req.json(),provider=str(b.provider,30),tax=Number(b.tax_percent),refund=Number(b.refund_window_days);
+      if(!["","tap","myfatoorah","moyasar","tamara","tabby","bank"].includes(provider)||!Number.isFinite(tax)||tax<0||tax>25||!Number.isInteger(refund)||refund<0||refund>90||typeof b.discounts_enabled!=="boolean")return fail(req,"إعدادات اختبار المدفوعات غير صحيحة");
+      // Provider credentials are never accepted or persisted, and live mode is immutable here.
+      const config={mode:"test",live_enabled:false,provider,tax_percent:tax,refund_window_days:refund,discounts_enabled:b.discounts_enabled,methods:["mada","apple_pay","google_pay","visa","mastercard","stc_pay","bank_transfer"],updated_at:new Date().toISOString()};
+      const r=await db.from("deela_books_settings").update({payment_test_config:config,updated_at:new Date().toISOString()}).eq("id",1).select("payment_test_config").single();
+      if(r.error)throw r.error;return respond(req,{ok:true,config:r.data.payment_test_config,payments_live:false});
+    }
+    if(req.method==="GET"&&path==="/owner/users"){
+      const [users,controls]=await Promise.all([db.auth.admin.listUsers({page:1,perPage:100}),db.from("deela_books_user_controls").select("user_id,blocked,note,changed_at").limit(1000)]);
+      if(users.error||controls.error)throw Error("تعذر قراءة قائمة الحسابات");
+      const controlMap=new Map((controls.data||[]).map((x:any)=>[x.user_id,x]));
+      const out=[];for(const u of users.data.users){const p=await db.from("profiles").select("role").eq("id",u.id).maybeSingle();const c=controlMap.get(u.id) as any;out.push({id:u.id,email:u.email||"",phone:u.phone||"",created_at:u.created_at,last_sign_in_at:u.last_sign_in_at,is_owner:p.data?.role==="owner",blocked:c?.blocked===true,note:c?.note||""});}
+      return respond(req,{users:out});
+    }
+    if(req.method==="POST"&&path==="/owner/user-status"){
+      const b=await req.json(),id=str(b.user_id,60),blocked=b.blocked===true,note=str(b.note,500);
+      if(!uuid.test(id)||typeof b.blocked!=="boolean")return fail(req,"بيانات حالة الحساب غير صحيحة");
+      const p=await db.from("profiles").select("role").eq("id",id).maybeSingle();if(p.error)throw p.error;
+      if(p.data?.role==="owner")return fail(req,"حساب المالك محمي ولا يمكن إيقافه من هذه الشاشة",403);
+      const r=await db.from("deela_books_user_controls").upsert({user_id:id,blocked,note,changed_by:user.id,changed_at:new Date().toISOString()},{onConflict:"user_id"});
+      if(r.error)throw r.error;return respond(req,{ok:true,user_id:id,blocked});
+    }
     if(req.method==="GET"&&path==="/owner/sellers"){
       const r=await db.from("deela_books_sellers").select("*").order("created_at",{ascending:false}).limit(120);
       if(r.error)throw r.error;return respond(req,{sellers:r.data||[]});
@@ -554,8 +649,8 @@ Deno.serve(async req=>{
         if(!b.theme_images||typeof b.theme_images!=="object"||Array.isArray(b.theme_images))return fail(req,"صور غير صحيحة",400);
         const images:Record<string,string>={};
         for(const [k,v] of Object.entries(b.theme_images)){
-          if(!["logo","background","banner"].includes(k)||typeof v!=="string"||v.length>2000)return fail(req,"رابط صورة غير صحيح",400);
-          if(v){try{const u=new URL(v);if(u.protocol!=="https:"||u.username||u.password)throw Error();}catch{return fail(req,"رابط الصورة يجب أن يكون HTTPS",400);}}
+          if(!["logo","background","banner"].includes(k)||typeof v!=="string"||v.length>240)return fail(req,"مسار صورة غير صحيح",400);
+          if(v&&!v.startsWith(user.id+"/branding/"))return fail(req,"الصورة يجب أن تكون مرفوعة بحساب المالك",403);
           images[k]=v;
         }
         configured.theme_images=images;
@@ -572,9 +667,9 @@ Deno.serve(async req=>{
       }
       const {data,error:e}=await db.from("deela_books_settings").update(configured)
         .eq("id",1).select("*").single();
-      if(e)throw e;return respond(req,{ok:true,settings:data});
+      if(e)throw e;return respond(req,{ok:true,settings:await signedBranding(data)});
     }
-    if(req.method==="GET"&&path==="/owner/settings")return respond(req,{settings:conf});
+    if(req.method==="GET"&&path==="/owner/settings")return respond(req,{settings:await signedBranding(conf)});
   }
   return fail(req,"المسار غير موجود",404);
  }catch(e){

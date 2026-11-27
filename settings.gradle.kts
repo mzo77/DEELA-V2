@@ -30,4 +30,4 @@ plugins {
 }
 
 rootProject.name = "DEELA APPS"
-include(":app")
+include(":app", ":deela-books-admin")

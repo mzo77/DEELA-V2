@@ -11,6 +11,7 @@ const date=v=>v?new Date(v).toLocaleDateString("ar-SA"):"—";
 const kinds={physical:"ورقي",ebook:"إلكتروني",audiobook:"صوتي"};
 const conditions={new:"جديد",like_new:"شبه جديد",good:"جيد",acceptable:"مقبول",not_applicable:"رقمي"};
 const categories=["الكل","روايات","أدب وشعر","خيال ورعب","تطوير الذات","تاريخ","كتب الأطفال","فلسفة","تقنية","ديني","أخرى"];
+function categoryOptions(){return [...new Set([...categories,...(state.sections||[]).filter(x=>x.kind==="category").map(x=>x.category).filter(Boolean)])];}
 const statusNames={draft:"مسودة",pending:"بانتظار المراجعة",published:"منشور",rejected:"مرفوض",archived:"مؤرشف",
  approved:"معتمد",suspended:"موقوف",pending_review:"بانتظار مراجعة الطلب",awaiting_payment:"بانتظار الدفع",
  paid:"تم تأكيد الدفع",preparing:"جارٍ التجهيز",shipped:"تم الشحن",delivered:"تم التسليم",cancelled:"ملغي"};
@@ -18,7 +19,7 @@ const enabled=key=>state.settings?.[key]!==false;
 const state={token:window.__DEELA_BOOKS_TOKEN||sessionStorage.getItem("deela-books-token")||sessionStorage.getItem("deela-shop-owner-session")||"",
  email:"",view:"home",listings:[],shops:[],cart:[],me:null,settings:{},
  current:null,category:"الكل",format:"all",sort:"newest",search:"",ownerTab:"overview",sellerTab:"books",
- sellerListings:[],ownerData:null,editing:null,formNote:"",loading:false};
+ sellerListings:[],ownerData:null,editing:null,formNote:"",loading:false,sections:[],banners:[]};
 try{let c=JSON.parse(localStorage.getItem("deela-books-cart-v1")||"[]");if(Array.isArray(c))state.cart=c.filter(x=>typeof x.id==="string"&&Number.isInteger(x.qty)&&x.qty>0&&x.qty<=10).slice(0,10)}catch{}
 let noticeTimer;
 function toast(s){
@@ -47,7 +48,7 @@ async function reload(){
  if(!state.token){openLogin();return}
  try{
   const [catalog,shops,me]=await Promise.all([api("/catalog"),api("/shops"),api("/me")]);
-  state.listings=catalog.listings||[];state.shops=shops.shops||[];state.me=me;state.settings=catalog.settings||{};
+  state.listings=catalog.listings||[];state.shops=shops.shops||[];state.me=me;state.settings=catalog.settings||{};state.sections=catalog.sections||[];state.banners=catalog.banners||[];
   state.email=me.email||"";
   applyTheme(state.settings.theme_colors);applyMaterial(state.settings.theme_material);applyDesign(state.settings.theme_design);applySections(state.settings.theme_sections);applyImages(state.settings.theme_images);state.cart=state.cart.filter(x=>state.listings.some(b=>b.id===x.id));saveCart();
   $("heroTitle").textContent=state.settings.hero_title||"لكل كتاب حكاية، ولكل قارئ عالم";
@@ -74,7 +75,7 @@ function applyTheme(colors){
   else document.documentElement.style.removeProperty("--"+key);
  }
 }
-const materials={none:"بدون خامة",ceramic:"سيراميك",marble:"رخام",ornament:"زخارف هندسية",pearl:"لؤلؤي",metal:"معدن",velvet:"مخمل",neon:"نيون",heritage:"تراثي"};
+ const materials={none:"بدون خامة",ceramic:"سيراميك",marble:"رخام",ornament:"زخارف هندسية",pearl:"لؤلؤي",metal:"معدن",velvet:"مخمل",neon:"نيون",heritage:"تراثي"};
 function applyMaterial(value){document.body.dataset.material=Object.hasOwn(materials,value)?value:"none";}
 function materialFields(conf){
  return '<label class="field full">خامة خلفية المتجر<select name="theme_material">'+Object.entries(materials).map(([k,v])=>'<option value="'+k+'" '+(conf.theme_material===k?'selected':'')+'>'+v+'</option>').join("")+'</select></label><div class="field full material-preview" id="materialPreview" data-material="'+(Object.hasOwn(materials,conf.theme_material)?conf.theme_material:"none")+'" style="min-height:110px;padding:24px;border:1px solid var(--line);border-radius:18px;background-color:var(--bg)">معاينة الخامة والزخرفة</div>';
@@ -110,14 +111,33 @@ function applySections(config){
  if(!node)return null;
  const h=node.querySelector("h2");if(h){h.dataset.originalTitle??=h.textContent;if(k!=="banner"||d.title)h.textContent=d.title||h.dataset.originalTitle;}
  node.dataset.material=Object.hasOwn(materials,d.material)?d.material:"none";
- node.dataset.ownerHidden=d.visible===false?"true":"false";
+ node.dataset.ownerHidden=d.visible===false?"true":"false";node.hidden=d.visible===false;
  return {node,order:Number(d.order)||i+1};
  }).filter(Boolean).sort((a,b)=>a.order-b.order);
  for(const {node} of sections)node.parentNode.appendChild(node);
 }
 const imageKeys={logo:"رابط صورة الشعار",background:"رابط خلفية المتجر",banner:"رابط صورة البنر"};
 function safeImage(value){try{const u=new URL(value);return u.protocol==="https:"&&!u.username&&!u.password?u.href:""}catch{return ""}}
-function imageFields(conf){return Object.entries(imageKeys).map(([k,label])=>field(label,"image_"+k,"url",false,"https://...",conf.theme_images?.[k]||"")).join("");}
+function imageFields(conf){return Object.entries(imageKeys).map(([k,label])=>{
+ const src=safeImage(conf.theme_images?.[k]);
+ return '<label class="field">'+esc(label)+'<input type="file" accept="image/png,image/jpeg,image/webp" data-brand-image="'+k+'" aria-label="رفع '+esc(label)+' من الجهاز">'+
+ '<input type="hidden" name="image_'+k+'_path" value="'+esc(conf.theme_image_paths?.[k]||"")+'"><span class="form-msg" data-image-status="'+k+'">'+(src?'الصورة الحالية محفوظة':'اختر صورة من الهاتف أو الجهاز')+'</span>'+
+ (src?'<img data-image-preview="'+k+'" src="'+esc(src)+'" alt="معاينة '+esc(label)+'" style="max-width:180px;max-height:100px;object-fit:contain;border-radius:12px">':'<img data-image-preview="'+k+'" hidden alt="معاينة '+esc(label)+'" style="max-width:180px;max-height:100px;object-fit:contain;border-radius:12px">')+'</label>';
+}).join("");}
+document.addEventListener("change",async ev=>{
+ const input=ev.target;if(!input.matches("[data-brand-image],[data-admin-image]"))return;
+ const admin=input.matches("[data-admin-image]"),key=admin?input.dataset.adminImage:input.dataset.brandImage,file=input.files?.[0];if(!file)return;
+ const status=admin?document.querySelector('[data-upload-status="'+key+'"]'):document.querySelector('[data-image-status="'+key+'"]');
+ try{
+  if(!["image/jpeg","image/png","image/webp"].includes(file.type))throw Error("الصورة يجب أن تكون PNG أو JPG أو WebP");
+  if(file.size>3145728)throw Error("حجم صورة الهوية يجب ألا يتجاوز 3MB");
+  status.textContent="جارٍ رفع الصورة إلى التخزين الخاص…";
+  const path=await upload(file,"branding");
+  const pathField=input.form.elements.namedItem(admin?"image_path":"image_"+key+"_path");if(pathField)pathField.value=path;
+  if(admin)status.textContent="تم رفع الصورة. احفظ النموذج لتطبيقها.";
+  else{const preview=document.querySelector('[data-image-preview="'+key+'"]');preview.src=URL.createObjectURL(file);preview.hidden=false;status.textContent="تم الرفع. اضغط حفظ لتطبيق الصورة.";}
+ }catch(e){status.textContent=errorMessage(e);input.value="";}
+});
 function applyImages(images){
  for(const [key,selector] of [["background","body"],["banner",".feature-banner"]]){
  const el=document.querySelector(selector),url=safeImage(images?.[key]);if(el)el.style.backgroundImage=url?'url('+JSON.stringify(url)+')':"";
@@ -168,6 +188,16 @@ function renderHome(){
  $("homeListings").innerHTML=state.listings.length?state.listings.slice(0,8).map(card).join(""):demoCovers();
  $("featuredShops").innerHTML=state.shops.length?state.shops.slice(0,6).map(shopCard).join(""):
  '<div class="empty-state"><h3>هنا تبدأ متاجر ديلا</h3><p>بمجرد اعتماد متجرك الأول، ستظهر هنا متاجر المؤلفين والناشرين الحقيقية.</p><button class="btn btn-outline" data-route="seller">سجّل أول متجر</button></div>';
+ renderManagedHome();
+}
+function renderManagedHome(){
+ let host=document.getElementById("managedHomeSections");if(!host){host=document.createElement("div");host.id="managedHomeSections";$("home").append(host)}
+ const banners=(state.banners||[]).filter(x=>x.image_url),sections=(state.sections||[]).filter(x=>x.visible);
+ host.innerHTML=(banners.length?'<section class="container section"><div class="managed-banner-grid">'+banners.map(b=>'<a class="managed-banner" href="'+(b.target_url?esc(b.target_url):"#home")+'" '+(b.target_url?'target="_blank" rel="noopener noreferrer"':'')+' style="background-image:linear-gradient(90deg,#071326aa,#07132622),url(&quot;'+esc(b.image_url)+'&quot;)"><strong>'+esc(b.title)+'</strong></a>').join("")+'</div></section>':"")+sections.map(s=>{
+  const style=s.image_url?'background-image:linear-gradient(90deg,#071326df,#07132655),url(&quot;'+esc(s.image_url)+'&quot;)':'';
+  const detail=s.kind==="category"?' · '+esc(s.category):"";
+  return '<section class="container section managed-section" data-material="'+esc(s.material||"none")+'" style="'+style+'"><div class="managed-section-copy"><span class="eyebrow">DEELA BOOKS</span><h2>'+esc(s.title)+detail+'</h2><p>'+esc(s.description||"")+'</p>'+(s.kind==="category"?'<button class="btn btn-outline" data-category="'+esc(s.category)+'">استكشف القسم ←</button>':"")+'</div></section>';
+ }).join("");
 }
 function shopCard(s){
  const following=state.me?.following?.includes(s.id);
@@ -201,7 +231,7 @@ function catalogPage(){
  };
  books=books.sort(sorters[state.sort]||sorters.newest);
  return heading("مكتبة ديلا","اختر كتابًا يناسب ذوقك من الكتب الحقيقية المعتمدة.","EXPLORE OUR BOOKS")+
- '<div class="filters">'+categories.map(c=>'<button class="filter '+(state.category===c?"active":"")+'" data-category="'+esc(c)+'">'+esc(c)+'</button>').join("")+'</div>'+
+ '<div class="filters">'+categoryOptions().map(c=>'<button class="filter '+(state.category===c?"active":"")+'" data-category="'+esc(c)+'">'+esc(c)+'</button>').join("")+'</div>'+
  '<div class="catalog-toolbar"><p>عدد الكتب: '+books.length+' '+(state.me?.is_owner?"(تظهر كتب المراجعة للمالك فقط)":"")+'</p>'+
  '<div class="filter-selects"><select id="formatFilter" aria-label="تصفية نوع الكتاب"><option value="all">جميع الأنواع</option><option value="physical">ورقي</option><option value="ebook">رقمي</option><option value="audiobook">صوتي</option></select>'+
  '<select id="sortFilter" aria-label="ترتيب الكتب"><option value="newest">الأحدث</option><option value="popular">الأكثر إعجابًا</option><option value="rated">الأعلى تقييمًا</option><option value="price_low">الأقل سعرًا</option><option value="price_high">الأعلى سعرًا</option></select></div></div>'+
@@ -356,7 +386,7 @@ function editorPage(b=null){
  field("اسم المؤلف","author","text",false,"اسم الكاتب",b?.author||"")+
  '<label class="field">نوع الكتاب<select name="format">'+
  Object.entries(kinds).map(([key,label])=>'<option value="'+key+'" '+(b?.format===key?"selected":"")+'>'+label+'</option>').join("")+'</select></label>'+
- '<label class="field">التصنيف<select name="category">'+categories.filter(x=>x!=="الكل").map(x=>'<option '+(b?.category===x?"selected":"")+'>'+esc(x)+'</option>').join("")+'</select></label>'+
+ '<label class="field">التصنيف<select name="category">'+categoryOptions().filter(x=>x!=="الكل").map(x=>'<option '+(b?.category===x?"selected":"")+'>'+esc(x)+'</option>').join("")+'</select></label>'+
  '<label class="field">حالة الكتاب الورقي<select name="book_condition">'+Object.entries(conditions).map(([key,label])=>
  '<option value="'+key+'" '+(b?.book_condition===key?"selected":"")+'>'+label+'</option>').join("")+'</select></label>'+
  '<div class="field full"><div class="seller-price-tip">💰 <strong>السعر يحدده صاحب الكتاب</strong>، وتظهر القيمة للقراء بالريال. يمكنك تعديل السعر، لكن أي تعديل يحتاج مراجعة جديدة.</div></div>'+
@@ -407,10 +437,33 @@ function ownerFeatureGroup(group,conf){
  '<span class="switch"><input type="checkbox" name="'+esc(key)+'" '+(conf[key]===true?"checked":"")+'><span class="switch-track"></span></span></label>'
  ).join("")+'</section>';
 }
+function managedOwnerTabs(){
+ const rows=state.ownerData?.sections||[];
+ return '<section class="panel"><h2>الأقسام الديناميكية</h2><p>إنشاء أقسام وتصنيفات وترتيبها وإخفاؤها، مع حفظ مستقل لكل قسم.</p><form id="sectionForm" class="form-grid">'+
+ '<label class="field">عنوان القسم<input name="title" required maxlength="100"></label><label class="field">النوع<select name="kind"><option value="category">تصنيف كتب</option><option value="promo">قسم ترويجي</option></select></label>'+
+ '<label class="field">التصنيف<input name="category" maxlength="80" placeholder="روايات"></label><label class="field">الترتيب<input name="sort_order" type="number" min="1" max="9999" value="1"></label>'+
+ '<label class="field full">الوصف<textarea name="description" maxlength="450"></textarea></label><label class="field">الخامة<select name="material">'+Object.entries(materials).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join("")+'</select></label>'+imageUploader("section")+
+ '<label class="field"><input type="checkbox" name="visible" checked>إظهار القسم</label><input type="hidden" name="id"><input type="hidden" name="image_path"><div class="field full"><button class="btn btn-primary" type="submit">إنشاء القسم</button><span class="form-msg" data-upload-status="section"></span></div></form><div class="managed-admin-list">'+(rows.length?rows.map(x=>'<article class="row-card"><strong>'+esc(x.title)+'</strong> · '+esc(x.kind==="category"?x.category:"ترويجي")+' · الترتيب '+Number(x.sort_order)+' · '+(x.visible?"ظاهر":"مخفي")+'<div class="toolbar"><button class="btn btn-outline" data-section-edit="'+esc(x.id)+'">تعديل</button><button class="btn btn-outline" data-section-delete="'+esc(x.id)+'">حذف</button></div></article>').join(""):'<p>لم تُنشأ أقسام بعد.</p>')+'</div></section>'+
+ '<section class="panel"><h2>البنرات وجدول الظهور</h2><p>رفع صورة من المعرض، تحديد رابط وموعد بداية ونهاية الظهور.</p><form id="bannerForm" class="form-grid">'+
+ '<label class="field">عنوان البنر<input name="title" required maxlength="120"></label><label class="field">الترتيب<input name="sort_order" type="number" min="1" max="9999" value="1"></label><label class="field full">الرابط HTTPS<input name="target_url" type="url" placeholder="https://..."></label>'+imageUploader("banner")+
+ '<label class="field">الحركة<select name="motion"><option value="none">ثابت</option><option value="glow">لمعان</option><option value="slide">انزلاق</option></select></label><label class="field">يبدأ في<input name="starts_at" type="datetime-local"></label><label class="field">ينتهي في<input name="ends_at" type="datetime-local"></label><label class="field"><input type="checkbox" name="active" checked>تفعيل البنر وفق الجدول</label><input type="hidden" name="id"><input type="hidden" name="image_path"><div class="field full"><button class="btn btn-primary" type="submit">حفظ البنر</button><span class="form-msg" data-upload-status="banner"></span></div></form><div class="managed-admin-list">'+(state.ownerData?.banners||[]).map(x=>'<article class="row-card"><strong>'+esc(x.title)+'</strong> · '+(x.active?"مفعّل":"مخفي")+' · '+(x.starts_at?date(x.starts_at):"بلا موعد بداية")+'<div class="toolbar"><button class="btn btn-outline" data-banner-edit="'+esc(x.id)+'">تعديل</button><button class="btn btn-outline" data-banner-delete="'+esc(x.id)+'">حذف</button></div></article>').join("")+'</div></section>';
+}
+function imageUploader(kind){return '<label class="field">صورة من الجهاز<input type="file" accept="image/png,image/jpeg,image/webp" data-admin-image="'+kind+'"></label>';}
+function paymentOwnerPanel(){
+ const c=state.ownerData?.config||{mode:"test",live_enabled:false,provider:"",tax_percent:0,refund_window_days:7,discounts_enabled:false};
+ return '<section class="panel"><h2>مركز المدفوعات · بيئة اختبار فقط</h2><p>لا يجري تحصيل أموال هنا. لا نقبل مفاتيح سرية ولا نسجل نجاح دفع تجريبي على أنه حقيقي.</p><form id="paymentsForm" class="form-grid">'+
+ '<label class="field">بوابة الربط المقترحة<select name="provider"><option value="">غير محددة</option>'+[["tap","Tap"],["myfatoorah","MyFatoorah"],["moyasar","Moyasar"],["tamara","Tamara"],["tabby","Tabby"],["bank","تحويل بنكي"]].map(([k,v])=>'<option value="'+k+'" '+(c.provider===k?"selected":"")+'>'+v+'</option>').join("")+'</select></label>'+
+ '<label class="field">الضريبة (%)<input name="tax_percent" type="number" min="0" max="25" step="0.01" value="'+Number(c.tax_percent||0)+'"></label><label class="field">نافذة الاسترداد (أيام)<input name="refund_window_days" type="number" min="0" max="90" value="'+Number(c.refund_window_days??7)+'"></label><label class="field"><input name="discounts_enabled" type="checkbox" '+(c.discounts_enabled?"checked":"")+'>تفعيل خصومات الاختبار</label><div class="field full"><p>طرق الدفع المخطط لها: مدى، Apple Pay، Google Pay، Visa، Mastercard، STC Pay، والتحويل البنكي. مزود الخدمة وبيانات التاجر مطلوبة قبل الربط الحقيقي.</p></div><div class="owner-locked-panel full"><strong>الحالة: اختبار معطل فعليًا · الدفع الحقيقي مغلق</strong><p>مفاتيح الربط لا تدخل هنا. أدخلها لاحقًا في مخزن أسرار الخادم، بعد موافقة منفصلة على تفعيل المدفوعات.</p></div><div class="field full"><button class="btn btn-primary" type="submit">حفظ إعدادات الاختبار</button><span class="form-msg"></span></div></form></section>';
+}
+function accountOwnerPanel(){
+ const rows=state.ownerData?.users||[];
+ return '<section class="panel"><h2>إدارة الحسابات</h2><p>حساب المالك محمي. إيقاف حساب عادي يمنع استخدامه من وظائف DEELA Books بعد إعادة فحص الجلسة.</p><div class="list-rows">'+rows.map(u=>'<article class="row-card"><div class="row-top"><div><strong>'+esc(u.email||u.phone||u.id)+'</strong><p>آخر دخول: '+date(u.last_sign_in_at)+' · إنشاء: '+date(u.created_at)+'</p></div><span class="status">'+(u.is_owner?"مالك محمي":u.blocked?"موقوف":"نشط")+'</span></div>'+(u.is_owner?"":'<label class="field">ملاحظة إدارية<input data-user-note="'+esc(u.id)+'" value="'+esc(u.note)+'" maxlength="500"></label><button class="btn '+(u.blocked?"btn-outline":"danger")+'" data-user-toggle="'+esc(u.id)+'" data-blocked="'+(!u.blocked)+'">'+(u.blocked?"إعادة تفعيل الحساب":"إيقاف الحساب")+'</button>')+'</article>').join("")+'</div><p>المعروض أول 100 حساب فقط. إدارة مزودات تسجيل الدخول والجوال وGoogle وApple تحتاج مفاتيح المزود وإعداداتها الخارجية.</p></section>';
+}
 function ownerPage(){
  const tab=state.ownerTab;
  const tabs=[
   ["overview","الرئيسية والإحصائيات"],["features","تشغيل المميزات"],
+  ["sections","الأقسام والبنرات"],["payments","المدفوعات"],["users","الحسابات"],
   ["sellers","المؤلفون والمتاجر"],["listings","إدارة الكتب والعروض"],
   ["orders","الطلبات والمبيعات"],["reports","التقييمات والبلاغات"],
   ["settings","الهوية والإعدادات"]
@@ -451,6 +504,9 @@ function ownerPage(){
   '<div class="owner-save-bar"><div><strong>التحكم المباشر</strong><p>تعطيل أي ميزة يمنع استخدامها من واجهة القراء وكذلك من الخادم.</p></div>'+
   '<button class="btn btn-primary" type="submit">حفظ وتطبيق المميزات</button></div><p class="form-msg" id="featuresMessage"></p></form>';
  }
+ if(tab==="sections")return top+managedOwnerTabs();
+ if(tab==="payments")return top+paymentOwnerPanel();
+ if(tab==="users")return top+accountOwnerPanel();
  if(tab==="sellers"){
   const arr=state.ownerData?.sellers||[];
   return top+'<div class="panel"><div class="owner-section-title"><div><h2>طلبات المؤلفين والمتاجر</h2><p>اعتماد أو تعليق أو رفض كل متجر على حدة.</p></div><span class="status">'+arr.length+' متجر</span></div>'+
@@ -543,6 +599,9 @@ async function ownerData(){
  if(tab==="orders")state.ownerData=await api("/owner/orders");
  if(tab==="reports")state.ownerData=await api("/owner/reports");
  if(tab==="features"||tab==="settings")state.ownerData=await api("/owner/settings");
+ if(tab==="sections"){const [sections,banners]=await Promise.all([api("/owner/sections"),api("/owner/banners")]);state.ownerData={...sections,...banners};}
+ if(tab==="payments")state.ownerData=await api("/owner/payments");
+ if(tab==="users")state.ownerData=await api("/owner/users");
 }
 async function sellerData(){
  const r=await api("/my/listings");state.sellerListings=r.listings||[];
@@ -644,8 +703,8 @@ async function confirmAction(message){
 async function upload(file,type){
  if(!file)return null;
  const ext=(file.name.split(".").pop()||"").toLowerCase();
- const max=type==="cover"?5242880:52428800;
- if(file.size>max)throw Error(type==="cover"?"حجم الغلاف أكثر من 5MB":"حجم الكتاب أكثر من 50MB");
+ const max=type==="cover"?5242880:type==="branding"?3145728:52428800;
+ if(file.size>max)throw Error(type==="cover"?"حجم الغلاف أكثر من 5MB":type==="branding"?"حجم صورة الهوية أكثر من 3MB":"حجم الكتاب أكثر من 50MB");
  const signed=await api("/upload/sign",{method:"POST",data:{type,extension:ext}});
  const {createClient}=await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.95.0/+esm");
  const client=createClient(ROOT,KEY,{auth:{persistSession:false,autoRefreshToken:false}});
@@ -717,9 +776,20 @@ async function handleForm(ev){
     await reload();await route("owner",false);
   }else if(id==="settingsForm"){
     const payload={...state.settings,...state.ownerData?.settings,...raw,
-      theme_images:Object.fromEntries(Object.keys(imageKeys).map(k=>[k,raw['image_'+k]||''])),theme_sections:Object.fromEntries(Object.keys(sectionDefs).map(k=>[k,{title:raw["section_"+k+"_title"]||"",order:Number(raw["section_"+k+"_order"]),material:raw["section_"+k+"_material"],visible:raw["section_"+k+"_visible"]==="on"}])),theme_design:{radius:Number(raw.design_radius),font_size:Number(raw.design_font_size),banner_motion:raw.design_banner_motion},theme_material:raw.theme_material,theme_colors:Object.fromEntries(Object.keys(themeKeys).map(k=>[k,raw["theme_"+k]])),site_public:false,payments_live:false};
+      theme_images:Object.fromEntries(Object.keys(imageKeys).map(k=>[k,raw['image_'+k+'_path']||''])),theme_sections:Object.fromEntries(Object.keys(sectionDefs).map(k=>[k,{title:raw["section_"+k+"_title"]||"",order:Number(raw["section_"+k+"_order"]),material:raw["section_"+k+"_material"],visible:raw["section_"+k+"_visible"]==="on"}])),theme_design:{radius:Number(raw.design_radius),font_size:Number(raw.design_font_size),banner_motion:raw.design_banner_motion},theme_material:raw.theme_material,theme_colors:Object.fromEntries(Object.keys(themeKeys).map(k=>[k,raw["theme_"+k]])),site_public:false,payments_live:false};
     await api("/owner/settings",{method:"POST",data:payload});
     toast("تم حفظ هوية المنصة والعروض");await reload();await route("owner",false);
+  }else if(id==="sectionForm"){
+    const data={...raw,visible:form.elements.namedItem("visible").checked,sort_order:Number(raw.sort_order)};
+    const saved=await api("/owner/sections/save",{method:"POST",data});
+    toast("تم حفظ القسم: "+saved.section.title);await reload();await route("owner",false);
+  }else if(id==="bannerForm"){
+    const data={...raw,active:form.elements.namedItem("active").checked,sort_order:Number(raw.sort_order),starts_at:raw.starts_at?new Date(raw.starts_at).toISOString():null,ends_at:raw.ends_at?new Date(raw.ends_at).toISOString():null};
+    await api("/owner/banners/save",{method:"POST",data});
+    toast("تم حفظ البنر وجدول ظهوره");await reload();await route("owner",false);
+  }else if(id==="paymentsForm"){
+    const data={...raw,tax_percent:Number(raw.tax_percent),refund_window_days:Number(raw.refund_window_days),discounts_enabled:form.elements.namedItem("discounts_enabled").checked};
+    await api("/owner/payments",{method:"POST",data});toast("حُفظت إعدادات الاختبار. الدفع الحقيقي ما زال مغلقًا.");await route("owner",false);
   }else if(id==="messageForm"){
     await api("/messages",{method:"POST",data:{listing_id:raw.listing_id,body:raw.body}});
     toast("تم إرسال رسالتك للبائع");await route("messages",false);
@@ -774,6 +844,26 @@ async function moderate(id,type,status){
   toast("تمت معالجة المراجعة");await route("owner",false);
  }catch(e){toast(errorMessage(e))}
 }
+async function removeManaged(kind,id){
+ if(!await confirmAction(kind==="section"?"حذف هذا القسم نهائيًا؟":"حذف هذا البنر نهائيًا؟"))return;
+ try{await api("/owner/"+kind+"s/delete",{method:"POST",data:{id}});toast("تم الحذف");await route("owner",false)}catch(e){toast(errorMessage(e))}
+}
+async function setUserBlocked(id,blocked){
+ if(!await confirmAction(blocked?"إيقاف هذا الحساب عن استخدام DEELA Books؟":"إعادة تفعيل هذا الحساب؟"))return;
+ try{await api("/owner/user-status",{method:"POST",data:{user_id:id,blocked,note:document.querySelector('[data-user-note="'+id+'"]')?.value||""}});toast("تم تحديث حالة الحساب");await route("owner",false)}catch(e){toast(errorMessage(e))}
+}
+function editManaged(kind,id){
+ const row=kind==="section"?(state.ownerData?.sections||[]).find(x=>x.id===id):(state.ownerData?.banners||[]).find(x=>x.id===id);
+ const form=document.getElementById(kind+"Form");if(!row||!form)return;
+ for(const [key,value] of Object.entries(row)){
+  const field=form.elements.namedItem(key);if(!field)continue;
+  if(field.type==="checkbox")field.checked=value===true;
+  else if(field.type==="datetime-local")field.value=value?new Date(value).toISOString().slice(0,16):"";
+  else if(field.value!==undefined)field.value=value??"";
+ }
+ form.scrollIntoView({behavior:"smooth",block:"center"});
+ const submit=form.querySelector('button[type="submit"]');if(submit)submit.textContent="حفظ التعديلات";
+}
 function editor(id){
  if(id==="close"){state.editing=null;$("sellerEditor").innerHTML="";return}
  state.editing=id==="new"?null:state.sellerListings.find(x=>x.id===id)||null;
@@ -809,6 +899,11 @@ function bind(){
   if(t.dataset.cartRemove){ev.preventDefault();state.cart=state.cart.filter(x=>x.id!==t.dataset.cartRemove);saveCart();return route("cart",false)}
   if(t.dataset.category){ev.preventDefault();state.category=t.dataset.category;return route("catalog")}
   if(t.dataset.ownerTab){ev.preventDefault();state.ownerTab=t.dataset.ownerTab;return route("owner")}
+  if(t.dataset.sectionDelete){ev.preventDefault();return removeManaged("section",t.dataset.sectionDelete)}
+  if(t.dataset.bannerDelete){ev.preventDefault();return removeManaged("banner",t.dataset.bannerDelete)}
+  if(t.dataset.sectionEdit){ev.preventDefault();return editManaged("section",t.dataset.sectionEdit)}
+  if(t.dataset.bannerEdit){ev.preventDefault();return editManaged("banner",t.dataset.bannerEdit)}
+  if(t.dataset.userToggle){ev.preventDefault();return setUserBlocked(t.dataset.userToggle,t.dataset.blocked==="true")}
   if(t.dataset.sellerStatus){ev.preventDefault();return applySellerStatus(t.dataset.sellerStatus,t.dataset.status)}
   if(t.dataset.ownerStatus){ev.preventDefault();return applyListingStatus(t.dataset.ownerStatus,t.dataset.status)}
   if(t.dataset.featureBook){
