@@ -858,9 +858,25 @@ function startSellerNotificationPolling(){
  void pollSellerNotifications();
  state.sellerNotificationTimer=setInterval(pollSellerNotifications,60000);
 }
+function pushKeyBytes(value){
+ const padded=String(value).replace(/-/g,"+").replace(/_/g,"/")+"===".slice((String(value).length+3)%4);
+ const raw=atob(padded);return Uint8Array.from(raw,c=>c.charCodeAt(0));
+}
 async function enableSellerNotifications(){
  if(!("Notification" in window))return toast("هذا المتصفح لا يدعم إشعارات المواقع");
- try{const p=await Notification.requestPermission();toast(p==="granted"?"تم تفعيل إشعارات البائع على هذا المتصفح":p==="denied"?"ارفض المتصفح الإذن؛ يمكنك تغييره من إعدادات الموقع":"لم يتم تفعيل الإشعارات");if(state.view==="seller")await route("seller",false)}catch{toast("تعذر طلب إذن الإشعارات")}
+ try{
+  const permission=await Notification.requestPermission();
+  if(permission!=="granted")return toast(permission==="denied"?"ارفض المتصفح الإذن؛ فعّله من إعدادات الموقع.":"لم يتم تفعيل الإشعارات.");
+  if(!("serviceWorker" in navigator)||!("PushManager" in window))return toast("تم السماح بإشعارات المتصفح، لكن هذا الجهاز لا يدعم تنبيهات الخلفية.");
+  const registration=await navigator.serviceWorker.register("./sw.js",{scope:"./",updateViaCache:"none"});
+  await navigator.serviceWorker.ready;
+  const config=await api("/push/key");
+  let subscription=await registration.pushManager.getSubscription();
+  if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:pushKeyBytes(config.public_key)});
+  await api("/push/subscribe",{method:"POST",data:subscription.toJSON()});
+  toast("تم تفعيل إشعارات الخلفية لهذا الجهاز.");
+  if(state.view==="seller")await route("seller",false);
+ }catch(e){toast(errorMessage(e)||"تعذر تفعيل إشعارات الخلفية");}
 }
 async function messagesData(){
  const r=await api("/messages");return r.messages||[];
