@@ -683,3 +683,20 @@ body[data-owner-visual-edit="true"] #homeCategories button,body[data-owner-visua
 .community-poll-result>i{display:block;height:8px;margin-top:5px;background:#ffffff16;border-radius:99px;overflow:hidden}
 .community-poll-result>i>span{display:block;height:100%;background:linear-gradient(90deg,var(--teal),var(--blue));border-radius:inherit;transition:width .35s ease}
 .community-poll-result.selected>div>span{color:var(--teal);font-weight:900}
+
+.owner-section-gear{min-width:34px;min-height:34px;width:34px;height:34px;padding:0;margin-inline-start:8px;border-radius:12px;font-size:14px;flex:0 0 auto;box-shadow:none}
+.section-title .owner-section-gear{align-self:center}
+.feature-banner{position:relative;background-size:cover;background-position:center}
+.feature-banner>.owner-section-gear{position:absolute;top:12px;inset-inline-start:12px;z-index:6}
+.owner-welcome{position:relative;isolation:isolate;--welcome-scale:1;font-size:calc(1em * var(--welcome-scale));flex-wrap:wrap}
+.owner-welcome[data-animation="glow"]{animation:deelaWelcomeIn .65s cubic-bezier(.2,.8,.2,1) both,deelaWelcomeGlow 3.8s ease-in-out 1s infinite}
+.owner-welcome-copy{display:inline}
+.owner-welcome-description{display:block;width:100%;font-size:.78em;opacity:.82}
+.owner-welcome-gear{width:30px;height:30px;min-height:30px;padding:0;border-radius:50%;font-size:12px;box-shadow:none}
+@keyframes deelaWelcomeGlow{0%,100%{box-shadow:0 0 0 #5ce0c200;border-color:#6dcbbb66}50%{box-shadow:0 0 22px #5ce0c244;border-color:#8bdccfbb}}
+.section-settings-modal{max-height:min(88dvh,860px);overflow:auto}
+.section-settings-modal .form-grid{gap:12px}
+.section-settings-modal .field small{display:block;color:var(--muted);font-size:11px;margin-top:6px}
+.section-settings-modal output{color:var(--teal);font-weight:800;margin-inline-start:8px}
+.owner-section-hidden{outline:1px dashed #efbf73!important;opacity:.85}
+@media(prefers-reduced-motion:reduce){.owner-welcome[data-animation="glow"]{animation:deelaWelcomeIn .01ms both}}

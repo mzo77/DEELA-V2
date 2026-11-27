@@ -166,23 +166,22 @@ function designFields(conf){
  const d={...designDefaults,...conf.theme_design};
  return '<label class="field">استدارة البطاقات<input name="design_radius" type="number" min="0" max="40" value="'+Number(d.radius)+'"></label><label class="field">حجم الخط<input name="design_font_size" type="number" min="12" max="22" value="'+Number(d.font_size)+'"></label><label class="field">حركة البنر<select name="design_banner_motion"><option value="none">ثابت</option><option value="glow" '+(d.banner_motion==="glow"?"selected":"")+'>لمعان متحرك</option></select></label>';
 }
-const sectionDefs={categories:["التصنيفات","#homeCategories"],books:["الكتب","#homeListings"],shops:["المتاجر","#featuredShops"],faq:["الأسئلة الشائعة",".faq-section"],banner:["البنر",".feature-banner"]};
-function sectionFields(conf){
- return Object.entries(sectionDefs).map(([k,[label]])=>{
- const d=conf.theme_sections?.[k]||{};
- return '<fieldset class="field full"><legend>'+label+'</legend><label>العنوان<input name="section_'+k+'_title" maxlength="100" value="'+esc(d.title||"")+'"></label><label>الترتيب<input type="number" min="1" max="99" name="section_'+k+'_order" value="'+(Number(d.order)||Object.keys(sectionDefs).indexOf(k)+1)+'"></label><label>الخامة<select name="section_'+k+'_material">'+Object.entries(materials).map(([v,t])=>'<option value="'+v+'" '+(d.material===v?"selected":"")+'>'+t+'</option>').join("")+'</select></label><label>لون الخلفية<input type="color" name="section_'+k+'_background_color" value="'+esc(/^#[0-9a-f]{6}$/i.test(d.background_color||"")?d.background_color:"#18283d")+'"></label><label>لون العنوان والإبراز<input type="color" name="section_'+k+'_accent_color" value="'+esc(/^#[0-9a-f]{6}$/i.test(d.accent_color||"")?d.accent_color:"#8bdccf")+'"></label><label><input type="checkbox" name="section_'+k+'_visible" '+(d.visible!==false?"checked":"")+'>إظهار القسم</label></fieldset>';
- }).join("");
-}
+const sectionDefs={categories:["التصنيفات","#homeCategories"],books:["الكتب","#homeListings"],banner:["البنر",".feature-banner"],shops:["المتاجر","#featuredShops"],faq:["الأسئلة الشائعة",".faq-section"],contests:["مجتمع ديلا","#contestHome .contest-section"]};
 function applySections(config){
  const sections=Object.entries(sectionDefs).map(([k,[label,selector]],i)=>{
  const node=document.querySelector(selector)?.closest("section.container");const d=config?.[k]||{};
  if(!node)return null;
  const h=node.querySelector("h2");if(h){h.dataset.originalTitle??=h.textContent;if(k!=="banner"||d.title)h.textContent=d.title||h.dataset.originalTitle;}
- node.dataset.material=Object.hasOwn(materials,d.material)?d.material:"none";
- node.style.setProperty("--section-bg",/^#[0-9a-f]{6}$/i.test(d.background_color||"")?d.background_color:"var(--panel)");
+ node.dataset.material=Object.hasOwn(materials,d.material)?d.material:"none";node.dataset.sectionKey=k;node.style.setProperty("--section-scale",String(Math.min(1.2,Math.max(.85,(Number(d.scale)||100)/100))));
+ const description=node.querySelector(".section-title p");if(description){description.dataset.originalDescription??=description.textContent;description.textContent=d.description||description.dataset.originalDescription;}const link=node.querySelector(".section-title .text-button")||(k==="banner"?node.querySelector(".btn"):null);if(link){link.dataset.originalLabel??=link.textContent;link.textContent=d.link_text||link.dataset.originalLabel;}const limit=Number(d.items_limit)||({categories:12,books:8,shops:6,faq:4,contests:6}[k]||6);node.querySelectorAll(".faqs>details").forEach((el,i)=>el.hidden=i>=limit);
+ const bannerUrl=safeImage(d.banner_url||"");if(k==="banner")node.style.backgroundImage=bannerUrl?'linear-gradient(90deg,#07101dcc,#07101d88),url("'+bannerUrl.replaceAll('"',"%22")+'")':"";
+ node.querySelectorAll(".community-tile").forEach(el=>{el.style.minHeight=(152*(Number(d.scale)||100)/100)+"px";el.style.fontSize=(Number(d.scale)||100)+"%"});
+ node.querySelectorAll(".book-card").forEach(el=>{el.style.width=(220*(Number(d.scale)||100)/100)+"px";el.style.setProperty("--book-cover-height",(251*(Number(d.scale)||100)/100)+"px")});
+ node.querySelectorAll(".shop-card,.faq-item,.contest-card").forEach(el=>{el.style.fontSize=(Number(d.scale)||100)+"%"});
+ node.style.setProperty("--section-bg",/^#[0-9a-f]{6}$/i.test(d.background_color||"")?d.background_color:"var(--panel)");node.style.backgroundColor=/^#[0-9a-f]{6}$/i.test(d.background_color||"")?d.background_color:"";
  node.style.setProperty("--section-accent",/^#[0-9a-f]{6}$/i.test(d.accent_color||"")?d.accent_color:"var(--teal)");
  node.style.borderColor="var(--section-accent)";
- node.dataset.ownerHidden=d.visible===false?"true":"false";node.hidden=d.visible===false;
+ node.dataset.ownerHidden=d.visible===false?"true":"false";node.classList.toggle("owner-section-hidden",d.visible===false&&!!state.me?.is_owner);node.hidden=d.visible===false&&!state.me?.is_owner;
  return {node,order:Number(d.order)||i+1};
  }).filter(Boolean).sort((a,b)=>a.order-b.order);
  for(const {node} of sections)node.parentNode.appendChild(node);
@@ -252,7 +251,7 @@ function cover(b){
 function card(b){
  const isPublished=b.status==="published",isOwn=Boolean(state.me?.seller?.id&&state.me.seller.id===b.seller_id),fav=state.me?.favorites?.includes(b.id),liked=state.me?.likes?.includes(b.id);
  const kind=kinds[b.format]||"كتاب",kindLabel=b.format==="physical"?"ورقي":b.format==="audiobook"?"صوتي":"رقمي";
- return '<article class="book-card '+(state.me?.is_owner?"owner-book-inspect":"") +'">'+(state.me?.is_owner?'<button type="button" class="owner-inline-control owner-book-control" data-owner-book-settings="'+esc(b.id)+'" aria-label="إعدادات الكتاب">⚙</button>':"")+'<div class="cover-wrap '+(b.format==="ebook"?"purple":b.format==="audiobook"?"teal":"gold")+'" data-book="'+esc(b.id)+'">'+
+ return '<article class="book-card"><div class="cover-wrap '+(b.format==="ebook"?"purple":b.format==="audiobook"?"teal":"gold")+'" data-book="'+esc(b.id)+'">'+
  (b.cover_url?'<img src="'+esc(b.cover_url)+'" alt="غلاف '+esc(b.title)+'" loading="lazy">':
  '<div class="cover-pseudo"><small>DEELA BOOKS</small><strong>'+esc(b.title.slice(0,38))+'</strong><em>✧</em></div>')+
  '<span class="book-badge">'+esc(kind)+(isPublished?"":" · غير منشور")+'</span>'+
@@ -268,7 +267,7 @@ function card(b){
 }
 function renderContestHome(){
  let host=document.getElementById("contestHome");if(!host){host=document.createElement("div");host.id="contestHome";$("home").append(host)}
- const rows=(state.contests||[]).filter(x=>["announced","open"].includes(x.status));
+ const contestLimit=Number(state.settings.theme_sections?.contests?.items_limit)||6;const rows=(state.contests||[]).filter(x=>["announced","open"].includes(x.status)).slice(0,contestLimit);
  host.innerHTML=rows.length?'<section class="container section contest-section"><div class="section-title"><div><span class="eyebrow">DEELA COMMUNITY</span><h2>مجتمع ديلا</h2><p>إعلانات المالك، أسئلة القراء واستطلاعاتهم</p></div></div><div class="contest-grid">'+rows.map(c=>{
   const poll=Array.isArray(c.poll_options)&&c.poll_options.length>=2,open=c.status==="open"&&c.question_text,answered=c.my_answer,counts=c.poll_counts||{},total=Object.values(counts).reduce((sum,n)=>sum+Number(n||0),0);
   let interaction="";
@@ -280,7 +279,7 @@ function renderContestHome(){
    interaction=answered?'<span class="status">وصلت إجابتك'+(answered.is_correct===true?" · إجابة صحيحة":answered.is_correct===false?" · إجابة غير صحيحة":" · بانتظار التصحيح")+'</span>':'<form id="contestAnswerForm" class="contest-answer-form"><input type="hidden" name="contest_id" value="'+esc(c.id)+'"><label class="field">إجابتك<input name="answer" required maxlength="1000"></label><button class="btn btn-primary" type="submit">إرسال الإجابة</button></form>';
   }
   return '<article class="contest-card"><span class="status">'+(open?(poll?"استطلاع مفتوح":"المسابقة بدأت"):"قريبًا")+'</span><h3>'+esc(c.title)+'</h3><p>'+esc(c.announcement||"")+'</p>'+(c.starts_at?'<small>تبدأ: '+new Date(c.starts_at).toLocaleString("ar-SA",{dateStyle:"medium",timeStyle:"short"})+'</small>':"")+(open?'<h4>'+esc(c.question_text)+'</h4>'+interaction:"")+'</article>';
- }).join("")+'</div></section>':"";
+ }).join("")+'</div></section>':"";addOwnerHomeSettingsGears();
 }
 async function refreshContests(){
  if(!state.token)return;
@@ -297,12 +296,12 @@ async function refreshContests(){
 }
 function startContestPolling(){if(state.contestTimer)clearInterval(state.contestTimer);void refreshContests();state.contestTimer=setInterval(refreshContests,30000);}
 function renderHome(){
- const heroText=document.querySelector(".hero-text");if(heroText){let welcome=document.getElementById("ownerWelcome");if(state.me?.is_owner){if(!welcome){welcome=document.createElement("span");welcome.id="ownerWelcome";welcome.className="owner-welcome";heroText.insertBefore(welcome,heroText.querySelector("#heroTitle"))}welcome.textContent="مرحباً بك في DEELA، "+(state.me?.seller?.shop_name||state.me?.display_name||"يا مالك المتجر");}else welcome?.remove();}
- const rail=document.getElementById("homeCategories");if(rail){const items=[["روايات","▤","عالم من القصص"],["أدب وشعر","❝","كلمات وأفكار"],["خيال ورعب","✦","خيال وغموض"],["تطوير الذات","◉","معرفة وعمل"],["كتب الأطفال","★","حكايات الصغار"],["تعليم","⌘","تعلم واكتشف"],["ألعاب فيديو","⌁","ألعاب ومغامرة"],["قرطاسية","✎","أدوات الكتابة"],["فنون وحرف","✿","اصنع بيدك"],["قهوة","☕","اختيارات المجتمع"],["موسيقى","♫","إيقاع ومزاج"],["أزياء","◇","ذوقك الخاص"]];rail.innerHTML=items.map(x=>'<button class="community-tile" data-category="'+esc(x[0])+'"><span>'+x[1]+'</span><strong>'+esc(x[0])+'</strong><small>'+esc(x[2])+'</small></button>').join("");}
- $("homeListings").innerHTML=state.listings.length?state.listings.slice(0,8).map(card).join(""):demoCovers();
- $("featuredShops").innerHTML=state.shops.length?state.shops.slice(0,6).map(shopCard).join(""):
+ const heroText=document.querySelector(".hero-text");if(heroText){let welcome=document.getElementById("ownerWelcome");if(state.me){if(!welcome){welcome=document.createElement("div");welcome.id="ownerWelcome";welcome.className="owner-welcome";heroText.insertBefore(welcome,heroText.querySelector("#heroTitle"))}const wd=state.settings.theme_sections?.welcome||{},person=state.me?.seller?.shop_name||state.me?.display_name||"قارئنا";welcome.innerHTML='<span class="owner-welcome-copy">'+esc((wd.title||"أهلاً بك في DEELA، {name}").replaceAll("{name}",person))+'</span>'+(wd.description?'<small class="owner-welcome-description">'+esc(wd.description)+'</small>':"");welcome.hidden=wd.visible===false;welcome.style.color=/^#[0-9a-f]{6}$/i.test(wd.accent_color||"")?wd.accent_color:"";welcome.dataset.animation=wd.animation||"glow";welcome.style.setProperty("--welcome-scale",String((Number(wd.scale)||100)/100));}else welcome?.remove();}
+ const rail=document.getElementById("homeCategories");if(rail){const items=[["روايات","▤","عالم من القصص"],["أدب وشعر","❝","كلمات وأفكار"],["خيال ورعب","✦","خيال وغموض"],["تطوير الذات","◉","معرفة وعمل"],["كتب الأطفال","★","حكايات الصغار"],["تعليم","⌘","تعلم واكتشف"],["ألعاب فيديو","⌁","ألعاب ومغامرة"],["قرطاسية","✎","أدوات الكتابة"],["فنون وحرف","✿","اصنع بيدك"],["قهوة","☕","اختيارات المجتمع"],["موسيقى","♫","إيقاع ومزاج"],["أزياء","◇","ذوقك الخاص"]].slice(0,Number(state.settings.theme_sections?.categories?.items_limit)||12);rail.innerHTML=items.map(x=>'<button class="community-tile" data-category="'+esc(x[0])+'"><span>'+x[1]+'</span><strong>'+esc(x[0])+'</strong><small>'+esc(x[2])+'</small></button>').join("");}
+ $("homeListings").innerHTML=state.listings.length?state.listings.slice(0,Number(state.settings.theme_sections?.books?.items_limit)||8).map(card).join(""):demoCovers();
+ $("featuredShops").innerHTML=state.shops.length?state.shops.slice(0,Number(state.settings.theme_sections?.shops?.items_limit)||6).map(shopCard).join(""):
  '<div class="empty-state"><h3>هنا تبدأ متاجر ديلا</h3><p>بمجرد اعتماد متجرك الأول، ستظهر هنا متاجر المؤلفين والناشرين الحقيقية.</p><button class="btn btn-outline" data-route="seller">سجّل أول متجر</button></div>';
- renderManagedHome();renderContestHome();
+ renderManagedHome();renderContestHome();applySections(state.settings.theme_sections||{});addOwnerHomeSettingsGears();
 }
 function openOwnerSectionSettings(id){
  if(!state.me?.is_owner)return;
@@ -832,7 +831,7 @@ function ownerPage(){
   '<div class="owner-settings-accordions">'+
   '<details class="owner-setting-accordion"><summary><span>الألوان والخامة</span><small>ألوان المتجر وخلفيته</small></summary><div class="form-grid settings-accordion-body">'+themeFields(conf)+materialFields(conf)+'</div></details>'+
   '<details class="owner-setting-accordion"><summary><span>التصميم والخط</span><small>استدارة البطاقات وحجم الخط وحركة البنر</small></summary><div class="form-grid settings-accordion-body">'+designFields(conf)+'</div></details>'+
-  '<details class="owner-setting-accordion"><summary><span>الأقسام والبنرات والصور</span><small>ترتيب الأقسام ومحتواها البصري</small></summary><div class="form-grid settings-accordion-body">'+sectionFields(conf)+imageFields(conf)+'</div></details>'+
+  '<details class="owner-setting-accordion"><summary><span>صور الموقع العامة</span><small>الشعار والخلفية والصورة الرئيسية</small></summary><div class="form-grid settings-accordion-body">'+imageFields(conf)+'</div></details>'+
   '<details class="owner-setting-accordion"><summary><span>بيانات الموقع والعروض</span><small>الاسم والرسائل وروابط التواصل والعمولة</small></summary><div class="form-grid settings-accordion-body">'+field("اسم المنصة","name","text",true,"DEELA Books",conf.name||"DEELA Books")+
   field("عنوان الواجهة الرئيسية","hero_title","text",true,"لكل كتاب حكاية",conf.hero_title||"")+
   field("الرسالة العلوية","announcement","text",false,"",conf.announcement||"")+
@@ -1168,7 +1167,7 @@ async function handleForm(ev){
     await reload();await route("owner",false);
   }else if(id==="settingsForm"){
     const payload={...state.settings,...state.ownerData?.settings,...raw,
-      theme_images:Object.fromEntries(Object.keys(imageKeys).map(k=>[k,raw['image_'+k+'_path']||''])),theme_sections:Object.fromEntries(Object.keys(sectionDefs).map(k=>[k,{title:raw["section_"+k+"_title"]||"",order:Number(raw["section_"+k+"_order"]),material:raw["section_"+k+"_material"],background_color:raw["section_"+k+"_background_color"]||"",accent_color:raw["section_"+k+"_accent_color"]||"",visible:raw["section_"+k+"_visible"]==="on"}])),theme_design:{...designDefaults,...state.settings.theme_design,radius:Number(raw.design_radius),font_size:Number(raw.design_font_size),banner_motion:raw.design_banner_motion},theme_material:raw.theme_material,theme_colors:Object.fromEntries(Object.keys(themeKeys).map(k=>[k,raw["theme_"+k]])),site_public:false,payments_live:false};
+      theme_images:Object.fromEntries(Object.keys(imageKeys).map(k=>[k,raw['image_'+k+'_path']||''])),theme_sections:state.settings.theme_sections||state.ownerData?.settings?.theme_sections||{},theme_design:{...designDefaults,...state.settings.theme_design,radius:Number(raw.design_radius),font_size:Number(raw.design_font_size),banner_motion:raw.design_banner_motion},theme_material:raw.theme_material,theme_colors:Object.fromEntries(Object.keys(themeKeys).map(k=>[k,raw["theme_"+k]])),site_public:false,payments_live:false};
     await api("/owner/settings",{method:"POST",data:payload});
     toast("تم حفظ هوية المنصة والعروض");await reload();await route("owner",false);
   }else if(id==="sectionForm"){
@@ -1327,69 +1326,41 @@ function quickModal(title,formId,fields){
  shade.onclick=close;modal.querySelector("#quickClose").onclick=close;
  modal.querySelector("form").onsubmit=async e=>{e.stopPropagation();await handleForm(e);close()};
 }
-let visualPressTimer=null,visualLongPressed=false;
-function visualEditTarget(el){
- if(!state.me?.is_owner)return null;
- if(el.closest("#homeCategories button[data-category]"))return "category";
- if(el.closest(".book-card"))return "book";
- const section=el.closest("section.container");
- if(section){const match=Object.entries(sectionDefs).find(([,[,selector]])=>document.querySelector(selector)?.closest("section.container")===section);if(match)return "section:"+match[0];}
- return null;
-}
 function openOwnerStaticSectionSettings(key){
  if(!state.me?.is_owner)return;
  const def=sectionDefs[key];if(!def)return;const cfg={...(state.settings.theme_sections||{})},d=cfg[key]||{},idx=Object.keys(sectionDefs).indexOf(key);
- const shade=document.createElement("div"),modal=document.createElement("section");shade.className="shade";shade.style.zIndex="120";modal.className="modal owner-inline-modal";modal.style.zIndex="121";
- modal.innerHTML='<button class="close" type="button" aria-label="إغلاق">✕</button><span class="eyebrow">إعدادات القسم المحدد</span><h2>'+esc(def[0])+'</h2><form id="ownerStaticSectionForm" class="form-grid"><label class="field full">عنوان القسم<input name="title" maxlength="100" value="'+esc(d.title||"")+'"></label><label class="field">الترتيب<input name="order" type="number" min="1" max="99" value="'+(Number(d.order)||idx+1)+'"></label><label class="field">الخامة<select name="material">'+Object.entries(materials).map(([v,t])=>'<option value="'+v+'" '+((d.material||"none")===v?"selected":"")+'>'+esc(t)+'</option>').join("")+'</select></label><label class="field">لون الخلفية<input name="background_color" type="color" value="'+(/^#[0-9a-f]{6}$/i.test(d.background_color||"")?d.background_color:"#18283d")+'"></label><label class="field">لون التمييز<input name="accent_color" type="color" value="'+(/^#[0-9a-f]{6}$/i.test(d.accent_color||"")?d.accent_color:"#8bdccf")+'"></label><label class="checkbox-field full"><input name="visible" type="checkbox" '+(d.visible===false?"":"checked")+'> إظهار هذا القسم للزوار</label><div class="form-actions full"><button class="btn btn-outline" type="button" data-owner-inline-close>إلغاء</button><button class="btn btn-primary" type="submit">حفظ وعرض النتيجة</button></div><p class="form-msg full"></p></form>';
+ const shade=document.createElement("div"),modal=document.createElement("section");shade.className="shade";shade.style.zIndex="120";modal.className="modal owner-inline-modal section-settings-modal";modal.style.zIndex="121";
+ modal.innerHTML='<button class="close" type="button" aria-label="إغلاق">✕</button><span class="eyebrow">تحكم خاص بالمالك</span><h2>تخصيص '+esc(def[0])+'</h2><p class="muted">عدّل هذا القسم وحده؛ تظهر النتيجة للزوار بعد الحفظ.</p><form id="ownerStaticSectionForm" class="form-grid"><label class="field full">اسم القسم<input name="title" maxlength="100" value="'+esc(d.title||"")+'"></label><label class="field full">وصف قصير<input name="description" maxlength="180" value="'+esc(d.description||"")+'" placeholder="سطر يظهر تحت العنوان"></label><label class="field full">نص رابط القسم<input name="link_text" maxlength="60" value="'+esc(d.link_text||"")+'" placeholder="مثال: تصفح المكتبة ←"></label>'+(key==="banner"?"" : '<label class="field">عدد العناصر الظاهرة<input name="items_limit" type="number" min="1" max="30" value="'+(Number(d.items_limit)||({categories:12,books:8,shops:6,faq:4,contests:6}[key]||6))+'"></label>')+'<label class="field">ترتيب الظهور<input name="order" type="number" min="1" max="99" value="'+(Number(d.order)||idx+1)+'"></label><label class="field">الخامة<select name="material">'+Object.entries(materials).map(([v,t])=>'<option value="'+esc(v)+'" '+((d.material||"none")===v?"selected":"")+'>'+esc(t)+'</option>').join("")+'</select></label><label class="field">لون الخلفية<input name="background_color" type="color" value="'+(/^#[0-9a-f]{6}$/i.test(d.background_color||"")?d.background_color:"#18283d")+'"></label><label class="field">لون الإبراز<input name="accent_color" type="color" value="'+(/^#[0-9a-f]{6}$/i.test(d.accent_color||"")?d.accent_color:"#8bdccf")+'"></label><label class="field full">رابط صورة بنر<input name="banner_url" type="url" maxlength="500" value="'+esc(d.banner_url||"")+'" placeholder="https://..."></label><label class="field full">حجم القسم <output data-scale-value>'+(Number(d.scale)||100)+'%</output><input name="scale" type="range" min="85" max="120" value="'+(Number(d.scale)||100)+'"></label><label class="checkbox-field full"><input name="visible" type="checkbox" '+(d.visible===false?"":"checked")+'> إظهار القسم للزوار</label><div class="form-actions full"><button class="btn btn-outline" type="button" data-owner-inline-close>إغلاق</button><button class="btn btn-primary" type="submit">حفظ التخصيص</button></div><p class="form-msg full"></p></form>';
  const close=()=>{shade.remove();modal.remove()};shade.onclick=close;modal.querySelector(".close").onclick=close;modal.querySelector("[data-owner-inline-close]").onclick=close;
- modal.querySelector("form").onsubmit=async e=>{e.preventDefault();const f=e.currentTarget,b=f.querySelector('[type="submit"]'),raw=Object.fromEntries(new FormData(f)),next={...cfg,[key]:{...d,title:raw.title||"",order:Number(raw.order),material:raw.material,background_color:raw.background_color,accent_color:raw.accent_color,visible:f.elements.visible.checked}};b.disabled=true;try{const r=await api("/owner/settings",{method:"POST",data:{...state.settings,theme_sections:next,site_public:false,payments_live:false}});state.settings={...state.settings,...r.settings,theme_sections:next};applySections(next);renderHome();close();toast("تم حفظ إعدادات "+def[0])}catch(err){f.querySelector(".form-msg").textContent=errorMessage(err);b.disabled=false}};
+ const range=modal.querySelector('[name="scale"]');range.oninput=()=>modal.querySelector("[data-scale-value]").textContent=range.value+"%";
+ modal.querySelector("form").onsubmit=async e=>{e.preventDefault();const f=e.currentTarget,b=f.querySelector('[type="submit"]'),raw=Object.fromEntries(new FormData(f)),next={...cfg,[key]:{...d,title:raw.title||"",description:raw.description||"",link_text:raw.link_text||"",items_limit:Number(raw.items_limit)||({categories:12,books:8,shops:6,faq:4,contests:6}[key]||6),order:Number(raw.order),material:raw.material,background_color:raw.background_color,accent_color:raw.accent_color,banner_url:raw.banner_url||"",scale:Number(raw.scale),visible:f.elements.visible.checked}};b.disabled=true;try{const r=await api("/owner/settings",{method:"POST",data:{...state.settings,theme_sections:next,site_public:false,payments_live:false}});state.settings={...state.settings,...r.settings,theme_sections:next};applySections(next);renderHome();close();toast("تم حفظ تخصيص "+def[0])}catch(err){f.querySelector(".form-msg").textContent=errorMessage(err);b.disabled=false}};
  document.body.append(shade,modal);
 }
-async function saveVisualDesign(patch){
- const current={...designDefaults,...state.settings.theme_design},next={...current,...patch};
- applyDesign(next);
- try{
-  const r=await api("/owner/settings",{method:"POST",data:{...state.settings,theme_design:next,site_public:false,payments_live:false}});
-  state.settings={...state.settings,...r.settings};applyDesign(next);toast("تم تطبيق التغيير على جميع الأيقونات أو الكتب.");
- }catch(e){applyDesign(current);toast(errorMessage(e));throw e}
-}
-function openVisualEditor(kind){
+function openOwnerWelcomeSettings(){
  if(!state.me?.is_owner)return;
- const d={...designDefaults,...state.settings.theme_design},category=kind==="category",shade=document.createElement("div"),modal=document.createElement("section");
- shade.className="shade";shade.style.zIndex="100";modal.className="modal visual-editor-modal";modal.style.zIndex="101";
- modal.innerHTML='<button class="close" type="button" aria-label="إغلاق">✕</button><span class="eyebrow">تعديل مباشر للمالك</span><h2>'+(category?"أيقونات اكتشف عالمك":"شكل بطاقات الكتب")+'</h2><p class="muted">'+(category?"الحجم والشكل يطبّقان على جميع أيقونات الأقسام.":"اسحب شريطي العرض والارتفاع وشاهد شكل الكتاب مباشرة. التغيير يعمّم على كل الكتب.")+'</p>'+
- (category?'<label class="field">حجم الأيقونة <output id="visualSizeOut">'+d.category_icon_size+'px</output><input id="visualSize" type="range" min="0" max="500" value="'+d.category_icon_size+'"></label><label class="field">شكل الأيقونة<select id="visualShape"><option value="soft" '+(d.category_icon_shape==="soft"?"selected":"")+'>ناعم</option><option value="round" '+(d.category_icon_shape==="round"?"selected":"")+'>دائري</option><option value="square" '+(d.category_icon_shape==="square"?"selected":"")+'>مربع</option></select></label>':
- '<div class="visual-book-preview"><article class="book-card" id="visualBookPreview"><div class="cover-wrap purple"><div class="cover-pseudo"><small>DEELA BOOKS</small><strong>عنوان الكتاب</strong><em>✧</em></div></div><div class="book-info"><h3>عنوان الكتاب</h3><div class="book-price-row"><span class="book-price">١٠ ر.س</span></div><div class="product-kind"><i class="digital"></i><span>رقمي</span></div></div></article></div>'+
- '<label class="field">عرض بطاقة الكتاب <output id="visualWidthOut">'+d.book_card_width+'px</output><input id="visualWidth" type="range" min="0" max="1200" step="1" value="'+d.book_card_width+'"></label>'+
- '<label class="field">ارتفاع غلاف الكتاب <output id="visualHeightOut">'+d.book_cover_height+'px</output><input id="visualHeight" type="range" min="0" max="1200" step="1" value="'+d.book_cover_height+'"></label>'+
- '<label class="field">شكل البطاقة<select id="visualShape"><option value="18" '+(d.book_card_radius===18?"selected":"")+'>مستدير</option><option value="0" '+(d.book_card_radius===0?"selected":"")+'>مربع</option><option value="100" '+(d.book_card_radius===100?"selected":"")+'>دائري</option></select></label>')+
- '<div class="form-actions"><button type="button" class="btn btn-outline" data-visual-cancel>إلغاء</button><button type="button" class="btn btn-primary" data-visual-save>حفظ على الجميع</button></div>';
- const close=()=>{shade.remove();modal.remove();applyDesign({...designDefaults,...state.settings.theme_design})};
- shade.onclick=close;modal.querySelector(".close").onclick=close;modal.querySelector("[data-visual-cancel]").onclick=close;
- const size=modal.querySelector("#visualSize"),shape=modal.querySelector("#visualShape"),width=modal.querySelector("#visualWidth"),height=modal.querySelector("#visualHeight"),previewCard=modal.querySelector("#visualBookPreview");
- const preview=()=>{let patch;
-  if(category){patch={category_icon_size:Number(size.value),category_icon_shape:shape.value};modal.querySelector("#visualSizeOut").textContent=size.value+"px";}
-  else{patch={book_card_width:Number(width.value),book_cover_height:Number(height.value),book_card_radius:Number(shape.value)};
-   modal.querySelector("#visualWidthOut").textContent=width.value+"px";modal.querySelector("#visualHeightOut").textContent=height.value+"px";
-   previewCard.style.width=Math.min(Number(width.value),modal.querySelector(".visual-book-preview").clientWidth)+"px";
-   previewCard.style.setProperty("--book-cover-height",height.value+"px");previewCard.style.setProperty("--book-card-radius",shape.value+"px");
-  }
-  applyDesign({...d,...patch});
- };
- if(size)size.oninput=preview;if(width)width.oninput=preview;if(height)height.oninput=preview;if(shape)shape.oninput=preview;
- modal.querySelector("[data-visual-save]").onclick=async()=>{const patch=category?{category_icon_size:Number(size.value),category_icon_shape:shape.value}:{book_card_width:Number(width.value),book_cover_height:Number(height.value),book_card_radius:Number(shape.value)};const b=modal.querySelector("[data-visual-save]");b.disabled=true;try{await saveVisualDesign(patch);shade.remove();modal.remove()}catch{b.disabled=false}};
- document.body.append(shade,modal);preview();
+ const cfg={...(state.settings.theme_sections||{})},d=cfg.welcome||{},shade=document.createElement("div"),modal=document.createElement("section");shade.className="shade";shade.style.zIndex="120";modal.className="modal owner-inline-modal section-settings-modal";modal.style.zIndex="121";
+ modal.innerHTML='<button class="close" type="button" aria-label="إغلاق">✕</button><span class="eyebrow">رسالة الترحيب</span><h2>تخصيص الترحيب</h2><p class="muted">عدّل النص والحجم واللمعان للمشتركين.</p><form id="ownerWelcomeForm" class="form-grid"><label class="field full">نص الترحيب<input name="title" maxlength="100" value="'+esc(d.title||"أهلاً بك في DEELA، {name}")+'"><small>اكتب {name} ليظهر اسم المشترك.</small></label><label class="field full">سطر توضيحي<input name="description" maxlength="180" value="'+esc(d.description||"اكتشف مكتبتك المفضلة وواصل القراءة.")+'"></label><label class="field">لون الترحيب<input name="accent_color" type="color" value="'+(/^#[0-9a-f]{6}$/i.test(d.accent_color||"")?d.accent_color:"#8bdccf")+'"></label><label class="field">الحجم<select name="scale"><option value="90" '+(Number(d.scale)===90?"selected":"")+'>صغير</option><option value="100" '+(!d.scale||Number(d.scale)===100?"selected":"")+'>متوسط</option><option value="110" '+(Number(d.scale)===110?"selected":"")+'>كبير</option></select></label><label class="field full">الحركة<select name="animation"><option value="glow" '+(d.animation!=="none"?"selected":"")+'>لمعان هادئ</option><option value="none" '+(d.animation==="none"?"selected":"")+'>بدون حركة</option></select></label><label class="checkbox-field full"><input name="visible" type="checkbox" '+(d.visible===false?"":"checked")+'> إظهار الترحيب</label><div class="form-actions full"><button class="btn btn-outline" type="button" data-owner-inline-close>إغلاق</button><button class="btn btn-primary" type="submit">حفظ الترحيب</button></div><p class="form-msg full"></p></form>';
+ const close=()=>{shade.remove();modal.remove()};shade.onclick=close;modal.querySelector(".close").onclick=close;modal.querySelector("[data-owner-inline-close]").onclick=close;
+ modal.querySelector("form").onsubmit=async e=>{e.preventDefault();const f=e.currentTarget,b=f.querySelector('[type="submit"]'),raw=Object.fromEntries(new FormData(f)),next={...cfg,welcome:{title:raw.title||"",description:raw.description||"",order:1,material:"none",visible:f.elements.visible.checked,background_color:"",accent_color:raw.accent_color,scale:Number(raw.scale),animation:raw.animation}};b.disabled=true;try{const r=await api("/owner/settings",{method:"POST",data:{...state.settings,theme_sections:next,site_public:false,payments_live:false}});state.settings={...state.settings,...r.settings,theme_sections:next};renderHome();close();toast("تم حفظ رسالة الترحيب")}catch(err){f.querySelector(".form-msg").textContent=errorMessage(err);b.disabled=false}};
+ document.body.append(shade,modal);
 }
+function addOwnerHomeSettingsGears(){
+ document.querySelectorAll("[data-owner-static-settings],[data-owner-welcome-settings]").forEach(el=>el.remove());
+ if(!state.me?.is_owner)return;
+ for(const [key,[label,selector]] of Object.entries(sectionDefs)){
+  const node=document.querySelector(selector)?.closest("section.container");if(!node)continue;
+  const title=node.querySelector(".section-title");const btn=document.createElement("button");btn.type="button";btn.className="owner-inline-control owner-section-gear";btn.dataset.ownerStaticSettings=key;btn.setAttribute("aria-label","إعدادات قسم "+label);btn.title="تخصيص "+label;btn.textContent="⚙";if(key==="banner")node.append(btn);else if(title?.querySelector(".text-button"))title.querySelector(".text-button").insertAdjacentElement("afterend",btn);else if(title?.firstElementChild)title.firstElementChild.append(btn);else (title||node).append(btn);
+ }
+ const welcome=document.getElementById("ownerWelcome");if(welcome){const btn=document.createElement("button");btn.type="button";btn.className="owner-inline-control owner-welcome-gear";btn.dataset.ownerWelcomeSettings="true";btn.setAttribute("aria-label","إعدادات الترحيب");btn.textContent="⚙";welcome.append(btn)}
+}
+
 function bind(){
- document.addEventListener("pointerdown",ev=>{const kind=visualEditTarget(ev.target);if(!kind)return;clearTimeout(visualPressTimer);visualPressTimer=setTimeout(()=>{visualLongPressed=true;if(kind.startsWith("section:"))openOwnerStaticSectionSettings(kind.slice(8));else openVisualEditor(kind)},650)},true);
- ["pointerup","pointercancel"].forEach(name=>document.addEventListener(name,()=>clearTimeout(visualPressTimer),true));
- document.addEventListener("contextmenu",ev=>{const kind=visualEditTarget(ev.target);if(kind){ev.preventDefault();visualLongPressed=true;if(kind.startsWith("section:"))openOwnerStaticSectionSettings(kind.slice(8));else openVisualEditor(kind)}},true);
- document.addEventListener("click",ev=>{if(visualLongPressed){visualLongPressed=false;ev.preventDefault();ev.stopImmediatePropagation()}},true);
  document.addEventListener("click",async ev=>{
   const t=ev.target.closest("button,a,[data-book]");
   if(!t)return;
   if(t.dataset.ownerSectionSettings){ev.preventDefault();ev.stopPropagation();return openOwnerSectionSettings(t.dataset.ownerSectionSettings)}
-  if(t.closest("[data-owner-book-settings]")){ev.preventDefault();ev.stopPropagation();return openOwnerBookActions(t.closest("[data-owner-book-settings]").dataset.ownerBookSettings)}
+  if(t.dataset.ownerStaticSettings){ev.preventDefault();ev.stopPropagation();return openOwnerStaticSectionSettings(t.dataset.ownerStaticSettings)}
+  if(t.hasAttribute("data-ownerWelcomeSettings")){ev.preventDefault();ev.stopPropagation();return openOwnerWelcomeSettings()}
   if(t.dataset.book){ev.preventDefault();return book(t.dataset.book)}
   if(t.dataset.gallery){ev.preventDefault();const b=state.listings.find(x=>x.id===state.current),urls=b?.image_urls||[];const img=document.querySelector("#productGalleryMain img");if(img&&urls[Number(t.dataset.gallery)])img.src=urls[Number(t.dataset.gallery)];return}
   if(t.dataset.shop){ev.preventDefault();return openShop(t.dataset.shop)}
