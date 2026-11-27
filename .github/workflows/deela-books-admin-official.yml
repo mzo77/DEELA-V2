@@ -36,11 +36,11 @@ jobs:
           manifest=Path('deela-books-admin/src/main/AndroidManifest.xml').read_text()
           gradle=Path('deela-books-admin/build.gradle.kts').read_text()
           activity=Path('deela-books-admin/src/main/java/com/deela/books/admin/AdminActivity.kt').read_text()
-          icon=Path('deela-books-admin/src/main/res/mipmap-nodpi/ic_deela_admin.png')
+          icon=Path('deela-books-admin/src/main/res/drawable/ic_deela_admin.xml')
           assert 'applicationId = "com.deela.books.admin"' in gradle
           assert 'versionName = "1.0.4"' in gradle
           assert 'android:label="DEELA ADMIN"' in manifest
-          assert icon.is_file() and icon.stat().st_size > 1000
+          assert icon.is_file() and 'DEELA ADMIN' in Path('deela-books-admin/src/main/icon/deela-admin.svg').read_text()
           assert 'OWNER_PORTAL' in activity and 'books-private/' in activity
           assert 'type = "image/*"' in activity
           print('Standalone Arabic owner app and gallery picker verified')
