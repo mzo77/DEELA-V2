@@ -575,3 +575,11 @@ button.like-chip:hover,.like-chip.active{color:#ffe4d5;border-color:#d3a3a8;back
 .contest-answer.correct{background:#0f422f55}.contest-answer.incorrect{opacity:.7}
 .notification-unread{border-inline-start:4px solid var(--blue)}
 @media(max-width:500px){.account-logout{min-height:56px;font-size:18px!important}}
+
+/* Owner-adjustable icon sizing */
+.category-grid .cat-emoji{width:var(--category-icon-size,36px);height:var(--category-icon-size,36px);font-size:calc(var(--category-icon-size,36px)*.62)}
+.mobile-nav button span{font-size:var(--nav-icon-size,20px)}
+.card-love,.card-save{width:var(--book-action-icon-size,42px);height:var(--book-action-icon-size,42px);min-width:var(--book-action-icon-size,42px);font-size:calc(var(--book-action-icon-size,42px)*.48);padding:0;display:grid;place-items:center}
+.card-love small{font-size:calc(var(--book-action-icon-size,42px)*.26)}
+.icon-size-control input[type=range]{width:100%;accent-color:var(--teal)}
+.icon-size-control output{display:inline-block;min-width:44px;margin-inline-start:8px;color:var(--teal);font-weight:900}
