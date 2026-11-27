@@ -164,7 +164,7 @@ Deno.serve(async req=>{
     settings:{name:conf.name,hero_title:conf.hero_title,hero_subtitle:conf.hero_subtitle,
       announcement:conf.announcement,support_url:conf.support_url,site_public:conf.site_public,
       home_promo_title:conf.home_promo_title,home_promo_description:conf.home_promo_description,
-      theme_colors:conf.theme_colors,theme_material:conf.theme_material,theme_design:conf.theme_design,theme_sections:conf.theme_sections,
+      theme_colors:conf.theme_colors,theme_material:conf.theme_material,theme_design:conf.theme_design,theme_sections:conf.theme_sections,theme_images:conf.theme_images,
       ...Object.fromEntries(FEATURE_FLAGS.map(k=>[k,conf[k]]))},
     payments_live:false,shipping_live:false,currency:"SAR"
   });
@@ -549,6 +549,16 @@ Deno.serve(async req=>{
           clean[k]={title:d.title,order:d.order,visible:d.visible,material:d.material};
         }
         configured.theme_sections=clean;
+      }
+      if(Object.prototype.hasOwnProperty.call(b,"theme_images")){
+        if(!b.theme_images||typeof b.theme_images!=="object"||Array.isArray(b.theme_images))return fail(req,"صور غير صحيحة",400);
+        const images:Record<string,string>={};
+        for(const [k,v] of Object.entries(b.theme_images)){
+          if(!["logo","background","banner"].includes(k)||typeof v!=="string"||v.length>2000)return fail(req,"رابط صورة غير صحيح",400);
+          if(v){try{const u=new URL(v);if(u.protocol!=="https:"||u.username||u.password)throw Error();}catch{return fail(req,"رابط الصورة يجب أن يكون HTTPS",400);}}
+          images[k]=v;
+        }
+        configured.theme_images=images;
       }
       if(configured.support_url && !/^https:\/\//.test(String(configured.support_url)))
         return fail(req,"رابط الدعم يجب أن يبدأ بـ https://",400);
