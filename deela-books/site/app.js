@@ -19,7 +19,7 @@ const enabled=key=>state.settings?.[key]!==false;
 const state={token:window.__DEELA_BOOKS_TOKEN||sessionStorage.getItem("deela-books-token")||sessionStorage.getItem("deela-shop-owner-session")||"",
  email:"",view:"home",listings:[],shops:[],cart:[],me:null,settings:{},
  current:null,category:"الكل",format:"all",sort:"newest",search:"",ownerTab:"overview",sellerTab:"books",
- sellerListings:[],sellerNotifications:[],ownerData:null,editing:null,formNote:"",loading:false,sections:[],banners:[]};
+ sellerListings:[],sellerNotifications:[],sellerNotificationIds:new Set(),sellerNotificationsReady:false,sellerNotificationTimer:null,ownerData:null,editing:null,formNote:"",loading:false,sections:[],banners:[]};
 try{let c=JSON.parse(localStorage.getItem("deela-books-cart-v1")||"[]");if(Array.isArray(c))state.cart=c.filter(x=>typeof x.id==="string"&&Number.isInteger(x.qty)&&x.qty>0&&x.qty<=10).slice(0,10)}catch{}
 let noticeTimer;
 function toast(s){
@@ -367,7 +367,7 @@ function sellerPage(){
  '<p>الموافقة على المتجر والكتب تصدر من مركز المالك. يمكنك إدارة الملفات بعد اعتماد المتجر.</p></div>'+
  (available?'<div class="toolbar">'+(enabled("enable_book_submissions")?'<button class="btn btn-primary" data-editor="new">+ أضف كتابًا</button>':'<span class="status muted">رفع الكتب متوقف حاليًا</span>')+
  '<button class="btn btn-outline" data-owner-tab="listings" data-route="owner">مراجعة الكتب (مالك)</button></div>'+
- '<div id="sellerEditor"></div><div class="panel"><h2>تنبيهات وتفاعل القراء</h2><p>تُحتسب مشاهدة فريدة واحدة لكل قارئ يوميًا، ويصلك تنبيه عند كل 10 مشاهدات أو إعجاب جديد.</p><div class="list-rows">'+(state.sellerNotifications.length?state.sellerNotifications.map(n=>'<article class="row-card ' +(n.read_at?"":"notification-unread")+'"><div class="row-top"><strong>'+esc(n.title)+'</strong><small>'+date(n.created_at)+'</small></div><p>'+esc(n.body)+'</p>'+(n.read_at?'<span class="status muted">مقروء</span>':'<button class="btn btn-outline" data-notification-read="'+esc(n.id)+'">تعليم كمقروء</button>')+'</article>').join(""):'<p>لا توجد تنبيهات جديدة حاليًا.</p>')+'</div><button class="btn btn-outline" data-notifications-read-all>تعليم كل التنبيهات كمقروءة</button></div><div class="panel"><h2>كتبي المرفوعة</h2><div class="list-rows">'+
+ '<div id="sellerEditor"></div><div class="panel"><h2>تنبيهات وتفاعل القراء</h2><p>تُحتسب مشاهدة فريدة واحدة لكل قارئ يوميًا، ويصلك تنبيه عند كل 10 مشاهدات أو إعجاب جديد. يجري تحديثها أثناء بقاء الصفحة مفتوحة.</p>'+("Notification" in window?(Notification.permission==="granted"?'<span class="status">إشعارات المتصفح مفعّلة</span>':Notification.permission==="denied"?'<span class="status muted">إشعارات المتصفح محظورة من إعدادات الجهاز</span>':'<button class="btn btn-outline" data-enable-seller-notifications>تفعيل إشعارات المتصفح</button>'):"")+'<div class="list-rows">'+(state.sellerNotifications.length?state.sellerNotifications.map(n=>'<article class="row-card ' +(n.read_at?"":"notification-unread")+'"><div class="row-top"><strong>'+esc(n.title)+'</strong><small>'+date(n.created_at)+'</small></div><p>'+esc(n.body)+'</p>'+(n.read_at?'<span class="status muted">مقروء</span>':'<button class="btn btn-outline" data-notification-read="'+esc(n.id)+'">تعليم كمقروء</button>')+'</article>').join(""):'<p>لا توجد تنبيهات جديدة حاليًا.</p>')+'</div><button class="btn btn-outline" data-notifications-read-all>تعليم كل التنبيهات كمقروءة</button></div><div class="panel"><h2>كتبي المرفوعة</h2><div class="list-rows">'+
  (state.sellerListings.length?state.sellerListings.map(l=>
  '<div class="row-card"><div class="row-top"><div><h3>'+esc(l.title)+'</h3><p>'+esc(kinds[l.format])+' · '+sar(l.price_sar)+'</p>'+
  '<div class="community-strip"><span class="like-chip">♥ '+Number(l.like_count||0)+' إعجاب</span><span class="rating-chip">◉ '+Number(l.view_count||0)+' مشاهدة</span>'+
@@ -607,6 +607,33 @@ async function ownerData(){
 }
 async function sellerData(){
  const [r,n]=await Promise.all([api("/my/listings"),api("/seller/notifications")]);state.sellerListings=r.listings||[];state.sellerNotifications=n.notifications||[];
+ if(!state.sellerNotificationsReady){state.sellerNotificationIds=new Set(state.sellerNotifications.map(x=>x.id));state.sellerNotificationsReady=true;}
+}
+async function pollSellerNotifications(){
+ if(!state.token||!state.me?.seller||state.me.seller.status!=="approved")return;
+ try{
+  const r=await api("/seller/notifications"),items=r.notifications||[];
+  if(!state.sellerNotificationsReady){state.sellerNotificationIds=new Set(items.map(x=>x.id));state.sellerNotifications=items;state.sellerNotificationsReady=true;return;}
+  const fresh=items.filter(x=>!state.sellerNotificationIds.has(x.id));
+  for(const x of items)state.sellerNotificationIds.add(x.id);
+  state.sellerNotifications=items;
+  if(fresh.length){
+   toast(fresh.length===1?fresh[0].title:"لديك "+fresh.length+" تنبيهات جديدة للبائع");
+   if("Notification" in window&&Notification.permission==="granted"){
+    const n=fresh[0];const notice=new Notification(n.title,{body:n.body,tag:"deela-books-"+n.id});notice.onclick=()=>{window.focus();route("seller",false);notice.close()};
+   }
+   if(state.view==="seller")await route("seller",false);
+  }
+ }catch{}
+}
+function startSellerNotificationPolling(){
+ if(state.sellerNotificationTimer)clearInterval(state.sellerNotificationTimer);
+ void pollSellerNotifications();
+ state.sellerNotificationTimer=setInterval(pollSellerNotifications,60000);
+}
+async function enableSellerNotifications(){
+ if(!("Notification" in window))return toast("هذا المتصفح لا يدعم إشعارات المواقع");
+ try{const p=await Notification.requestPermission();toast(p==="granted"?"تم تفعيل إشعارات البائع على هذا المتصفح":p==="denied"?"ارفض المتصفح الإذن؛ يمكنك تغييره من إعدادات الموقع":"لم يتم تفعيل الإشعارات");if(state.view==="seller")await route("seller",false)}catch{toast("تعذر طلب إذن الإشعارات")}
 }
 async function messagesData(){
  const r=await api("/messages");return r.messages||[];
@@ -733,7 +760,7 @@ async function login(ev){
   if(!response.ok||!data.access_token)throw Error(data.error||"تعذر تسجيل الدخول");
   if(data.role!=="owner")throw Error("الموقع خاص بالمالك حتى إطلاقه");
   state.token=data.access_token;sessionStorage.setItem("deela-books-token",state.token);
-  $("loginPassword").value="";closeLogin();await reload();
+  $("loginPassword").value="";closeLogin();await reload();startSellerNotificationPolling();
  }catch(e){$("loginMessage").textContent=errorMessage(e)}
  finally{submit.disabled=false}
 }
@@ -926,6 +953,7 @@ function bind(){
   if(t.dataset.moveCategory){ev.preventDefault();return moveListingCategory(t.dataset.moveCategory)}
   if(t.dataset.notificationRead){ev.preventDefault();return markSellerNotifications(t.dataset.notificationRead)}
   if(t.hasAttribute("data-notifications-read-all")){ev.preventDefault();return markSellerNotifications()}
+  if(t.hasAttribute("data-enable-seller-notifications")){ev.preventDefault();return enableSellerNotifications()}
   if(t.dataset.featureBook){
     ev.preventDefault();return toggleBookFeatured(t.dataset.featureBook,t.dataset.featureStatus,t.dataset.featured==="true");
   }
@@ -985,6 +1013,7 @@ async function boot(){
  else if(["catalog","shops","seller","favorites","orders","messages","cart","owner"].includes(hash))state.view=hash;
  if(!state.token)return openLogin();
  await reload();
+ startSellerNotificationPolling();
 }
 boot();
 })();
