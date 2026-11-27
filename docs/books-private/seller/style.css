@@ -649,3 +649,25 @@ body[data-owner-visual-edit="true"] #homeCategories button,body[data-owner-visua
 .payment-method-copy small{color:var(--muted);font-size:.82em}
 .payment-method-test{font-size:.72em;color:var(--gold);border:1px solid var(--line);border-radius:999px;padding:3px 7px}
 @media(max-width:520px){.payment-method-grid{grid-template-columns:1fr 1fr}.payment-method-card{padding:9px;gap:7px;min-height:64px}}
+
+/* Owner controls stay beside the section or book they affect. */
+.owner-welcome{display:inline-flex;align-items:center;gap:8px;margin:0 0 12px;padding:8px 14px;border:1px solid #6dcbbb66;border-radius:999px;color:var(--teal);background:linear-gradient(105deg,#5ce0c21c,#73aaff18);font-weight:800;animation:deelaWelcomeIn .65s cubic-bezier(.2,.8,.2,1) both}
+@keyframes deelaWelcomeIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.owner-inline-control{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:7px 11px;border:1px solid #79d8ca88;border-radius:999px;color:#d8fff6;background:#0c2030eF;font:inherit;font-size:12px;font-weight:800;cursor:pointer;box-shadow:0 8px 24px #0005;transition:transform .18s ease,background .18s ease;z-index:5}
+.owner-inline-control:hover{transform:translateY(-2px);background:#124150}
+.owner-book-inspect{position:relative}
+.owner-book-control{position:absolute;top:8px;left:8px;min-height:32px;padding:5px 9px}
+.owner-section-hidden{outline:1px dashed #efbf73!important;opacity:.75}
+.owner-section-hidden:before{content:"معاينة مالك · مخفي للزوار";position:absolute;z-index:4;top:8px;right:10px;padding:5px 9px;border-radius:9px;background:#332814;color:#ffe0a5;font-size:11px;font-weight:800}
+.managed-section{position:relative}
+.owner-inline-modal{max-height:min(88vh,760px);overflow:auto}
+.owner-tools-menu{margin:12px 0 20px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(120deg,#13263a,#101d2d);overflow:hidden}
+.owner-tools-menu summary{padding:14px 18px;cursor:pointer;font-weight:900;list-style:none}
+.owner-tools-menu summary::-webkit-details-marker{display:none}
+.owner-tools-menu summary span{display:block;color:var(--muted);font-size:11px;font-weight:500;margin-top:4px}
+.owner-tools-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;padding:12px;border-top:1px solid var(--line)}
+.owner-tool-link{padding:10px;border:1px solid var(--line);border-radius:11px;background:#142539;color:var(--white);font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.owner-tool-link.active{border-color:var(--teal);color:var(--teal)}
+.owner-book-actions{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
+.book-info .book-price-row,.book-info .book-price,.book-info .product-kind{width:100%;text-align:center;justify-content:center}
+@media(max-width:640px){.owner-inline-control span{display:none}.owner-book-control{top:6px;left:6px}.owner-tools-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.managed-section{padding:18px}}
