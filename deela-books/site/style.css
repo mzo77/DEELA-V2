@@ -426,3 +426,5 @@ button.like-chip:hover,.like-chip.active{color:#ffe4d5;border-color:#d3a3a8;back
 
 @keyframes deelaBannerGlow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.16)}}
 @media(prefers-reduced-motion:no-preference){body[data-banner-motion="glow"] .feature-banner{animation:deelaBannerGlow 5s ease-in-out infinite}}
+
+#home [data-owner-hidden="true"]{display:none!important}
