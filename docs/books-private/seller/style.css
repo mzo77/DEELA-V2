@@ -671,3 +671,15 @@ body[data-owner-visual-edit="true"] #homeCategories button,body[data-owner-visua
 .owner-book-actions{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
 .book-info .book-price-row,.book-info .book-price,.book-info .product-kind{width:100%;text-align:center;justify-content:center}
 @media(max-width:640px){.owner-inline-control span{display:none}.owner-book-control{top:6px;left:6px}.owner-tools-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.managed-section{padding:18px}}
+
+.community-poll-form fieldset{border:0;padding:0;margin:8px 0 14px;display:grid;gap:8px}
+.community-poll-form legend{color:var(--muted);font-size:12px;margin-bottom:8px}
+.community-poll-option{display:flex;align-items:center;gap:10px;padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:#ffffff08;cursor:pointer}
+.community-poll-option input{accent-color:var(--teal);width:18px;height:18px}
+.community-poll-option:has(input:checked){border-color:var(--teal);background:#7edccb15}
+.community-poll-results{display:grid;gap:10px;margin-top:14px}
+.community-poll-result>div{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px}
+.community-poll-result b,.community-poll-results small{color:var(--muted)}
+.community-poll-result>i{display:block;height:8px;margin-top:5px;background:#ffffff16;border-radius:99px;overflow:hidden}
+.community-poll-result>i>span{display:block;height:100%;background:linear-gradient(90deg,var(--teal),var(--blue));border-radius:inherit;transition:width .35s ease}
+.community-poll-result.selected>div>span{color:var(--teal);font-weight:900}
