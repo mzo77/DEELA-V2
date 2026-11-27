@@ -112,7 +112,7 @@ document.addEventListener("input",ev=>{
 document.addEventListener("input",ev=>{
  const el=ev.target;if(!el.closest("#settingsForm"))return;
  if(el.name?.startsWith("design_")){
-  const form=el.form,d={radius:Number(form.elements.design_radius.value),font_size:Number(form.elements.design_font_size.value),banner_motion:form.elements.design_banner_motion.value,category_icon_size:Number(form.elements.design_category_icon_size.value),nav_icon_size:Number(form.elements.design_nav_icon_size.value),book_action_icon_size:Number(form.elements.design_book_action_icon_size.value)};
+  const form=el.form,d={...designDefaults,...state.settings.theme_design,radius:Number(form.elements.design_radius.value),font_size:Number(form.elements.design_font_size.value),banner_motion:form.elements.design_banner_motion.value};
   applyDesign(d);
   document.querySelectorAll("[data-icon-output]").forEach(out=>{const input=form.elements[out.dataset.iconOutput];if(input)out.value=input.value+"px"});
  }
@@ -121,15 +121,18 @@ document.addEventListener("input",ev=>{
  if(el.name==="theme_bg"&&/^#[0-9a-f]{6}$/i.test(el.value))preview.style.backgroundColor=el.value;
  if(el.name==="theme_white"&&/^#[0-9a-f]{6}$/i.test(el.value))preview.style.color=el.value;
 });
-const designDefaults={radius:18,font_size:14,banner_motion:"none",category_icon_size:36,nav_icon_size:20,book_action_icon_size:42};
+const designDefaults={radius:18,font_size:14,banner_motion:"none",category_icon_size:36,nav_icon_size:20,book_action_icon_size:42,category_icon_shape:"soft",book_cover_height:251,book_card_radius:18};
 function applyDesign(d){
- const root=document.documentElement;
+ const root=document.documentElement,shape={round:"50%",square:"5px",soft:"17px"};
  root.style.setProperty("--radius",Math.max(0,Math.min(40,Number(d?.radius??18)||0))+"px");
  document.body.style.fontSize=Math.max(12,Math.min(22,Number(d?.font_size??14)||14))+"px";
  document.body.dataset.bannerMotion=d?.banner_motion==="glow"?"glow":"none";
- root.style.setProperty("--category-icon-size",Math.max(22,Math.min(64,Number(d?.category_icon_size??36)||36))+"px");
+ root.style.setProperty("--category-icon-size",Math.max(22,Math.min(72,Number(d?.category_icon_size??36)||36))+"px");
+ root.style.setProperty("--category-icon-radius",shape[d?.category_icon_shape]||shape.soft);
  root.style.setProperty("--nav-icon-size",Math.max(14,Math.min(32,Number(d?.nav_icon_size??20)||20))+"px");
  root.style.setProperty("--book-action-icon-size",Math.max(28,Math.min(52,Number(d?.book_action_icon_size??42)||42))+"px");
+ root.style.setProperty("--book-cover-height",Math.max(160,Math.min(420,Number(d?.book_cover_height??251)||251))+"px");
+ root.style.setProperty("--book-card-radius",Math.max(0,Math.min(36,Number(d?.book_card_radius??18)||0))+"px");
 }
 function iconSizeFields(conf){
  const d={...designDefaults,...conf.theme_design};
@@ -725,7 +728,6 @@ function ownerPage(){
   return top+'<form class="panel owner-settings" id="settingsForm"><h2>الهوية والعروض والعمولة</h2>'+
   '<p>غيّر عناوين الموقع وصفه ورسالة الإعلان ووسيلة التواصل دون تعديل أي كود.</p>'+
   '<div class="owner-settings-accordions">'+
-  '<details class="owner-setting-accordion icon-settings-accordion" open><summary><span>أحجام الأيقونات</span><small>غيّرها بالمنزلق وشاهد النتيجة فورًا</small></summary><div class="form-grid settings-accordion-body">'+iconSizeFields(conf)+'</div></details>'+
   '<details class="owner-setting-accordion"><summary><span>الألوان والخامة</span><small>ألوان المتجر وخلفيته</small></summary><div class="form-grid settings-accordion-body">'+themeFields(conf)+materialFields(conf)+'</div></details>'+
   '<details class="owner-setting-accordion"><summary><span>التصميم والخط</span><small>استدارة البطاقات وحجم الخط وحركة البنر</small></summary><div class="form-grid settings-accordion-body">'+designFields(conf)+'</div></details>'+
   '<details class="owner-setting-accordion"><summary><span>الأقسام والبنرات والصور</span><small>ترتيب الأقسام ومحتواها البصري</small></summary><div class="form-grid settings-accordion-body">'+sectionFields(conf)+imageFields(conf)+'</div></details>'+
@@ -1037,7 +1039,7 @@ async function handleForm(ev){
     await reload();await route("owner",false);
   }else if(id==="settingsForm"){
     const payload={...state.settings,...state.ownerData?.settings,...raw,
-      theme_images:Object.fromEntries(Object.keys(imageKeys).map(k=>[k,raw['image_'+k+'_path']||''])),theme_sections:Object.fromEntries(Object.keys(sectionDefs).map(k=>[k,{title:raw["section_"+k+"_title"]||"",order:Number(raw["section_"+k+"_order"]),material:raw["section_"+k+"_material"],background_color:raw["section_"+k+"_background_color"]||"",accent_color:raw["section_"+k+"_accent_color"]||"",visible:raw["section_"+k+"_visible"]==="on"}])),theme_design:{radius:Number(raw.design_radius),font_size:Number(raw.design_font_size),banner_motion:raw.design_banner_motion,category_icon_size:Number(raw.design_category_icon_size),nav_icon_size:Number(raw.design_nav_icon_size),book_action_icon_size:Number(raw.design_book_action_icon_size)},theme_material:raw.theme_material,theme_colors:Object.fromEntries(Object.keys(themeKeys).map(k=>[k,raw["theme_"+k]])),site_public:false,payments_live:false};
+      theme_images:Object.fromEntries(Object.keys(imageKeys).map(k=>[k,raw['image_'+k+'_path']||''])),theme_sections:Object.fromEntries(Object.keys(sectionDefs).map(k=>[k,{title:raw["section_"+k+"_title"]||"",order:Number(raw["section_"+k+"_order"]),material:raw["section_"+k+"_material"],background_color:raw["section_"+k+"_background_color"]||"",accent_color:raw["section_"+k+"_accent_color"]||"",visible:raw["section_"+k+"_visible"]==="on"}])),theme_design:{...designDefaults,...state.settings.theme_design,radius:Number(raw.design_radius),font_size:Number(raw.design_font_size),banner_motion:raw.design_banner_motion},theme_material:raw.theme_material,theme_colors:Object.fromEntries(Object.keys(themeKeys).map(k=>[k,raw["theme_"+k]])),site_public:false,payments_live:false};
     await api("/owner/settings",{method:"POST",data:payload});
     toast("تم حفظ هوية المنصة والعروض");await reload();await route("owner",false);
   }else if(id==="sectionForm"){
@@ -1195,7 +1197,42 @@ function quickModal(title,formId,fields){
  shade.onclick=close;modal.querySelector("#quickClose").onclick=close;
  modal.querySelector("form").onsubmit=async e=>{e.stopPropagation();await handleForm(e);close()};
 }
+let visualPressTimer=null,visualLongPressed=false;
+function visualEditTarget(el){
+ if(!state.me?.is_owner)return null;
+ if(el.closest("#homeCategories button[data-category]"))return "category";
+ if(el.closest(".book-card"))return "book";
+ return null;
+}
+async function saveVisualDesign(patch){
+ const current={...designDefaults,...state.settings.theme_design},next={...current,...patch};
+ applyDesign(next);
+ try{
+  const r=await api("/owner/settings",{method:"POST",data:{...state.settings,theme_design:next,site_public:false,payments_live:false}});
+  state.settings={...state.settings,...r.settings};applyDesign(next);toast("تم تطبيق التغيير على جميع الأيقونات أو الكتب.");
+ }catch(e){applyDesign(current);toast(errorMessage(e));throw e}
+}
+function openVisualEditor(kind){
+ if(!state.me?.is_owner)return;
+ const d={...designDefaults,...state.settings.theme_design},category=kind==="category",shade=document.createElement("div"),modal=document.createElement("section");
+ shade.className="shade";shade.style.zIndex="100";modal.className="modal visual-editor-modal";modal.style.zIndex="101";
+ modal.innerHTML='<button class="close" type="button" aria-label="إغلاق">✕</button><span class="eyebrow">تعديل مباشر للمالك</span><h2>'+(category?"أيقونات اكتشف عالمك":"شكل بطاقات الكتب")+'</h2><p class="muted">'+(category?"الحجم والشكل يطبّقان على جميع أيقونات الأقسام.":"الحجم والاستدارة يطبّقان على جميع الكتب.")+'</p>'+
+ (category?'<label class="field">حجم الأيقونة <output id="visualSizeOut">'+d.category_icon_size+'px</output><input id="visualSize" type="range" min="22" max="72" value="'+d.category_icon_size+'"></label><label class="field">شكل الأيقونة<select id="visualShape"><option value="soft" '+(d.category_icon_shape==="soft"?"selected":"")+'>ناعم</option><option value="round" '+(d.category_icon_shape==="round"?"selected":"")+'>دائري</option><option value="square" '+(d.category_icon_shape==="square"?"selected":"")+'>مربع</option></select></label>':
+ '<label class="field">ارتفاع غلاف الكتاب <output id="visualSizeOut">'+d.book_cover_height+'px</output><input id="visualSize" type="range" min="160" max="420" value="'+d.book_cover_height+'"></label><label class="field">استدارة بطاقة الكتاب <output id="visualShapeOut">'+d.book_card_radius+'px</output><input id="visualShape" type="range" min="0" max="36" value="'+d.book_card_radius+'"></label>')+
+ '<div class="form-actions"><button type="button" class="btn btn-outline" data-visual-cancel>إلغاء</button><button type="button" class="btn btn-primary" data-visual-save>حفظ على الجميع</button></div>';
+ const close=()=>{shade.remove();modal.remove();applyDesign({...designDefaults,...state.settings.theme_design})};
+ shade.onclick=close;modal.querySelector(".close").onclick=close;modal.querySelector("[data-visual-cancel]").onclick=close;
+ const size=modal.querySelector("#visualSize"),shape=modal.querySelector("#visualShape");
+ const preview=()=>{const patch=category?{category_icon_size:Number(size.value),category_icon_shape:shape.value}:{book_cover_height:Number(size.value),book_card_radius:Number(shape.value)};modal.querySelector("#visualSizeOut").textContent=size.value+"px";const out=modal.querySelector("#visualShapeOut");if(out)out.textContent=shape.value+"px";applyDesign({...d,...patch})};
+ size.oninput=preview;shape.oninput=preview;
+ modal.querySelector("[data-visual-save]").onclick=async()=>{const patch=category?{category_icon_size:Number(size.value),category_icon_shape:shape.value}:{book_cover_height:Number(size.value),book_card_radius:Number(shape.value)};const b=modal.querySelector("[data-visual-save]");b.disabled=true;try{await saveVisualDesign(patch);shade.remove();modal.remove()}catch{b.disabled=false}};
+ document.body.append(shade,modal);
+}
 function bind(){
+ document.addEventListener("pointerdown",ev=>{const kind=visualEditTarget(ev.target);if(!kind)return;clearTimeout(visualPressTimer);visualPressTimer=setTimeout(()=>{visualLongPressed=true;openVisualEditor(kind)},650)},true);
+ ["pointerup","pointercancel"].forEach(name=>document.addEventListener(name,()=>clearTimeout(visualPressTimer),true));
+ document.addEventListener("contextmenu",ev=>{const kind=visualEditTarget(ev.target);if(kind){ev.preventDefault();visualLongPressed=true;openVisualEditor(kind)}},true);
+ document.addEventListener("click",ev=>{if(visualLongPressed){visualLongPressed=false;ev.preventDefault();ev.stopImmediatePropagation()}},true);
  document.addEventListener("click",async ev=>{
   const t=ev.target.closest("button,a,[data-book]");
   if(!t)return;
