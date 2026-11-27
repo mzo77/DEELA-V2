@@ -628,3 +628,7 @@ body[data-owner-visual-edit="true"] #homeCategories button,body[data-owner-visua
 .seller-orders-panel .seller-order-card{border:1px solid var(--line);background:linear-gradient(145deg,#13253a,#0d1b2c)}
 .seller-order-controls{margin-block:14px}.seller-order-controls .field{min-width:0}.order-support-status{margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--bg2)}
 .order-support-status p{margin:.4em 0}.account-logout-panel{margin-top:22px}
+
+.book-card .book-info{text-align:center}
+.book-card .book-price-row,.book-card .product-kind,.book-card .book-rating,.book-card .book-bottom{justify-content:center;text-align:center}
+.book-card .product-type-label{display:block;margin-bottom:5px;color:var(--teal)}
