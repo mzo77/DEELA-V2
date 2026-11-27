@@ -273,7 +273,7 @@ td{color:#d0e2ec}
 .auth-link{border:0;background:none;color:#48aafa;text-align:center;padding:7px;font:700 12px system-ui,Tahoma,sans-serif;cursor:pointer}
 .auth-divider{display:flex;align-items:center;gap:10px;margin:16px 0 10px;color:#929aa6;font-size:11px}
 .auth-divider:before,.auth-divider:after{content:"";height:1px;background:#2b3039;flex:1}
-.auth-social{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.auth-social{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .auth-social button{border:1px solid #343943;background:#15171c;color:#f4f6fa;border-radius:12px;padding:11px 8px;font-weight:800}
 .auth-social button:disabled{color:#8b929d;border-color:#252a32;opacity:.82}
 .auth-modal .form-msg{color:#82c8ff;min-height:19px}.auth-modal .form-msg.error{color:#ff9a9a}
