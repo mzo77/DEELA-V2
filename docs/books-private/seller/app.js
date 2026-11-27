@@ -230,14 +230,14 @@ function cover(b){
  return '<div class="cover-wrap '+tint+'">'+inner+'<span class="book-badge">'+esc(kinds[b.format]||"كتاب")+'</span></div>';
 }
 function card(b){
- const isPublished=b.status==="published",fav=state.me?.favorites?.includes(b.id),liked=state.me?.likes?.includes(b.id);
+ const isPublished=b.status==="published",isOwn=Boolean(state.me?.seller?.id&&state.me.seller.id===b.seller_id),fav=state.me?.favorites?.includes(b.id),liked=state.me?.likes?.includes(b.id);
  const kind=kinds[b.format]||"كتاب",kindLabel=b.format==="physical"?"ورقي":b.format==="audiobook"?"صوتي":"رقمي";
  return '<article class="book-card"><div class="cover-wrap '+(b.format==="ebook"?"purple":b.format==="audiobook"?"teal":"gold")+'" data-book="'+esc(b.id)+'">'+
  (b.cover_url?'<img src="'+esc(b.cover_url)+'" alt="غلاف '+esc(b.title)+'" loading="lazy">':
  '<div class="cover-pseudo"><small>DEELA BOOKS</small><strong>'+esc(b.title.slice(0,38))+'</strong><em>✧</em></div>')+
  '<span class="book-badge">'+esc(kind)+(isPublished?"":" · غير منشور")+'</span>'+
  (enabled("enable_favorites")?'<button type="button" data-favorite="'+esc(b.id)+'" class="card-save '+(fav?"liked":"")+'" aria-label="حفظ في المفضلة">'+(fav?"▣":"♧")+'</button>':"")+
- (enabled("enable_reader_likes")?'<button type="button" data-like="'+esc(b.id)+'" class="card-love '+(liked?"active":"")+'" aria-label="أعجبني">'+(liked?"♥":"♡")+' <small>'+Number(b.like_count||0)+'</small></button>':"")+'</div>'+
+ (enabled("enable_reader_likes")&&!isOwn?'<button type="button" data-like="'+esc(b.id)+'" class="card-love '+(liked?"active":"")+'" aria-label="أعجبني">'+(liked?"♥":"♡")+' <small>'+Number(b.like_count||0)+'</small></button>':"")+'</div>'+
  '<div class="book-info"><span class="book-meta product-type-label">'+esc(productTypes[b.product_type||"book"]||"كتاب أو رواية")+'</span><h3 data-book="'+esc(b.id)+'">'+esc(b.title)+'</h3>'+
  '<div class="book-price-row">'+(enabled("show_book_prices")?'<span class="book-price">'+sar(b.price_sar)+'</span>':'<span class="status muted">السعر مخفي</span>')+'</div>'+
  '<div class="product-kind"><i class="'+(b.format==="physical"?"physical":"digital")+'"></i><span>'+kindLabel+(b.format==="physical"&&b.book_condition?" · "+esc(conditions[b.book_condition]||""):"")+'</span></div>'+
@@ -369,7 +369,7 @@ function detailPage(){
  (b.publication_year?'<div><small>سنة النشر</small><strong>'+Number(b.publication_year)+'</strong></div>':"")+
  '</div>'+
  '<div class="detail-buttons">'+(available&&enabled("enable_orders")&&enabled("show_book_prices")?'<button class="btn btn-primary" data-add="'+esc(b.id)+'">أضف للسلة ♧</button>':'<span class="status muted">'+(b.status!=="published"?"بانتظار النشر":b.format==="physical"&&Number(b.stock)===0?"نفدت النسخ":"غير متاح للشراء")+'</span>')+
- (enabled("enable_reader_likes")?'<button class="btn btn-outline" data-like="'+esc(b.id)+'">'+(state.me?.likes?.includes(b.id)?"♥ إلغاء الإعجاب":"♡ أعجبني")+'</button>':"")+
+ (enabled("enable_reader_likes")&&state.me?.seller?.id!==b.seller_id?'<button class="btn btn-outline" data-like="'+esc(b.id)+'">'+(state.me?.likes?.includes(b.id)?"♥ إلغاء الإعجاب":"♡ أعجبني")+'</button>':"")+
  (enabled("enable_favorites")?'<button class="btn btn-outline" data-favorite="'+esc(b.id)+'">'+(state.me?.favorites?.includes(b.id)?"♥ محفوظ في المفضلة":"◇ حفظ للمفضلة")+'</button>':"")+
  (enabled("enable_messages")?'<button class="btn btn-outline" data-ask="'+esc(b.id)+'">راسل البائع ✉</button>':"")+
  '<button class="btn btn-outline" data-report="'+esc(b.id)+'">إبلاغ</button>'+
@@ -912,6 +912,8 @@ function cartChange(id,delta){
 }
 async function toggleLike(id){
  if(!enabled("enable_reader_likes"))return toast("الميزة متوقفة من مركز المالك");
+ const target=state.listings.find(x=>x.id===id)||state.sellerListings.find(x=>x.id===id);
+ if(target&&state.me?.seller?.id&&target.seller_id===state.me.seller.id)return toast("هذا كتابك؛ لا يمكن إضافة إعجاب من حساب الناشر.");
  if(!state.me)return openLogin();
  const liked=!state.me.likes?.includes(id);
  try{
