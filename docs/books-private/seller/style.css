@@ -583,3 +583,23 @@ button.like-chip:hover,.like-chip.active{color:#ffe4d5;border-color:#d3a3a8;back
 .card-love small{font-size:calc(var(--book-action-icon-size,42px)*.26)}
 .icon-size-control input[type=range]{width:100%;accent-color:var(--teal)}
 .icon-size-control output{display:inline-block;min-width:44px;margin-inline-start:8px;color:var(--teal);font-weight:900}
+
+/* Collapsible owner settings and visibly distinct trial memberships */
+.owner-settings-accordions{display:grid;gap:12px;margin:18px 0}
+.owner-setting-accordion,.owner-feature-group{border:1px solid var(--line);border-radius:16px;background:linear-gradient(145deg,var(--panel),var(--bg2));overflow:hidden}
+.owner-setting-accordion>summary,.owner-feature-heading{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;font-weight:900;color:var(--white)}
+.owner-setting-accordion>summary::-webkit-details-marker,.owner-feature-heading::-webkit-details-marker{display:none}
+.owner-setting-accordion>summary::after,.owner-feature-heading::after{content:"＋";color:var(--teal);font-size:20px}
+.owner-setting-accordion[open]>summary::after,.owner-feature-group[open]>.owner-feature-heading::after{content:"−"}
+.owner-setting-accordion>summary small,.owner-feature-heading small{display:block;color:var(--muted);font-size:12px;font-weight:500}
+.settings-accordion-body{padding:16px;border-top:1px solid var(--line)}
+.owner-feature-list{padding:0 14px 12px}
+.owner-feature-group{margin:12px 0}
+.owner-feature-group[open]{padding-bottom:2px}
+.icon-settings-accordion{border-color:var(--teal);box-shadow:0 0 0 1px #65ded425}
+.premium-test-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;margin-inline-start:8px;border:1px dashed #d6b46a;border-radius:999px;color:#f1d99e;background:#5d471c50;font-size:11px;font-weight:800;vertical-align:middle}
+@media(max-width:600px){
+ .owner-setting-accordion>summary,.owner-feature-heading{padding:14px 12px;align-items:flex-start}
+ .owner-setting-accordion>summary small,.owner-feature-heading small{max-width:48%;text-align:left}
+ .settings-accordion-body{padding:12px}
+}
