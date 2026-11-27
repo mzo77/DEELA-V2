@@ -188,13 +188,13 @@ Deno.serve(async req=>{
   }
   if(req.method==="GET"&&path==="/catalog"){
     if(privateSeller){
-      const categories=await db.from("deela_books_sections").select("id,title,description,kind,category,sort_order,visible").eq("kind","category").eq("visible",true).order("sort_order").limit(200);
+      const categories=await db.from("deela_books_sections").select("id,title,description,kind,category,sort_order,visible").eq("kind","category").eq("visible",true).order("sort_order").limit(1000);
       if(categories.error)throw categories.error;
       const sellerSettings={site_public:false,...Object.fromEntries(FEATURE_FLAGS.map(k=>[k,conf[k]]))};
       return respond(req,{listings:[],settings:sellerSettings,sections:categories.data||[],banners:[],payments_live:false,shipping_live:false,currency:"SAR"});
     }
     const [sectionRows,bannerRows,theme]=await Promise.all([
-      db.from("deela_books_sections").select("id,title,description,kind,category,image_path,material,design,sort_order,visible").eq("visible",true).order("sort_order").limit(200),
+      db.from("deela_books_sections").select("id,title,description,kind,category,image_path,material,design,sort_order,visible").eq("visible",true).order("sort_order").limit(1000),
       db.from("deela_books_banners").select("id,title,image_path,target_url,motion,active,starts_at,ends_at,sort_order").eq("active",true).or("starts_at.is.null,starts_at.lte."+new Date().toISOString()).or("ends_at.is.null,ends_at.gt."+new Date().toISOString()).order("sort_order").limit(50),
       signedBranding(conf)
     ]);
@@ -535,14 +535,20 @@ Deno.serve(async req=>{
     if(!isOwner)return fail(req,"حساب المالك فقط",403);
     if(req.method==="GET"&&path==="/owner/overview")return await ownerOverview(req);
     if(req.method==="GET"&&path==="/owner/sections"){
-      const r=await db.from("deela_books_sections").select("*").order("sort_order").limit(500);
+      const r=await db.from("deela_books_sections").select("*").order("sort_order").limit(1000);
       if(r.error)throw r.error;return respond(req,{sections:await signedMerchandising(r.data||[])});
     }
     if(req.method==="POST"&&path==="/owner/sections/save"){
       const b=await req.json(),id=str(b.id,60),title=str(b.title,100),kind=str(b.kind,20),material=str(b.material,20),category=str(b.category,80),image=str(b.image_path,240),order=Number(b.sort_order);
-      if(title.length<1||!["category","promo"].includes(kind)||!Object.keys({none:1,ceramic:1,marble:1,ornament:1,pearl:1,metal:1,velvet:1,neon:1,heritage:1}).includes(material)||!Number.isInteger(order)||order<1||order>9999)return fail(req,"بيانات القسم غير صحيحة");
+      const validMaterials=["none","ceramic","marble","ornament","pearl","metal","velvet","neon","heritage","aurora","granite","wood","floral","sandstone","crystal","geometric","goldleaf","watercolor","leather","linen","mosaic","stars"];
+      const design=b.design&&typeof b.design==="object"&&!Array.isArray(b.design)?b.design:{};
+      const cleanDesign:Record<string,unknown>={};
+      if(design.background_color!==undefined){if(typeof design.background_color!=="string"||!/^#[0-9a-f]{6}$/i.test(design.background_color))return fail(req,"لون خلفية القسم غير صحيح");cleanDesign.background_color=design.background_color;}
+      if(design.accent_color!==undefined){if(typeof design.accent_color!=="string"||!/^#[0-9a-f]{6}$/i.test(design.accent_color))return fail(req,"لون إبراز القسم غير صحيح");cleanDesign.accent_color=design.accent_color;}
+      if(design.pattern!==undefined){if(typeof design.pattern!=="string"||!validMaterials.includes(design.pattern))return fail(req,"نمط القسم غير صحيح");cleanDesign.pattern=design.pattern;}
+      if(title.length<1||!["category","promo"].includes(kind)||!validMaterials.includes(material)||!Number.isInteger(order)||order<1||order>9999)return fail(req,"بيانات القسم غير صحيحة");
       if(image&&!image.startsWith(user.id+"/branding/"))return fail(req,"صورة القسم ليست ضمن ملفات المالك",403);
-      const row={title,description:str(b.description,450),kind,category,image_path:image,material,design:b.design&&typeof b.design==="object"?b.design:{},sort_order:order,visible:b.visible===true,updated_by:user.id,updated_at:new Date().toISOString()};
+      const row={title,description:str(b.description,450),kind,category,image_path:image,material,design:cleanDesign,sort_order:order,visible:b.visible===true,updated_by:user.id,updated_at:new Date().toISOString()};
       const q=uuid.test(id)?await db.from("deela_books_sections").update(row).eq("id",id).select("*").single():await db.from("deela_books_sections").insert(row).select("*").single();
       if(q.error)throw q.error;return respond(req,{ok:true,section:(await signedMerchandising([q.data]))[0]});
     }
@@ -580,17 +586,21 @@ Deno.serve(async req=>{
       if(r.error)throw r.error;return respond(req,{ok:true,config:r.data.payment_test_config,payments_live:false});
     }
     if(req.method==="GET"&&path==="/owner/users"){
-      const [users,controls]=await Promise.all([db.auth.admin.listUsers({page:1,perPage:100}),db.from("deela_books_user_controls").select("user_id,blocked,note,changed_at").limit(1000)]);
-      if(users.error||controls.error)throw Error("تعذر قراءة قائمة الحسابات");
+      const sellers=await db.from("deela_books_sellers").select("user_id,shop_name,slug,status,created_at").order("created_at",{ascending:false}).limit(500);
+      if(sellers.error)throw Error("تعذر قراءة حسابات بائعي DEELA Books");
+      const ids=[...new Set((sellers.data||[]).map((x:any)=>x.user_id).filter((x:any)=>uuid.test(String(x))))];
+      if(!ids.length)return respond(req,{users:[]});
+      const controls=await db.from("deela_books_user_controls").select("user_id,blocked,note,changed_at").in("user_id",ids);
+      if(controls.error)throw Error("تعذر قراءة إعدادات بائعي DEELA Books");
       const controlMap=new Map((controls.data||[]).map((x:any)=>[x.user_id,x]));
-      const out=[];for(const u of users.data.users){const p=await db.from("profiles").select("role").eq("id",u.id).maybeSingle();const c=controlMap.get(u.id) as any;out.push({id:u.id,email:u.email||"",phone:u.phone||"",created_at:u.created_at,last_sign_in_at:u.last_sign_in_at,is_owner:p.data?.role==="owner",blocked:c?.blocked===true,note:c?.note||""});}
+      const out=[];for(const seller of sellers.data||[]){const auth=await db.auth.admin.getUserById(seller.user_id);if(auth.error)continue;const u=auth.data.user,c=controlMap.get(seller.user_id) as any;out.push({id:u.id,email:u.email||"",phone:u.phone||"",created_at:seller.created_at||u.created_at,last_sign_in_at:u.last_sign_in_at,is_owner:false,blocked:c?.blocked===true,note:c?.note||"",shop_name:seller.shop_name||"",slug:seller.slug||"",seller_status:seller.status||""});}
       return respond(req,{users:out});
     }
     if(req.method==="POST"&&path==="/owner/user-status"){
       const b=await req.json(),id=str(b.user_id,60),blocked=b.blocked===true,note=str(b.note,500);
       if(!uuid.test(id)||typeof b.blocked!=="boolean")return fail(req,"بيانات حالة الحساب غير صحيحة");
-      const p=await db.from("profiles").select("role").eq("id",id).maybeSingle();if(p.error)throw p.error;
-      if(p.data?.role==="owner")return fail(req,"حساب المالك محمي ولا يمكن إيقافه من هذه الشاشة",403);
+      const seller=await db.from("deela_books_sellers").select("user_id").eq("user_id",id).maybeSingle();if(seller.error)throw seller.error;
+      if(!seller.data)return fail(req,"إدارة الحسابات هنا مخصصة لبائعي DEELA Books فقط",403);
       const r=await db.from("deela_books_user_controls").upsert({user_id:id,blocked,note,changed_by:user.id,changed_at:new Date().toISOString()},{onConflict:"user_id"});
       if(r.error)throw r.error;return respond(req,{ok:true,user_id:id,blocked});
     }
@@ -704,7 +714,7 @@ Deno.serve(async req=>{
         updated_at:new Date().toISOString()
       };
       if(Object.prototype.hasOwnProperty.call(b,"theme_colors")){
-        const keys=["bg","panel","white","muted","teal","purple","gold","line"];
+        const keys=["bg","bg2","panel","panel2","panel3","white","muted","muted2","teal","teal2","purple","gold","rose","blue","success","line","line2"];
         if(!b.theme_colors||typeof b.theme_colors!=="object"||Array.isArray(b.theme_colors))return fail(req,"ألوان غير صحيحة",400);
         const colors:Record<string,string>={};
         for(const [key,value] of Object.entries(b.theme_colors)){
@@ -714,7 +724,7 @@ Deno.serve(async req=>{
         configured.theme_colors=colors;
       }
       if(Object.prototype.hasOwnProperty.call(b,"theme_material")){
-        if(!["none","ceramic","marble","ornament","pearl","metal","velvet","neon","heritage"].includes(b.theme_material))return fail(req,"خامة غير صحيحة",400);
+        if(!["none","ceramic","marble","ornament","pearl","metal","velvet","neon","heritage","aurora","granite","wood","floral","sandstone","crystal","geometric","goldleaf","watercolor","leather","linen","mosaic","stars"].includes(b.theme_material))return fail(req,"خامة غير صحيحة",400);
         configured.theme_material=b.theme_material;
       }
       if(Object.prototype.hasOwnProperty.call(b,"theme_design")){
@@ -728,8 +738,9 @@ Deno.serve(async req=>{
         const clean:Record<string,unknown>={};
         for(const [k,v] of Object.entries(sections)){
           const d=v as any;
-          if(!["categories","books","shops","faq","banner"].includes(k)||!d||typeof d.title!=="string"||d.title.length>100||!Number.isInteger(d.order)||d.order<1||d.order>99||typeof d.visible!=="boolean"||!["none","ceramic","marble","ornament","pearl","metal","velvet","neon","heritage"].includes(d.material))return fail(req,"إعداد قسم غير صحيح",400);
-          clean[k]={title:d.title,order:d.order,visible:d.visible,material:d.material};
+          const materialList=["none","ceramic","marble","ornament","pearl","metal","velvet","neon","heritage","aurora","granite","wood","floral","sandstone","crystal","geometric","goldleaf","watercolor","leather","linen","mosaic","stars"];
+          if(!["categories","books","shops","faq","banner"].includes(k)||!d||typeof d.title!=="string"||d.title.length>100||!Number.isInteger(d.order)||d.order<1||d.order>99||typeof d.visible!=="boolean"||!materialList.includes(d.material)||![undefined,""].includes(d.background_color)&&!(typeof d.background_color==="string"&&/^#[0-9a-f]{6}$/i.test(d.background_color))||![undefined,""].includes(d.accent_color)&&!(typeof d.accent_color==="string"&&/^#[0-9a-f]{6}$/i.test(d.accent_color)))return fail(req,"إعداد قسم غير صحيح",400);
+          clean[k]={title:d.title,order:d.order,visible:d.visible,material:d.material,background_color:d.background_color||"",accent_color:d.accent_color||""};
         }
         configured.theme_sections=clean;
       }

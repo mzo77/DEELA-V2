@@ -65,9 +65,19 @@ async function reload(){
   $("accountButton").innerHTML=state.me?.is_owner?"حساب المالك ◌":"حسابي ◌";
   document.querySelectorAll(".owner-only").forEach(x=>x.hidden=!state.me?.is_owner);
   renderHome();route(state.view,false);
- }catch(e){toast(errorMessage(e));openLogin(errorMessage(e))}
+ }catch(e){openLogin(errorMessage(e))}
 }
-const themeKeys={"bg":"خلفية المتجر","panel":"البطاقات","white":"النص الرئيسي","muted":"النص الثانوي","teal":"اللون الأساسي","purple":"اللون المساعد","gold":"اللون الذهبي","line":"الحدود"};
+const themeKeys={bg:"الخلفية الرئيسية",bg2:"الخلفية الثانوية",panel:"خلفية البطاقات",panel2:"البطاقات الفاتحة",panel3:"البطاقات البارزة",white:"النص الرئيسي",muted:"النص الثانوي",muted2:"النص الخافت",teal:"اللون الأساسي",teal2:"اللون الأساسي الفاتح",purple:"اللون المساعد",gold:"اللون الذهبي",rose:"الوردي",blue:"الأزرق",success:"لون النجاح",line:"الحدود",line2:"الحدود البارزة"};
+const themePresets={
+ ocean:{bg:"#0c1524",bg2:"#111f31",panel:"#18283d",panel2:"#1e344b",panel3:"#243b51",white:"#eff7ff",muted:"#a3b8cb",muted2:"#7392aa",teal:"#8bdccf",teal2:"#a5eddf",purple:"#b1a6e8",gold:"#e6c59e",rose:"#eaa8c0",blue:"#8eb8f0",success:"#75d6a4",line:"#355069",line2:"#4c6d80"},
+ sapphire:{bg:"#0b1228",bg2:"#121d3b",panel:"#19294a",panel2:"#24385e",panel3:"#304873",white:"#f3f5ff",muted:"#b0bddc",muted2:"#8295bd",teal:"#79d6e4",teal2:"#a7ebf3",purple:"#a698f5",gold:"#e5c789",rose:"#ed9fc2",blue:"#7aa9ff",success:"#76d7a0",line:"#364b75",line2:"#50699a"},
+ emerald:{bg:"#0d1b1a",bg2:"#132522",panel:"#1b342f",panel2:"#23443c",panel3:"#2d574b",white:"#effaf4",muted:"#adc8b9",muted2:"#7eaa94",teal:"#8fe0bd",teal2:"#b3f2d2",purple:"#b7a6d9",gold:"#d9c185",rose:"#e7a9ab",blue:"#86c8d1",success:"#83df9f",line:"#3d6655",line2:"#59866f"},
+ rose:{bg:"#21131e",bg2:"#2b1928",panel:"#3a2335",panel2:"#4b2d45",panel3:"#603a56",white:"#fff4fa",muted:"#ddbbce",muted2:"#b38ba3",teal:"#8edaca",teal2:"#b2f1df",purple:"#c2a2ef",gold:"#e8c48e",rose:"#f1a9cb",blue:"#a1c3f0",success:"#86d5a0",line:"#70465f",line2:"#95617f"},
+ lavender:{bg:"#171529",bg2:"#211d3b",panel:"#2b2850",panel2:"#3a3565",panel3:"#49427b",white:"#f7f4ff",muted:"#c4bcdf",muted2:"#958bbd",teal:"#8edfd7",teal2:"#b6f0e8",purple:"#b8a3ff",gold:"#e5cb9b",rose:"#edaed0",blue:"#9bbafa",success:"#82d6a6",line:"#514a7b",line2:"#70669e"},
+ sand:{bg:"#211e19",bg2:"#2c2821",panel:"#3a3429",panel2:"#4c4334",panel3:"#5d503e",white:"#fff8ed",muted:"#d2c2a8",muted2:"#a99576",teal:"#a7d7c4",teal2:"#c9eadb",purple:"#c4b0d4",gold:"#e7c486",rose:"#e4ada0",blue:"#a8c3d2",success:"#a5d28c",line:"#675943",line2:"#887456"},
+ midnight:{bg:"#101114",bg2:"#17191e",panel:"#20232a",panel2:"#292d36",panel3:"#343944",white:"#f3f4f8",muted:"#b9bdc8",muted2:"#858b99",teal:"#80ded4",teal2:"#a9f0e7",purple:"#b9a5ef",gold:"#e3c078",rose:"#e99fbd",blue:"#89baff",success:"#79d99d",line:"#414754",line2:"#5d6575"},
+ burgundy:{bg:"#201116",bg2:"#2b171e",panel:"#3b2029",panel2:"#4d2934",panel3:"#603441",white:"#fff4f3",muted:"#d7b9ba",muted2:"#ad898d",teal:"#8bd8c8",teal2:"#b3eddf",purple:"#c1a0d3",gold:"#e7c181",rose:"#ed9aaa",blue:"#9ebce5",success:"#82d39a",line:"#69404a",line2:"#8b5962"}
+};
 function applyTheme(colors){
  for(const key of Object.keys(themeKeys)){
   const value=colors?.[key];
@@ -75,7 +85,7 @@ function applyTheme(colors){
   else document.documentElement.style.removeProperty("--"+key);
  }
 }
- const materials={none:"بدون خامة",ceramic:"سيراميك",marble:"رخام",ornament:"زخارف هندسية",pearl:"لؤلؤي",metal:"معدن",velvet:"مخمل",neon:"نيون",heritage:"تراثي"};
+const materials={none:"بدون خامة",ceramic:"سيراميك لامع",marble:"رخام فاخر",ornament:"زخارف هندسية",pearl:"لؤلؤي",metal:"معدن مصقول",velvet:"مخمل ملكي",neon:"نيون",heritage:"تراثي",aurora:"شفق قطبي",granite:"جرانيت",wood:"خشب دافئ",floral:"نقوش نباتية",sandstone:"حجر رملي",crystal:"كريستال",geometric:"هندسي مغربي",goldleaf:"ورق ذهبي",watercolor:"ألوان مائية",leather:"جلد فاخر",linen:"كتان ناعم",mosaic:"فسيفساء",stars:"سماء مرصعة"};
 function applyMaterial(value){document.body.dataset.material=Object.hasOwn(materials,value)?value:"none";}
 function materialFields(conf){
  return '<label class="field full">خامة خلفية المتجر<select name="theme_material">'+Object.entries(materials).map(([k,v])=>'<option value="'+k+'" '+(conf.theme_material===k?'selected':'')+'>'+v+'</option>').join("")+'</select></label><div class="field full material-preview" id="materialPreview" data-material="'+(Object.hasOwn(materials,conf.theme_material)?conf.theme_material:"none")+'" style="min-height:110px;padding:24px;border:1px solid var(--line);border-radius:18px;background-color:var(--bg)">معاينة الخامة والزخرفة</div>';
@@ -102,7 +112,7 @@ const sectionDefs={categories:["التصنيفات","#homeCategories"],books:["�
 function sectionFields(conf){
  return Object.entries(sectionDefs).map(([k,[label]])=>{
  const d=conf.theme_sections?.[k]||{};
- return '<fieldset class="field full"><legend>'+label+'</legend><label>العنوان<input name="section_'+k+'_title" maxlength="100" value="'+esc(d.title||"")+'"></label><label>الترتيب<input type="number" min="1" max="99" name="section_'+k+'_order" value="'+(Number(d.order)||Object.keys(sectionDefs).indexOf(k)+1)+'"></label><label>الخامة<select name="section_'+k+'_material">'+Object.entries(materials).map(([v,t])=>'<option value="'+v+'" '+(d.material===v?"selected":"")+'>'+t+'</option>').join("")+'</select></label><label><input type="checkbox" name="section_'+k+'_visible" '+(d.visible!==false?"checked":"")+'>إظهار القسم</label></fieldset>';
+ return '<fieldset class="field full"><legend>'+label+'</legend><label>العنوان<input name="section_'+k+'_title" maxlength="100" value="'+esc(d.title||"")+'"></label><label>الترتيب<input type="number" min="1" max="99" name="section_'+k+'_order" value="'+(Number(d.order)||Object.keys(sectionDefs).indexOf(k)+1)+'"></label><label>الخامة<select name="section_'+k+'_material">'+Object.entries(materials).map(([v,t])=>'<option value="'+v+'" '+(d.material===v?"selected":"")+'>'+t+'</option>').join("")+'</select></label><label>لون الخلفية<input type="color" name="section_'+k+'_background_color" value="'+esc(/^#[0-9a-f]{6}$/i.test(d.background_color||"")?d.background_color:"#18283d")+'"></label><label>لون العنوان والإبراز<input type="color" name="section_'+k+'_accent_color" value="'+esc(/^#[0-9a-f]{6}$/i.test(d.accent_color||"")?d.accent_color:"#8bdccf")+'"></label><label><input type="checkbox" name="section_'+k+'_visible" '+(d.visible!==false?"checked":"")+'>إظهار القسم</label></fieldset>';
  }).join("");
 }
 function applySections(config){
@@ -111,6 +121,9 @@ function applySections(config){
  if(!node)return null;
  const h=node.querySelector("h2");if(h){h.dataset.originalTitle??=h.textContent;if(k!=="banner"||d.title)h.textContent=d.title||h.dataset.originalTitle;}
  node.dataset.material=Object.hasOwn(materials,d.material)?d.material:"none";
+ node.style.setProperty("--section-bg",/^#[0-9a-f]{6}$/i.test(d.background_color||"")?d.background_color:"var(--panel)");
+ node.style.setProperty("--section-accent",/^#[0-9a-f]{6}$/i.test(d.accent_color||"")?d.accent_color:"var(--teal)");
+ node.style.borderColor="var(--section-accent)";
  node.dataset.ownerHidden=d.visible===false?"true":"false";node.hidden=d.visible===false;
  return {node,order:Number(d.order)||i+1};
  }).filter(Boolean).sort((a,b)=>a.order-b.order);
@@ -148,8 +161,20 @@ function applyImages(images){
  });
 }
 function themeFields(conf){
- return Object.entries(themeKeys).map(([key,label])=>'<label class="field">'+esc(label)+'<input type="color" name="theme_'+key+'" value="'+esc(/^#[0-9a-f]{6}$/i.test(conf.theme_colors?.[key]||"")?conf.theme_colors[key]:getComputedStyle(document.documentElement).getPropertyValue("--"+key).trim())+'"></label>').join("");
+ const presets='<div class="field full"><strong>لوحات ألوان جاهزة</strong><div class="theme-preset-grid">'+Object.keys(themePresets).map(k=>'<button type="button" class="btn btn-outline" data-theme-preset="'+k+'">'+({ocean:"محيط",sapphire:"ياقوت",emerald:"زمرد",rose:"وردي ملكي",lavender:"لافندر",sand:"رملي",midnight:"منتصف الليل",burgundy:"عنابي"}[k])+'</button>').join("")+'</div></div>';
+ return presets+Object.entries(themeKeys).map(([key,label])=>'<label class="field">'+esc(label)+'<input type="color" name="theme_'+key+'" value="'+esc(/^#[0-9a-f]{6}$/i.test(conf.theme_colors?.[key]||"")?conf.theme_colors[key]:getComputedStyle(document.documentElement).getPropertyValue("--"+key).trim())+'"></label>').join("");
 }
+document.addEventListener("click",ev=>{
+ const button=ev.target.closest("[data-theme-preset]");if(!button)return;
+ const preset=themePresets[button.dataset.themePreset];if(!preset)return;
+ for(const [key,value] of Object.entries(preset)){const input=document.querySelector('[name="theme_'+key+'"]');if(input)input.value=value;}
+ applyTheme(preset);toast("تم تطبيق لوحة الألوان. احفظ الإعدادات لتثبيتها.");
+});
+document.addEventListener("input",ev=>{
+ const input=ev.target;if(!input.matches('#settingsForm input[type="color"][name^="theme_"]'))return;
+ const colors={};for(const [key] of Object.entries(themeKeys)){const item=document.querySelector('[name="theme_'+key+'"]');if(item)colors[key]=item.value;}
+ applyTheme(colors);
+});
 function demoCovers(){
  const samples=[
   ["ليالي الزمرد","رواية خيالية","purple"],["مدينة الغيم","رحلة أدبية","teal"],
@@ -194,10 +219,10 @@ function renderManagedHome(){
  let host=document.getElementById("managedHomeSections");if(!host){host=document.createElement("div");host.id="managedHomeSections";$("home").append(host)}
  const banners=(state.banners||[]).filter(x=>x.image_url),sections=(state.sections||[]).filter(x=>x.visible);
  host.innerHTML=(banners.length?'<section class="container section"><div class="managed-banner-grid">'+banners.map(b=>'<a class="managed-banner" href="'+(b.target_url?esc(b.target_url):"#home")+'" '+(b.target_url?'target="_blank" rel="noopener noreferrer"':'')+' style="background-image:linear-gradient(90deg,#071326aa,#07132622),url(&quot;'+esc(b.image_url)+'&quot;)"><strong>'+esc(b.title)+'</strong></a>').join("")+'</div></section>':"")+sections.map(s=>{
-  const style=s.image_url?'background-image:linear-gradient(90deg,#071326df,#07132655),url(&quot;'+esc(s.image_url)+'&quot;)':'';
+  const style=(s.image_url?'background-image:linear-gradient(90deg,#071326df,#07132655),url(&quot;'+esc(s.image_url)+'&quot;)':'background-color:'+( /^#[0-9a-f]{6}$/i.test(s.design?.background_color||"")?s.design.background_color:"var(--section-bg, var(--panel))"))+';--section-accent:'+( /^#[0-9a-f]{6}$/i.test(s.design?.accent_color||"")?s.design.accent_color:"var(--teal)");
   const detail=s.kind==="category"?' · '+esc(s.category):"";
   const books=s.kind==="category"?state.listings.filter(b=>b.category===s.category&&b.status==="published").slice(0,4):[];
-  return '<section class="container section managed-section" data-material="'+esc(s.material||"none")+'" style="'+style+'"><div class="managed-section-copy"><span class="eyebrow">DEELA BOOKS</span><h2>'+esc(s.title)+detail+'</h2><p>'+esc(s.description||"")+'</p>'+(s.kind==="category"?'<button class="btn btn-outline" data-category="'+esc(s.category)+'">استكشف القسم ←</button>':"")+'</div>'+(books.length?'<div class="books-grid managed-section-books">'+books.map(card).join("")+'</div>':"")+'</section>';
+  return '<section class="container section managed-section" data-material="'+esc(s.design?.pattern||s.material||"none")+'" style="'+style+'"><div class="managed-section-copy"><span class="eyebrow">DEELA BOOKS</span><h2>'+esc(s.title)+detail+'</h2><p>'+esc(s.description||"")+'</p>'+(s.kind==="category"?'<button class="btn btn-outline" data-category="'+esc(s.category)+'">استكشف القسم ←</button>':"")+'</div>'+(books.length?'<div class="books-grid managed-section-books">'+books.map(card).join("")+'</div>':"")+'</section>';
  }).join("");
 }
 function shopCard(s){
@@ -440,11 +465,11 @@ function ownerFeatureGroup(group,conf){
 }
 function managedOwnerTabs(){
  const rows=state.ownerData?.sections||[];
- return '<section class="panel"><h2>الأقسام الديناميكية</h2><p>إنشاء أقسام وتصنيفات وترتيبها وإخفاؤها، مع حفظ مستقل لكل قسم.</p><form id="sectionForm" class="form-grid">'+
+ return '<section class="panel"><h2>أقسام الروايات والتصنيفات</h2><p>أنشئ عددًا مفتوحًا من التصنيفات، مثل الفانتازيا والرعب والرومانسية والغموض والتاريخي والخيال العلمي والسير الذاتية. تظهر اختيارات البائع هنا تلقائيًا.</p><form id="sectionForm" class="form-grid">'+
  '<label class="field">عنوان القسم<input name="title" required maxlength="100"></label><label class="field">النوع<select name="kind"><option value="category">تصنيف كتب</option><option value="promo">قسم ترويجي</option></select></label>'+
  '<label class="field">التصنيف<input name="category" maxlength="80" placeholder="روايات"></label><label class="field">الترتيب<input name="sort_order" type="number" min="1" max="9999" value="1"></label>'+
- '<label class="field full">الوصف<textarea name="description" maxlength="450"></textarea></label><label class="field">الخامة<select name="material">'+Object.entries(materials).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join("")+'</select></label>'+imageUploader("section")+
- '<label class="field"><input type="checkbox" name="visible" checked>إظهار القسم</label><input type="hidden" name="id"><input type="hidden" name="image_path"><div class="field full"><button class="btn btn-primary" type="submit">إنشاء القسم</button><span class="form-msg" data-upload-status="section"></span></div></form><div class="managed-admin-list">'+(rows.length?rows.map(x=>'<article class="row-card"><strong>'+esc(x.title)+'</strong> · '+esc(x.kind==="category"?x.category:"ترويجي")+' · الترتيب '+Number(x.sort_order)+' · '+(x.visible?"ظاهر":"مخفي")+'<div class="toolbar"><button class="btn btn-outline" data-section-edit="'+esc(x.id)+'">تعديل</button><button class="btn btn-outline" data-section-delete="'+esc(x.id)+'">حذف</button></div></article>').join(""):'<p>لم تُنشأ أقسام بعد.</p>')+'</div></section>'+
+ '<label class="field full">الوصف<textarea name="description" maxlength="450"></textarea></label><label class="field">الخامة والزخرفة<select name="material">'+Object.entries(materials).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join("")+'</select></label><label class="field">لون خلفية القسم<input type="color" name="background_color" value="#18283d"></label><label class="field">لون إبراز العنوان<input type="color" name="accent_color" value="#8bdccf"></label>'+imageUploader("section")+
+ '<label class="field"><input type="checkbox" name="visible" checked>إظهار القسم</label><input type="hidden" name="id"><input type="hidden" name="image_path"><div class="field full"><button class="btn btn-primary" type="submit">حفظ القسم</button><span class="form-msg" data-upload-status="section"></span></div></form><div class="managed-admin-list">'+(rows.length?rows.map(x=>'<article class="row-card"><strong>'+esc(x.title)+'</strong> · '+esc(x.kind==="category"?x.category:"ترويجي")+' · '+esc(materials[x.material]||"بدون خامة")+' · الترتيب '+Number(x.sort_order)+' · '+(x.visible?"ظاهر":"مخفي")+'<div class="toolbar"><button class="btn btn-outline" data-section-edit="'+esc(x.id)+'">تعديل</button><button class="btn btn-outline" data-section-delete="'+esc(x.id)+'">حذف</button></div></article>').join(""):'<p>لم تُنشأ أقسام بعد.</p>')+'</div></section>'+
  '<section class="panel"><h2>البنرات وجدول الظهور</h2><p>رفع صورة من المعرض، تحديد رابط وموعد بداية ونهاية الظهور.</p><form id="bannerForm" class="form-grid">'+
  '<label class="field">عنوان البنر<input name="title" required maxlength="120"></label><label class="field">الترتيب<input name="sort_order" type="number" min="1" max="9999" value="1"></label><label class="field full">الرابط HTTPS<input name="target_url" type="url" placeholder="https://..."></label>'+imageUploader("banner")+
  '<label class="field">الحركة<select name="motion"><option value="none">ثابت</option><option value="glow">لمعان</option><option value="slide">انزلاق</option></select></label><label class="field">يبدأ في<input name="starts_at" type="datetime-local"></label><label class="field">ينتهي في<input name="ends_at" type="datetime-local"></label><label class="field"><input type="checkbox" name="active" checked>تفعيل البنر وفق الجدول</label><input type="hidden" name="id"><input type="hidden" name="image_path"><div class="field full"><button class="btn btn-primary" type="submit">حفظ البنر</button><span class="form-msg" data-upload-status="banner"></span></div></form><div class="managed-admin-list">'+(state.ownerData?.banners||[]).map(x=>'<article class="row-card"><strong>'+esc(x.title)+'</strong> · '+(x.active?"مفعّل":"مخفي")+' · '+(x.starts_at?date(x.starts_at):"بلا موعد بداية")+'<div class="toolbar"><button class="btn btn-outline" data-banner-edit="'+esc(x.id)+'">تعديل</button><button class="btn btn-outline" data-banner-delete="'+esc(x.id)+'">حذف</button></div></article>').join("")+'</div></section>';
@@ -458,7 +483,7 @@ function paymentOwnerPanel(){
 }
 function accountOwnerPanel(){
  const rows=state.ownerData?.users||[];
- return '<section class="panel"><h2>إدارة الحسابات</h2><p>حساب المالك محمي. إيقاف حساب عادي يمنع استخدامه من وظائف DEELA Books بعد إعادة فحص الجلسة.</p><div class="list-rows">'+rows.map(u=>'<article class="row-card"><div class="row-top"><div><strong>'+esc(u.email||u.phone||u.id)+'</strong><p>آخر دخول: '+date(u.last_sign_in_at)+' · إنشاء: '+date(u.created_at)+'</p></div><span class="status">'+(u.is_owner?"مالك محمي":u.blocked?"موقوف":"نشط")+'</span></div>'+(u.is_owner?"":'<label class="field">ملاحظة إدارية<input data-user-note="'+esc(u.id)+'" value="'+esc(u.note)+'" maxlength="500"></label><button class="btn '+(u.blocked?"btn-outline":"danger")+'" data-user-toggle="'+esc(u.id)+'" data-blocked="'+(!u.blocked)+'">'+(u.blocked?"إعادة تفعيل الحساب":"إيقاف الحساب")+'</button>')+'</article>').join("")+'</div><p>المعروض أول 100 حساب فقط. إدارة مزودات تسجيل الدخول والجوال وGoogle وApple تحتاج مفاتيح المزود وإعداداتها الخارجية.</p></section>';
+ return '<section class="panel"><h2>حسابات المؤلفين والمتاجر</h2><p>تظهر هنا حسابات البائعين المسجلين في DEELA Books فقط. حسابات مشتركي تطبيق DEELA للبرامج لا تُعرض ولا تُدار من هذه اللوحة.</p><div class="list-rows">'+(rows.length?rows.map(u=>'<article class="row-card"><div class="row-top"><div><strong>'+esc(u.shop_name||"متجر كتب")+'</strong><p>'+esc(u.email||u.phone||u.id)+' · آخر دخول: '+date(u.last_sign_in_at)+' · إنشاء: '+date(u.created_at)+'</p></div><span class="status">'+(u.blocked?"موقوف":esc(statusNames[u.seller_status]||u.seller_status||"بائع كتب"))+'</span></div>'+'<label class="field">ملاحظة إدارية<input data-user-note="'+esc(u.id)+'" value="'+esc(u.note)+'" maxlength="500"></label><button class="btn '+(u.blocked?"btn-outline":"danger")+'" data-user-toggle="'+esc(u.id)+'" data-blocked="'+(!u.blocked)+'">'+(u.blocked?"إعادة تفعيل حساب البائع":"إيقاف حساب البائع")+'</button></article>').join(""):'<div class="empty-state"><h3>لا توجد حسابات بائعين في DEELA Books بعد</h3><p>حسابات مشتركي تطبيق البرامج منفصلة ولن تظهر هنا.</p></div>')+'</div><p>القائمة تشمل بائعي الكتب فقط؛ إجراء الإيقاف محمي كذلك على الخادم.</p></section>';
 }
 function ownerPage(){
  const tab=state.ownerTab;
@@ -815,11 +840,11 @@ async function handleForm(ev){
     await reload();await route("owner",false);
   }else if(id==="settingsForm"){
     const payload={...state.settings,...state.ownerData?.settings,...raw,
-      theme_images:Object.fromEntries(Object.keys(imageKeys).map(k=>[k,raw['image_'+k+'_path']||''])),theme_sections:Object.fromEntries(Object.keys(sectionDefs).map(k=>[k,{title:raw["section_"+k+"_title"]||"",order:Number(raw["section_"+k+"_order"]),material:raw["section_"+k+"_material"],visible:raw["section_"+k+"_visible"]==="on"}])),theme_design:{radius:Number(raw.design_radius),font_size:Number(raw.design_font_size),banner_motion:raw.design_banner_motion},theme_material:raw.theme_material,theme_colors:Object.fromEntries(Object.keys(themeKeys).map(k=>[k,raw["theme_"+k]])),site_public:false,payments_live:false};
+      theme_images:Object.fromEntries(Object.keys(imageKeys).map(k=>[k,raw['image_'+k+'_path']||''])),theme_sections:Object.fromEntries(Object.keys(sectionDefs).map(k=>[k,{title:raw["section_"+k+"_title"]||"",order:Number(raw["section_"+k+"_order"]),material:raw["section_"+k+"_material"],background_color:raw["section_"+k+"_background_color"]||"",accent_color:raw["section_"+k+"_accent_color"]||"",visible:raw["section_"+k+"_visible"]==="on"}])),theme_design:{radius:Number(raw.design_radius),font_size:Number(raw.design_font_size),banner_motion:raw.design_banner_motion},theme_material:raw.theme_material,theme_colors:Object.fromEntries(Object.keys(themeKeys).map(k=>[k,raw["theme_"+k]])),site_public:false,payments_live:false};
     await api("/owner/settings",{method:"POST",data:payload});
     toast("تم حفظ هوية المنصة والعروض");await reload();await route("owner",false);
   }else if(id==="sectionForm"){
-    const data={...raw,visible:form.elements.namedItem("visible").checked,sort_order:Number(raw.sort_order)};
+    const data={...raw,visible:form.elements.namedItem("visible").checked,sort_order:Number(raw.sort_order),design:{background_color:raw.background_color||"",accent_color:raw.accent_color||"",pattern:raw.material}};
     const saved=await api("/owner/sections/save",{method:"POST",data});
     toast("تم حفظ القسم: "+saved.section.title);await reload();await route("owner",false);
   }else if(id==="bannerForm"){
@@ -902,7 +927,8 @@ async function setUserBlocked(id,blocked){
 function editManaged(kind,id){
  const row=kind==="section"?(state.ownerData?.sections||[]).find(x=>x.id===id):(state.ownerData?.banners||[]).find(x=>x.id===id);
  const form=document.getElementById(kind+"Form");if(!row||!form)return;
- for(const [key,value] of Object.entries(row)){
+ const values={...row,...(kind==="section"?{background_color:row.design?.background_color||"#18283d",accent_color:row.design?.accent_color||"#8bdccf"}:{})};
+ for(const [key,value] of Object.entries(values)){
   const field=form.elements.namedItem(key);if(!field)continue;
   if(field.type==="checkbox")field.checked=value===true;
   else if(field.type==="datetime-local")field.value=value?new Date(value).toISOString().slice(0,16):"";
