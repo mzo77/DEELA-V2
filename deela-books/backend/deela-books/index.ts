@@ -185,8 +185,11 @@ Deno.serve(async req=>{
     const conf=await settings();
     const cats=await db.from("deela_books_sections").select("id,title,description,category,sort_order").eq("kind","category").eq("visible",true).order("sort_order").limit(1000);
     if(cats.error)throw cats.error;
+    const defaults=["روايات","أدب وشعر","خيال ورعب","تطوير الذات","تاريخ","كتب الأطفال","فلسفة","تقنية","ديني","أخرى"];
+    const custom=cats.data||[],present=new Set(custom.map((x:any)=>x.category).filter(Boolean));
+    const sections=[...custom,...defaults.filter(title=>!present.has(title)).map((title,index)=>({id:"default-"+index,title,description:"تصنيف متاح لإضافة الكتب والروايات",category:title,sort_order:1000+index}))];
     return respond(req,{site_public:false,registration_enabled:conf.enable_seller_registration===true,submissions_enabled:conf.enable_book_submissions===true,
-      sections:cats.data||[],formats:["ورقي","إلكتروني","صوتي"],seller_review_required:true,
+      sections,formats:["ورقي","إلكتروني","صوتي"],seller_review_required:true,
       pricing_note:"لا توجد رسوم أو عروض مدفوعة مفعّلة حاليًا في البوابة؛ المدفوعات الحقيقية مغلقة."});
   }
   if(req.method==="GET"&&path==="/auth/providers"){
