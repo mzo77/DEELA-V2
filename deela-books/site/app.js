@@ -152,8 +152,8 @@ function detailPage(){
  (b.subtitle?'<p class="book-subtitle">'+esc(b.subtitle)+'</p>':"")+
  '<p>تأليف '+esc(b.author||"مؤلف مستقل")+' · <button class="text-button" data-shop="'+esc(b.deela_books_sellers?.slug||"")+'">'+esc(b.deela_books_sellers?.shop_name||"متجر ديلا")+'</button></p>'+
  '<div class="community-strip detail-community">'+
- '<span class="rating-chip">★ '+(Number(b.review_count)>0?Number(b.average_rating||0).toFixed(1):"بلا تقييم")+' · '+Number(b.review_count||0)+' مراجعة</span>'+
- '<span class="like-chip">♥ '+Number(b.like_count||0)+' إعجاب</span></div>'+
+ (enabled("enable_reviews")?'<span class="rating-chip">★ '+(Number(b.review_count)>0?Number(b.average_rating||0).toFixed(1):"بلا تقييم")+' · '+Number(b.review_count||0)+' مراجعة</span>':"")+
+ (enabled("enable_reader_likes")?'<span class="like-chip">♥ '+Number(b.like_count||0)+' إعجاب</span>':"")+'</div>'+
  (enabled("show_book_prices")?'<strong class="detail-price">'+sar(b.price_sar)+'</strong>':'<span class="status muted">الأسعار مخفية من لوحة المالك</span>')+
  (enabled("enable_discounts")&&enabled("show_book_prices")&&b.compare_at_sar&&Number(b.compare_at_sar)>Number(b.price_sar)?
  '<div class="compare-price">قبل الخصم <s>'+sar(b.compare_at_sar)+'</s></div>':"")+
