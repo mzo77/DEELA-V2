@@ -1,0 +1,4 @@
+Approved official DEELA Android release request.
+Target: v0.9.13 from the reviewed main branch.
+Owner authorization: publish the signed official APK after permanent signing-secret and certificate validation pass.
+Payment collection is excluded and remains disabled.
