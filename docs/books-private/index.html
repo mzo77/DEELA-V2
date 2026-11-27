@@ -73,9 +73,12 @@ async function render(token){
  const boot="<scr"+"ipt>window.__DEELA_BOOKS_TOKEN="+JSON.stringify(token)+";</scr"+"ipt>";
  const safeJS=js.replace(/<\/script/gi,"<\\/script");
  const run="<scr"+"ipt>"+safeJS+"</scr"+"ipt>";
- const logout='<button type="button" id="privateLogout" style="position:fixed;z-index:9999;left:10px;top:37px;padding:6px 12px;min-height:0;border-radius:10px;border:1px solid #8ee1d8;background:#1a394a;color:#e8fffa;font:800 11px Tahoma,Arial">تسجيل الخروج</button>';
- const listener="<scr"+"ipt>document.getElementById('privateLogout').onclick=function(){location.replace(location.pathname)};</scr"+"ipt>";
- html=html.replace("</body>",logout+boot+run+listener+"</body>");
+ const accountMarkup='id="accountButton">حسابي <span>◌</span></button>';
+ if(!html.includes(accountMarkup))throw Error("تعذر تجهيز شريط حساب المالك");
+ const logout='<button type="button" class="account-pill" id="privateLogout" style="min-height:0;margin-inline-start:8px">تسجيل الخروج</button>';
+ html=html.replace(accountMarkup,'id="accountButton">حساب المالك ◌</button>'+logout);
+ const listener="<scr"+"ipt>document.getElementById('privateLogout').onclick=function(){sessionStorage.removeItem('deela-books-token');location.replace(location.pathname)};</scr"+"ipt>";
+ html=html.replace("</body>",boot+run+listener+"</body>");
  document.open();document.write(html);document.close();
 }
 async function login(event){
