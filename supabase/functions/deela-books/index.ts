@@ -1,4 +1,5 @@
 import {createClient} from "npm:@supabase/supabase-js@2.95.0";
+import webpush from "npm:web-push@3.6.7";
 
 const SUPABASE_URL=Deno.env.get("SUPABASE_URL")||"";
 const SERVICE_ROLE=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";
@@ -8,7 +9,7 @@ const guest=ANON_KEY?createClient(SUPABASE_URL,ANON_KEY,{auth:{persistSession:fa
 const db=createClient(SUPABASE_URL,SERVICE_ROLE,{auth:{persistSession:false,autoRefreshToken:false}});
 const fn="/deela-books";
 const FEATURE_FLAGS=["enable_seller_registration","enable_book_submissions","enable_reader_likes","enable_favorites","enable_author_follows","enable_reviews","enable_messages","enable_orders","enable_discounts","enable_featured_section","enable_launch_alerts","show_book_prices"] as const;
-const PRIVATE_SELLER_ROUTES=new Set(["GET /catalog","GET /shops","GET /me","GET /my/listings","GET /seller/activity","GET /seller/orders","POST /seller/order-item/status","POST /seller/apply","POST /seller/profile","POST /listing/delete","GET /orders","POST /order","POST /order/support","GET /download","POST /like","POST /follow","POST /favorite","POST /view","POST /reports","GET /reviews","POST /reviews","GET /messages","POST /messages","POST /messages/reply","GET /seller/notifications","POST /seller/notifications/read","GET /seller/launch-alerts","POST /seller/launch-alerts/request","GET /seller/promotions","POST /seller/promotions/test","GET /contests","POST /contests/answer","GET /launch-alerts/feed","POST /listing","POST /upload/sign"]);
+const PRIVATE_SELLER_ROUTES=new Set(["GET /catalog","GET /shops","GET /me","GET /my/listings","GET /seller/activity","GET /seller/orders","POST /seller/order-item/status","POST /seller/apply","POST /seller/profile","POST /listing/delete","GET /orders","POST /order","POST /order/support","GET /download","POST /like","POST /follow","POST /favorite","POST /view","POST /reports","GET /reviews","POST /reviews","GET /messages","POST /messages","POST /messages/reply","GET /seller/notifications","POST /seller/notifications/read","POST /push/subscribe","POST /push/unsubscribe","GET /seller/launch-alerts","POST /seller/launch-alerts/request","GET /seller/promotions","POST /seller/promotions/test","GET /contests","POST /contests/answer","GET /launch-alerts/feed","POST /listing","POST /upload/sign"]);
 
 const trusted=new Set(["https://mzo77.github.io","https://appassets.androidplatform.net"]);
 const allowedOrigins=(req:Request)=>trusted.has(req.headers.get("origin")||"")?req.headers.get("origin")!:"https://mzo77.github.io";
@@ -214,6 +215,41 @@ Deno.serve(async req=>{
   "Access-Control-Allow-Headers":"authorization,content-type,apikey","Vary":"Origin"}});
  const parsed=new URL(req.url),path=parsed.pathname.split(fn)[1]||"/";
  if(req.method==="GET"&&path==="/health")return respond(req,{ok:true,name:"DEELA Books",owner_console_only:true,private_seller_portal:true,payments_live:false,shipping_live:false});
+
+  const pushSecrets=async()=>{
+    const result=await db.rpc("deela_books_get_push_secrets");
+    if(result.error||!result.data)throw Error("خدمة الإشعارات غير مهيأة");
+    const raw=JSON.parse(String(result.data.deela_books_vapid||"{}"));
+    return {publicKey:String(raw.publicKey||""),privateKey:String(raw.privateKey||""),subject:String(raw.subject||"https://mzo77.github.io/"),trigger:String(result.data.deela_books_push_trigger_secret||"")};
+  };
+  if(req.method==="GET"&&path==="/push/key"){
+    const cfg=await pushSecrets();
+    if(!cfg.publicKey)return fail(req,"إشعارات الخلفية غير مهيأة",503);
+    return respond(req,{public_key:cfg.publicKey});
+  }
+  if(req.method==="POST"&&path==="/push/send"){
+    const cfg=await pushSecrets();
+    if(!cfg.trigger||req.headers.get("x-deela-push-secret")!==cfg.trigger)return fail(req,"غير مصرح",403);
+    const b=await req.json(),userId=str(b.user_id,60),title=str(b.title,120)||"إشعار من DEELA Books",body=str(b.body,240);
+    if(!uuid.test(userId))return fail(req,"معرف المستخدم غير صحيح");
+    const rows=await db.from("deela_books_push_subscriptions").select("id,endpoint,p256dh,auth").eq("user_id",userId).limit(20);
+    if(rows.error)throw rows.error;
+    if(!(rows.data||[]).length)return respond(req,{ok:true,sent:0});
+    webpush.setVapidDetails(cfg.subject,cfg.publicKey,cfg.privateKey);
+    const payload=JSON.stringify({title,body,url:"./#notifications",tag:String(b.notification_id||"deela-books")});
+    const results=await Promise.allSettled((rows.data||[]).map(async s=>{
+      try {
+        await webpush.sendNotification({endpoint:s.endpoint,keys:{p256dh:s.p256dh,auth:s.auth}},payload,{TTL:60});
+        return true;
+      } catch(e) {
+        const status=Number((e as any)?.statusCode||0);
+        if(status===404||status===410)await db.from("deela_books_push_subscriptions").delete().eq("id",s.id);
+        throw e;
+      }
+    }));
+    return respond(req,{ok:true,sent:results.filter(x=>x.status==="fulfilled").length,expired:results.filter(x=>x.status==="rejected").length});
+  }
+
  try{
   const authProviderNames:Record<string,string>={google:"Google",apple:"Apple",azure:"Microsoft",facebook:"Facebook",github:"GitHub",discord:"Discord",twitter:"X",linkedin_oidc:"LinkedIn",gitlab:"GitLab",spotify:"Spotify",slack:"Slack"};
   const authGuest=()=>{if(!guest)throw Error("مصادقة البريد غير مهيأة على الخادم");return guest};
@@ -311,7 +347,22 @@ Deno.serve(async req=>{
   const storedConf=await settings();
   const testFlags=["enable_seller_registration","enable_book_submissions","enable_reader_likes","enable_favorites","enable_author_follows","enable_reviews","enable_messages","enable_orders","enable_discounts","enable_featured_section","show_book_prices"];
   const conf=storedConf.site_public?storedConf:{...storedConf,private_test_mode:true,...Object.fromEntries(testFlags.map(k=>[k,true]))};
-  const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
+  
+  if(req.method==="POST"&&path==="/push/subscribe"){
+    if(!user)return fail(req,"سجّل الدخول أولًا",401);
+    const b=await req.json(),endpoint=str(b.endpoint,3000),keys=b.keys||{},p256dh=str(keys.p256dh,256),authKey=str(keys.auth,256);
+    if(!endpoint.startsWith("https://")||!p256dh||!authKey)return fail(req,"بيانات اشتراك الإشعارات غير صالحة");
+    const r=await db.from("deela_books_push_subscriptions").upsert({user_id:user.id,endpoint,p256dh,auth:authKey,updated_at:new Date().toISOString()},{onConflict:"endpoint"}).select("id").single();
+    if(r.error)throw r.error;return respond(req,{ok:true});
+  }
+  if(req.method==="POST"&&path==="/push/unsubscribe"){
+    if(!user)return fail(req,"سجّل الدخول أولًا",401);
+    const b=await req.json(),endpoint=str(b.endpoint,3000);
+    if(!endpoint.startsWith("https://"))return fail(req,"رابط الاشتراك غير صالح");
+    const r=await db.from("deela_books_push_subscriptions").delete().eq("user_id",user.id).eq("endpoint",endpoint);
+    if(r.error)throw r.error;return respond(req,{ok:true});
+  }
+const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
   const privateSeller=!!sellerAccount&&sellerAccount.status==="approved"&&!conf.site_public;
   const pendingSeller=!!sellerAccount&&sellerAccount.status==="pending"&&!conf.site_public;
   const privateApplicant=!!user&&!isOwner&&!sellerAccount&&!conf.site_public&&conf.enable_seller_registration===true;
