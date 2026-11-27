@@ -546,3 +546,32 @@ button.like-chip:hover,.like-chip.active{color:#ffe4d5;border-color:#d3a3a8;back
 .shop-copy{flex:1;min-width:0}
 .shop-actions{display:flex;flex-direction:column;align-items:stretch;gap:7px;flex-shrink:0}
 .shop-card .shop-actions button{margin:0;white-space:nowrap}
+
+/* اختبار خاص كامل: أقسام مضغوطة، وأزرار الحساب واضحة */
+.category-grid{gap:9px}
+.category-grid button{flex:0 0 116px;min-height:112px;padding:10px 7px}
+.category-grid .cat-emoji{height:42px;width:42px;border-radius:13px;font-size:26px;margin-bottom:6px}
+.category-grid strong{font-size:12px}
+@media(max-width:700px){
+ .category-grid button{flex-basis:98px;min-height:94px;padding:8px 6px}
+ .category-grid .cat-emoji{height:34px;width:34px;border-radius:11px;font-size:22px}
+ .category-grid strong{font-size:10px}
+}
+.account-logout-panel{margin:32px 0 48px;padding:18px;border-color:#913d4c}
+.account-logout{display:flex!important;width:100%;justify-content:center;align-items:center;min-height:60px;background:#c92742!important;border-color:#f15a70!important;color:white!important;font-size:20px!important;font-weight:950;box-shadow:0 10px 32px #df294230}
+.account-delete-book{background:#9d2338!important;color:white!important;border-color:#d45166!important}
+.card-love{position:absolute;right:12px;bottom:12px;z-index:2;border:1px solid #ffffff55;border-radius:999px;background:#08131de8;color:white;min-width:48px;height:42px;padding:0 12px;font-size:20px}
+.card-love.active{color:#ff6686;background:#371322ef}
+.card-save{position:absolute;left:12px;bottom:12px;z-index:2;border:1px solid #ffffff55;border-radius:999px;background:#08131de8;color:white;width:42px;height:42px;font-size:19px}
+.book-review-form{margin-top:18px}
+.reader-review{padding:15px;border:1px solid var(--line);border-radius:15px;background:var(--panel);margin:10px 0}
+.reader-review p{white-space:pre-wrap;margin-bottom:0}
+.book-likers .activity-people{display:flex;flex-wrap:wrap;gap:8px}
+.verified-badge{display:inline-grid;place-items:center;width:19px;height:19px;margin-inline-start:8px;border-radius:50%;background:#1677ee;color:white;font-size:13px;vertical-align:middle;box-shadow:0 0 0 2px #1677ee33}
+.contest-section{padding-block:24px}
+.contest-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.contest-card{padding:20px;border:1px solid var(--line);border-radius:18px;background:var(--panel)}
+.contest-answer{display:grid;grid-template-columns:auto 1fr auto;gap:8px;padding:10px;border-bottom:1px solid var(--line)}
+.contest-answer.correct{background:#0f422f55}.contest-answer.incorrect{opacity:.7}
+.notification-unread{border-inline-start:4px solid var(--blue)}
+@media(max-width:500px){.account-logout{min-height:56px;font-size:18px!important}}
