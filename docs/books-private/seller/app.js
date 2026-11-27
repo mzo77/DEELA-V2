@@ -682,7 +682,7 @@ function ownerPage(){
   '<p>'+esc(b.author||b.deela_books_sellers?.shop_name||"")+' · '+esc(kinds[b.format])+' · '+sar(b.price_sar)+'</p>'+
   '<div class="community-strip"><span class="like-chip">♥ '+Number(b.like_count||0)+' إعجاب</span><span class="rating-chip">★ '+(b.review_count?Number(b.average_rating||0).toFixed(1):"جديد")+'</span></div></div>'+
   '<span class="status '+(b.status==="published"?"":"muted")+'">'+esc(statusNames[b.status]||b.status)+'</span></div>'+
-  '<p>'+esc((b.description||"").slice(0,250))+'</p><p>القسم الحالي: <strong>'+esc(b.category||"—")+'</strong> · المشاهدات: '+Number(b.view_count||0)+'</p>'+
+  '<p>'+esc((b.description||"").slice(0,250))+'</p>'+(b.format!=="physical"?'<button class="btn btn-soft" data-reader="'+esc(b.id)+'">معاينة محتوى الكتاب كمالك</button>':"")+'<p>القسم الحالي: <strong>'+esc(b.category||"—")+'</strong> · المشاهدات: '+Number(b.view_count||0)+'</p>'+
   '<div class="toolbar"><select data-listing-category="'+esc(b.id)+'" aria-label="القسم الصحيح للرواية">'+categoryOptions().filter(c=>c!=="الكل").map(c=>'<option '+(b.category===c?"selected":"")+'>'+esc(c)+'</option>').join("")+'</select><button class="btn btn-soft" data-move-category="'+esc(b.id)+'">نقل للقسم المختار</button></div>'+
   (b.subtitle?'<p><strong>العنوان الفرعي: </strong>'+esc(b.subtitle)+'</p>':"")+
   '<div class="toolbar">'+
@@ -823,7 +823,7 @@ async function route(view,push=true){
  if(view==="home")renderHome();
  else{
   if((view==="seller"||view==="profile")&&state.me?.seller)await sellerData();
-  if(view==="notifications"){const r=await api("/seller/notifications");state.sellerNotifications=r.notifications||[];}
+  if(view==="notifications"){const r=await api("/seller/notifications");state.sellerNotifications=r.notifications||[];updateNotificationBadge();}
   if(view==="alerts"){const d=await api("/launch-alerts/feed");state.launchAlertFeed=d.alerts||[];for(const x of state.launchAlertFeed)state.launchAlertIds.add(x.id);state.launchAlertsReady=true;}
   if(view==="orders"){const d=await api("/orders");state.orders=d.orders||[];}
   if(view==="owner")await ownerData();
@@ -1284,7 +1284,7 @@ function bind(){
   if(t.dataset.reply){ev.preventDefault();return quickModal("الرد على رسالة","replyForm",
    '<input type="hidden" name="id" value="'+esc(t.dataset.reply)+'"><label class="field">ردك<textarea name="body" required minlength="2" maxlength="1000"></textarea></label>')}
   if(t.dataset.review){ev.preventDefault();return quickModal("تقييم كتاب قرأته","reviewForm",
-   '<input type="hidden" name="listing_id" value="'+esc(t.dataset.review)+'"><label class="field">التقييم<select name="rating"><option value="5">★★★★★</option><option value="4">★★★★</option><option value="3">★★★</option><option value="2">★★</option><option value="1">★</option></select></label><label class="field">رأيك<textarea name="body" required minlength="8" maxlength="1000"></textarea></label>')}
+   '<input type="hidden" name="listing_id" value="'+esc(t.dataset.review)+'"><label class="field">التقييم<select name="rating"><option value="5">★★★★★</option><option value="4">★★★★</option><option value="3">★★★</option><option value="2">★★</option><option value="1">★</option></select></label><label class="field">رأيك<textarea name="body" required maxlength="1000"></textarea></label>')}
   if(t.dataset.report){ev.preventDefault();return quickModal("الإبلاغ عن كتاب","reportForm",
    '<input type="hidden" name="listing_id" value="'+esc(t.dataset.report)+'"><label class="field">سبب البلاغ<textarea name="reason" required minlength="10" maxlength="1000"></textarea></label>')}
   if(t.dataset.route){ev.preventDefault();return route(t.dataset.route)}
