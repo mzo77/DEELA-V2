@@ -34,6 +34,11 @@ private data class OwnerCatalogPage(val apps:List<OwnerCatalogEntry>,val hasMore
 
 private data class OwnerServiceObservation(val status:String,val receivedAt:String?,val fresh:Boolean)
 
+private data class OwnerBookListing(
+    val id:String,val title:String,val author:String,val status:String,val format:String,val sellerName:String
+)
+private data class OwnerBookShop(val id:String,val name:String,val status:String,val city:String)
+
 private object OwnerApi {
     suspend fun serviceObservations(token:String):Map<String,OwnerServiceObservation> = withContext(Dispatchers.IO) {
         val request=Request.Builder().url(base+"/api/owner/service-observations")
@@ -86,6 +91,47 @@ private object OwnerApi {
             .post(payload.toString().toRequestBody("application/json".toMediaType())).build()
         client.newCall(request).execute().use { response ->
             if(!response.isSuccessful)error("تعذر تعديل ظهور التطبيق: "+response.code)
+        }
+    }
+
+    private const val BOOKS_BASE="https://rxlynynjetajtsqlhkrq.supabase.co/functions/v1/deela-books"
+    private suspend fun booksRequest(token:String,path:String,body:JSONObject?=null):JSONObject=withContext(Dispatchers.IO){
+        val builder=Request.Builder().url(BOOKS_BASE+path).header("Authorization","Bearer "+token).header("Cache-Control","no-cache")
+        if(body!=null)builder.post(body.toString().toRequestBody("application/json".toMediaType())) else builder.get()
+        client.newCall(builder.build()).execute().use { response ->
+            val raw=response.body?.string().orEmpty()
+            if(!response.isSuccessful) {
+                val message=runCatching{JSONObject(raw).optString("error")}.getOrNull().orEmpty()
+                error(message.ifBlank{"تعذر تنفيذ العملية: "+response.code})
+            }
+            JSONObject(raw)
+        }
+    }
+    suspend fun bookListings(token:String):List<OwnerBookListing>{
+        val rows=booksRequest(token,"/owner/listings").optJSONArray("listings")?:JSONArray()
+        return (0 until rows.length()).map { i ->
+            val item=rows.getJSONObject(i)
+            val seller=item.optJSONObject("deela_books_sellers")
+            OwnerBookListing(item.optString("id"),item.optString("title","كتاب"),item.optString("author"),
+                item.optString("status"),item.optString("format"),seller?.optString("shop_name").orEmpty())
+        }
+    }
+    suspend fun bookShops(token:String):List<OwnerBookShop>{
+        val rows=booksRequest(token,"/owner/sellers").optJSONArray("sellers")?:JSONArray()
+        return (0 until rows.length()).map { i ->
+            val item=rows.getJSONObject(i)
+            OwnerBookShop(item.optString("id"),item.optString("shop_name","متجر"),item.optString("status"),item.optString("city"))
+        }
+    }
+    suspend fun setBookStatus(token:String,id:String,status:String){
+        booksRequest(token,"/owner/listing-status",JSONObject().put("id",id).put("status",status))
+    }
+    suspend fun setShopStatus(token:String,id:String,status:String){
+        booksRequest(token,"/owner/seller-status",JSONObject().put("id",id).put("status",status))
+    }
+    suspend fun bookReaderUrl(token:String,id:String):String{
+        return booksRequest(token,"/download?id="+URLEncoder.encode(id,"UTF-8")).optString("url").also {
+            if(!it.startsWith("https://"))error("لم يصل رابط قراءة آمن")
         }
     }
 
@@ -188,6 +234,13 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
     var reload by remember { mutableIntStateOf(0) }
     var selectedMonths by remember { mutableIntStateOf(1) }
     var requestReview by remember { mutableStateOf<Pair<OwnerRequest,String>?>(null) }
+    var booksMode by remember { mutableStateOf("الكتب") }
+    var booksReload by remember { mutableIntStateOf(0) }
+    var bookListings by remember { mutableStateOf<List<OwnerBookListing>>(emptyList()) }
+    var bookShops by remember { mutableStateOf<List<OwnerBookShop>>(emptyList()) }
+    var booksBusy by remember { mutableStateOf(false) }
+    var booksError by remember { mutableStateOf<String?>(null) }
+    val uriHandler=androidx.compose.ui.platform.LocalUriHandler.current
     LaunchedEffect(page,selectedPlatform,catalogQuery,catalogOffset,catalogReload,session.token) {
         if(page=="التطبيقات") {
             catalogBusy=true
@@ -198,6 +251,18 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                 catalogError=null
             }catch(e:Exception){catalogError=e.message?:"تعذر تحميل التطبيقات"}
             finally {catalogBusy=false}
+        }
+    }
+    LaunchedEffect(page,booksMode,booksReload,session.token) {
+        if(page=="كتب DEELA") {
+            booksBusy=true
+            try {
+                if(booksMode=="الكتب") bookListings=OwnerApi.bookListings(session.token)
+                else bookShops=OwnerApi.bookShops(session.token)
+                booksError=null
+            } catch(e:CancellationException) { throw e }
+              catch(e:Exception) { booksError=e.message?:"تعذر تحميل إدارة الكتب" }
+            finally { booksBusy=false }
         }
     }
     LaunchedEffect(session.token,reload) {
@@ -242,7 +307,7 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
             Text("لوحة تحكم المالك 👑",style=MaterialTheme.typography.titleLarge)
             Spacer(Modifier.height(12.dp))
             Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-                listOf("الرئيسية","الطلبات","المشتركون","التطبيقات","السجل","حالة الاتصال").forEach { tab ->
+                listOf("الرئيسية","الطلبات","المشتركون","التطبيقات","كتب DEELA","السجل","حالة الاتصال").forEach { tab ->
                     FilterChip(selected=page==tab,onClick={page=tab},label={Text(tab)})
                 }
             }
@@ -384,6 +449,118 @@ fun DeelaOwnerScreen(session:DeelaSession,onLogout:()->Unit) {
                             if(catalogHasMore) item {
                                 OutlinedButton(enabled=!catalogBusy,onClick={catalogOffset+=40},modifier=Modifier.fillMaxWidth()){
                                     Text("المزيد من التطبيقات")
+                                }
+                            }
+                        }
+                    }
+                    "كتب DEELA" -> {
+                        Text("إدارة متجر الكتب والروايات",style=MaterialTheme.typography.titleMedium)
+                        Text("اعتماد المتاجر والكتب، وفتح الكتاب لمراجعته قبل النشر.",style=MaterialTheme.typography.bodySmall)
+                        Row(horizontalArrangement=Arrangement.spacedBy(7.dp)) {
+                            listOf("الكتب","المتاجر").forEach { mode ->
+                                FilterChip(selected=booksMode==mode,onClick={booksMode=mode},label={Text(mode)})
+                            }
+                            TextButton(enabled=!booksBusy,onClick={booksReload++}){Text("تحديث")}
+                        }
+                        if(booksBusy) LinearProgressIndicator(Modifier.fillMaxWidth())
+                        booksError?.let { Text(it,color=MaterialTheme.colorScheme.error) }
+                        if(booksMode=="الكتب") {
+                            val visible=bookListings.filter { it.status!="archived" }
+                            if(visible.isEmpty()&&!booksBusy&&booksError==null) Text("لا توجد كتب مسجلة حاليًا.")
+                            LazyColumn(modifier=Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(9.dp)) {
+                                items(visible,key={it.id}) { book ->
+                                    ElevatedCard(Modifier.fillMaxWidth()) {
+                                        Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(5.dp)) {
+                                            Text(book.title,style=MaterialTheme.typography.titleSmall)
+                                            Text((book.author.ifBlank{"مؤلف غير محدد"})+" · "+(book.sellerName.ifBlank{"متجر DEELA"}))
+                                            Text("الحالة: "+book.status+" · "+book.format,style=MaterialTheme.typography.bodySmall)
+                                            Row(horizontalArrangement=Arrangement.spacedBy(5.dp)) {
+                                                TextButton(enabled=!booksBusy,onClick={
+                                                    booksBusy=true
+                                                    scope.launch {
+                                                        try { uriHandler.openUri(OwnerApi.bookReaderUrl(session.token,book.id)) }
+                                                        catch(e:Exception) { booksError=e.message?:"تعذر فتح الكتاب" }
+                                                        finally { booksBusy=false }
+                                                    }
+                                                }){Text("فتح للمعاينة")}
+                                                if(book.status=="pending"||book.status=="draft") {
+                                                    TextButton(enabled=!booksBusy,onClick={
+                                                        booksBusy=true
+                                                        scope.launch {
+                                                            try { OwnerApi.setBookStatus(session.token,book.id,"published");booksReload++ }
+                                                            catch(e:Exception){booksError=e.message?:"تعذر اعتماد الكتاب"}
+                                                            finally{booksBusy=false}
+                                                        }
+                                                    }){Text("اعتماد ونشر")}
+                                                    TextButton(enabled=!booksBusy,onClick={
+                                                        booksBusy=true
+                                                        scope.launch {
+                                                            try { OwnerApi.setBookStatus(session.token,book.id,"rejected");booksReload++ }
+                                                            catch(e:Exception){booksError=e.message?:"تعذر رفض الكتاب"}
+                                                            finally{booksBusy=false}
+                                                        }
+                                                    }){Text("رفض")}
+                                                } else if(book.status=="published") {
+                                                    TextButton(enabled=!booksBusy,onClick={
+                                                        booksBusy=true
+                                                        scope.launch {
+                                                            try { OwnerApi.setBookStatus(session.token,book.id,"archived");booksReload++ }
+                                                            catch(e:Exception){booksError=e.message?:"تعذر إخفاء الكتاب"}
+                                                            finally{booksBusy=false}
+                                                        }
+                                                    }){Text("إخفاء")}
+                                                } else if(book.status=="archived") {
+                                                    TextButton(enabled=!booksBusy,onClick={
+                                                        booksBusy=true
+                                                        scope.launch {
+                                                            try { OwnerApi.setBookStatus(session.token,book.id,"published");booksReload++ }
+                                                            catch(e:Exception){booksError=e.message?:"تعذر إعادة النشر"}
+                                                            finally{booksBusy=false}
+                                                        }
+                                                    }){Text("إعادة النشر")}
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            val visible=bookShops.filter { it.status!="rejected" }
+                            if(visible.isEmpty()&&!booksBusy&&booksError==null) Text("لا توجد متاجر مسجلة حاليًا.")
+                            LazyColumn(modifier=Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(9.dp)) {
+                                items(visible,key={it.id}) { shop ->
+                                    ElevatedCard(Modifier.fillMaxWidth()) {
+                                        Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(5.dp)) {
+                                            Text(shop.name,style=MaterialTheme.typography.titleSmall)
+                                            Text((shop.city.ifBlank{"الموقع غير محدد"})+" · الحالة: "+shop.status,style=MaterialTheme.typography.bodySmall)
+                                            Row(horizontalArrangement=Arrangement.spacedBy(5.dp)) {
+                                                if(shop.status!="approved") TextButton(enabled=!booksBusy,onClick={
+                                                    booksBusy=true
+                                                    scope.launch {
+                                                        try { OwnerApi.setShopStatus(session.token,shop.id,"approved");booksReload++ }
+                                                        catch(e:Exception){booksError=e.message?:"تعذر اعتماد المتجر"}
+                                                        finally{booksBusy=false}
+                                                    }
+                                                }){Text("اعتماد")}
+                                                if(shop.status=="pending") TextButton(enabled=!booksBusy,onClick={
+                                                    booksBusy=true
+                                                    scope.launch {
+                                                        try { OwnerApi.setShopStatus(session.token,shop.id,"rejected");booksReload++ }
+                                                        catch(e:Exception){booksError=e.message?:"تعذر رفض المتجر"}
+                                                        finally{booksBusy=false}
+                                                    }
+                                                }){Text("رفض")}
+                                                if(shop.status=="approved") TextButton(enabled=!booksBusy,onClick={
+                                                    booksBusy=true
+                                                    scope.launch {
+                                                        try { OwnerApi.setShopStatus(session.token,shop.id,"suspended");booksReload++ }
+                                                        catch(e:Exception){booksError=e.message?:"تعذر إيقاف المتجر"}
+                                                        finally{booksBusy=false}
+                                                    }
+                                                }){Text("إيقاف")}
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
