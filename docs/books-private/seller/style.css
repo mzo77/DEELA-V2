@@ -700,3 +700,21 @@ body[data-owner-visual-edit="true"] #homeCategories button,body[data-owner-visua
 .section-settings-modal output{color:var(--teal);font-weight:800;margin-inline-start:8px}
 .owner-section-hidden{outline:1px dashed #efbf73!important;opacity:.85}
 @media(prefers-reduced-motion:reduce){.owner-welcome[data-animation="glow"]{animation:deelaWelcomeIn .01ms both}}
+
+[data-section-motion="shimmer"] .book-card,[data-section-motion="shimmer"] .community-tile,[data-section-motion="shimmer"] .shop-card,[data-section-motion="shimmer"] .contest-card{position:relative;overflow:hidden;isolation:isolate}
+[data-section-motion="shimmer"] .book-card:after,[data-section-motion="shimmer"] .community-tile:after,[data-section-motion="shimmer"] .shop-card:after,[data-section-motion="shimmer"] .contest-card:after{content:"";position:absolute;z-index:2;top:-40%;bottom:-40%;left:-65%;width:38%;pointer-events:none;background:linear-gradient(105deg,transparent,#dcfff866 48%,#fff8 52%,transparent);transform:skewX(-18deg);animation:deelaCardShimmer 6.5s ease-in-out infinite}
+[data-section-motion="shimmer"] .book-card:active:after,[data-section-motion="shimmer"] .community-tile:active:after,[data-section-motion="shimmer"] .shop-card:active:after{animation-duration:1s}
+[data-section-motion="glow"] .book-card,[data-section-motion="glow"] .community-tile,[data-section-motion="glow"] .shop-card,[data-section-motion="glow"] .contest-card{transition:box-shadow .25s ease,border-color .25s ease}
+[data-section-motion="glow"] .book-card:hover,[data-section-motion="glow"] .community-tile:hover,[data-section-motion="glow"] .shop-card:hover,[data-section-motion="glow"] .contest-card:hover,[data-section-motion="glow"] .book-card:focus-within,[data-section-motion="glow"] .community-tile:focus-visible{box-shadow:0 0 24px color-mix(in srgb,var(--section-accent,var(--teal)) 38%,transparent);border-color:var(--section-accent,var(--teal))}
+@keyframes deelaCardShimmer{0%,28%{transform:translateX(0) skewX(-18deg);opacity:0}38%{opacity:.75}72%,100%{transform:translateX(510%) skewX(-18deg);opacity:0}}
+@media(prefers-reduced-motion:reduce){[data-section-motion="shimmer"] .book-card:after,[data-section-motion="shimmer"] .community-tile:after,[data-section-motion="shimmer"] .shop-card:after,[data-section-motion="shimmer"] .contest-card:after{animation:none;display:none}}
+.owner-command-center{border-color:#68d8c666;background:linear-gradient(145deg,#10243c,#0b1629)}
+.owner-command-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-top:16px}
+.owner-command-card{display:flex;flex-direction:column;gap:9px;text-align:start;padding:16px;border:1px solid var(--line);border-radius:16px;color:var(--white);background:linear-gradient(140deg,#152a41,#101e31);cursor:pointer}
+.owner-command-card strong{font-size:15px}.owner-command-card small{color:var(--muted);line-height:1.6}.owner-command-card span{color:var(--teal);font-size:11px;font-weight:800}
+
+[data-section-motion="shimmer"] .faqs details{position:relative;overflow:hidden;isolation:isolate}
+[data-section-motion="shimmer"] .faqs details:after{content:"";position:absolute;z-index:2;top:-50%;bottom:-50%;left:-70%;width:35%;pointer-events:none;background:linear-gradient(105deg,transparent,#dcfff866 48%,#fff8 52%,transparent);transform:skewX(-18deg);animation:deelaCardShimmer 7.5s ease-in-out infinite}
+[data-section-motion="shimmer"].feature-banner{background-size:cover,220% 100%;background-position:center,200% 50%;animation:deelaBannerShine 8s ease-in-out infinite}
+@keyframes deelaBannerShine{0%,30%{background-position:center,200% 50%}75%,100%{background-position:center,-100% 50%}}
+@media(prefers-reduced-motion:reduce){[data-section-motion="shimmer"] .faqs details:after,[data-section-motion="shimmer"].feature-banner{animation:none!important}}
