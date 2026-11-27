@@ -49,7 +49,7 @@ async function reload(){
   const [catalog,shops,me]=await Promise.all([api("/catalog"),api("/shops"),api("/me")]);
   state.listings=catalog.listings||[];state.shops=shops.shops||[];state.me=me;state.settings=catalog.settings||{};
   state.email=me.email||"";
-  applyTheme(state.settings.theme_colors);applyMaterial(state.settings.theme_material);applyDesign(state.settings.theme_design);state.cart=state.cart.filter(x=>state.listings.some(b=>b.id===x.id));saveCart();
+  applyTheme(state.settings.theme_colors);applyMaterial(state.settings.theme_material);applyDesign(state.settings.theme_design);applySections(state.settings.theme_sections);state.cart=state.cart.filter(x=>state.listings.some(b=>b.id===x.id));saveCart();
   $("heroTitle").textContent=state.settings.hero_title||"لكل كتاب حكاية، ولكل قارئ عالم";
   $("heroSubtitle").textContent=state.settings.hero_subtitle||"سوق ديلا للكتب والروايات.";
   $("announcement").textContent=state.settings.announcement||"DEELA Books";
@@ -96,6 +96,24 @@ function applyDesign(d){
 function designFields(conf){
  const d={...designDefaults,...conf.theme_design};
  return '<label class="field">استدارة البطاقات<input name="design_radius" type="number" min="0" max="40" value="'+Number(d.radius)+'"></label><label class="field">حجم الخط<input name="design_font_size" type="number" min="12" max="22" value="'+Number(d.font_size)+'"></label><label class="field">حركة البنر<select name="design_banner_motion"><option value="none">ثابت</option><option value="glow" '+(d.banner_motion==="glow"?"selected":"")+'>لمعان متحرك</option></select></label>';
+}
+const sectionDefs={categories:["التصنيفات","#homeCategories"],books:["الكتب","#homeListings"],shops:["المتاجر","#featuredShops"],faq:["الأسئلة الشائعة",".faq-section"],banner:["البنر",".feature-banner"]};
+function sectionFields(conf){
+ return Object.entries(sectionDefs).map(([k,[label]])=>{
+ const d=conf.theme_sections?.[k]||{};
+ return '<fieldset class="field full"><legend>'+label+'</legend><label>العنوان<input name="section_'+k+'_title" maxlength="100" value="'+esc(d.title||"")+'"></label><label>الترتيب<input type="number" min="1" max="99" name="section_'+k+'_order" value="'+(Number(d.order)||Object.keys(sectionDefs).indexOf(k)+1)+'"></label><label>الخامة<select name="section_'+k+'_material">'+Object.entries(materials).map(([v,t])=>'<option value="'+v+'" '+(d.material===v?"selected":"")+'>'+t+'</option>').join("")+'</select></label><label><input type="checkbox" name="section_'+k+'_visible" '+(d.visible!==false?"checked":"")+'>إظهار القسم</label></fieldset>';
+ }).join("");
+}
+function applySections(config){
+ const sections=Object.entries(sectionDefs).map(([k,[label,selector]],i)=>{
+ const node=document.querySelector(selector)?.closest("section.container");const d=config?.[k]||{};
+ if(!node)return null;
+ const h=node.querySelector("h2");if(h){h.dataset.originalTitle??=h.textContent;if(k!=="banner"||d.title)h.textContent=d.title||h.dataset.originalTitle;}
+ node.dataset.material=Object.hasOwn(materials,d.material)?d.material:"none";
+ node.dataset.ownerHidden=d.visible===false?"true":"false";
+ return {node,order:Number(d.order)||i+1};
+ }).filter(Boolean).sort((a,b)=>a.order-b.order);
+ for(const {node} of sections)node.parentNode.appendChild(node);
 }
 function themeFields(conf){
  return Object.entries(themeKeys).map(([key,label])=>'<label class="field">'+esc(label)+'<input type="color" name="theme_'+key+'" value="'+esc(/^#[0-9a-f]{6}$/i.test(conf.theme_colors?.[key]||"")?conf.theme_colors[key]:getComputedStyle(document.documentElement).getPropertyValue("--"+key).trim())+'"></label>').join("");
@@ -487,7 +505,7 @@ function ownerPage(){
   return top+'<form class="panel owner-settings" id="settingsForm"><h2>الهوية والعروض والعمولة</h2>'+
   '<p>غيّر عناوين الموقع وصفه ورسالة الإعلان ووسيلة التواصل دون تعديل أي كود.</p>'+
   '<div class="form-grid">'+
-  themeFields(conf)+materialFields(conf)+designFields(conf)+field("اسم المنصة","name","text",true,"DEELA Books",conf.name||"DEELA Books")+
+  themeFields(conf)+materialFields(conf)+designFields(conf)+sectionFields(conf)+field("اسم المنصة","name","text",true,"DEELA Books",conf.name||"DEELA Books")+
   field("عنوان الواجهة الرئيسية","hero_title","text",true,"لكل كتاب حكاية",conf.hero_title||"")+
   field("الرسالة العلوية","announcement","text",false,"",conf.announcement||"")+
   field("عنوان الحملة أو العرض","home_promo_title","text",false,"أحدث إصدارات ديلا",conf.home_promo_title||"")+
@@ -687,7 +705,7 @@ async function handleForm(ev){
     await reload();await route("owner",false);
   }else if(id==="settingsForm"){
     const payload={...state.settings,...state.ownerData?.settings,...raw,
-      theme_design:{radius:Number(raw.design_radius),font_size:Number(raw.design_font_size),banner_motion:raw.design_banner_motion},theme_material:raw.theme_material,theme_colors:Object.fromEntries(Object.keys(themeKeys).map(k=>[k,raw["theme_"+k]])),site_public:false,payments_live:false};
+      theme_sections:Object.fromEntries(Object.keys(sectionDefs).map(k=>[k,{title:raw["section_"+k+"_title"]||"",order:Number(raw["section_"+k+"_order"]),material:raw["section_"+k+"_material"],visible:raw["section_"+k+"_visible"]==="on"}])),theme_design:{radius:Number(raw.design_radius),font_size:Number(raw.design_font_size),banner_motion:raw.design_banner_motion},theme_material:raw.theme_material,theme_colors:Object.fromEntries(Object.keys(themeKeys).map(k=>[k,raw["theme_"+k]])),site_public:false,payments_live:false};
     await api("/owner/settings",{method:"POST",data:payload});
     toast("تم حفظ هوية المنصة والعروض");await reload();await route("owner",false);
   }else if(id==="messageForm"){
