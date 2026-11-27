@@ -105,13 +105,13 @@ p{color:var(--muted)}
 .category-grid button:hover{border-color:var(--teal);transform:translateY(-4px)}
 .category-grid button:nth-child(2n){background:linear-gradient(140deg,#2b2e51,#19263c)}
 .category-grid button:nth-child(3n){background:linear-gradient(140deg,#21414d,#192e43)}
-.cat-emoji{height:54px;width:54px;border-radius:17px;margin:0 auto 9px;display:grid;place-items:center;font:34px Georgia;color:#a6e9dc;background:#a6e9dc17;border:1px solid #9fe6df30}
+.cat-emoji{height:var(--category-icon-size,54px);width:var(--category-icon-size,54px);border-radius:var(--category-icon-radius,17px);margin:0 auto 9px;display:grid;place-items:center;font:calc(var(--category-icon-size,54px)*.62) Georgia;color:#a6e9dc;background:#a6e9dc17;border:1px solid #9fe6df30;transition:height .18s,width .18s,border-radius .18s,font-size .18s}
 .category-grid strong{display:block;font-size:14px;font-weight:900}
 .category-grid small{display:block;color:#9eb9cd;font-size:10px;margin-top:2px}
 .books-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:17px}
-.book-card{background:#182a42;border:1px solid #36536c;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.book-card{background:#182a42;border:1px solid #36536c;border-radius:var(--book-card-radius,18px);overflow:hidden;display:flex;flex-direction:column;min-width:0}
 .book-card:hover{border-color:#89dcd9;transform:translateY(-3px);transition:.18s}
-.cover-wrap{height:251px;display:grid;place-items:center;background:radial-gradient(circle at 27% 24%,#b9cff144,transparent 67%),linear-gradient(140deg,#304b69,#1b2f48);position:relative;overflow:hidden}
+.cover-wrap{height:var(--book-cover-height,251px);display:grid;place-items:center;background:radial-gradient(circle at 27% 24%,#b9cff144,transparent 67%),linear-gradient(140deg,#304b69,#1b2f48);position:relative;overflow:hidden}
 .cover-wrap.purple{background:radial-gradient(circle at 25% 23%,#9f7be59a,transparent 63%),linear-gradient(130deg,#4d467b,#1b2e45)}
 .cover-wrap.teal{background:radial-gradient(circle at 25% 23%,#65bcb095,transparent 63%),linear-gradient(130deg,#255f67,#203248)}
 .cover-wrap.gold{background:radial-gradient(circle at 25% 23%,#be9a7285,transparent 63%),linear-gradient(130deg,#66523f,#242b3f)}
@@ -603,3 +603,13 @@ button.like-chip:hover,.like-chip.active{color:#ffe4d5;border-color:#d3a3a8;back
  .owner-setting-accordion>summary small,.owner-feature-heading small{max-width:48%;text-align:left}
  .settings-accordion-body{padding:12px}
 }
+
+.header-count{position:absolute;top:-4px;right:-5px;z-index:2;min-width:17px;height:17px;padding:0 4px;border-radius:99px;background:#ef476f;color:#fff;font:800 10px/17px Arial;text-align:center;box-shadow:0 2px 7px #0008}
+.test-mode-note{padding:12px 14px;border:1px solid #3b786e;border-radius:14px;background:#12372f;color:#b7f3df}
+.deela-reader-modal,.visual-editor-modal{width:min(760px,calc(100% - 24px));max-height:calc(100dvh - 24px);overflow:auto}
+.deela-reader-modal iframe{display:block;width:100%;height:min(70dvh,760px);min-height:360px;border:1px solid var(--line);border-radius:14px;background:#fff}
+.visual-editor-modal{width:min(460px,calc(100% - 24px))}
+.visual-editor-modal input[type=range]{width:100%;accent-color:var(--teal)}
+.visual-editor-modal output{float:left;color:var(--teal);font-weight:900}
+body[data-owner-visual-edit="true"] #homeCategories button,body[data-owner-visual-edit="true"] .book-card{touch-action:manipulation}
+@media(max-width:520px){.deela-reader-modal iframe{height:62dvh;min-height:300px}}
