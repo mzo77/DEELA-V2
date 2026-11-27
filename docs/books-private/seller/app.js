@@ -249,7 +249,7 @@ function card(b){
 function renderContestHome(){
  let host=document.getElementById("contestHome");if(!host){host=document.createElement("div");host.id="contestHome";$("home").append(host)}
  const rows=(state.contests||[]).filter(x=>["announced","open"].includes(x.status));
- host.innerHTML=rows.length?'<section class="container section contest-section"><div class="section-title"><div><span class="eyebrow">DEELA COMMUNITY</span><h2>مسابقات ديلا</h2><p>إعلانات المسابقات والأسئلة القادمة</p></div></div><div class="contest-grid">'+rows.map(c=>{
+ host.innerHTML=rows.length?'<section class="container section contest-section"><div class="section-title"><div><span class="eyebrow">DEELA COMMUNITY</span><h2>مجتمع ديلا</h2><p>إعلانات المالك، أسئلة القراء ومسابقات DEELA</p></div></div><div class="contest-grid">'+rows.map(c=>{
   const open=c.status==="open"&&c.question_text,answered=c.my_answer;
   return '<article class="contest-card"><span class="status">'+(open?"بدأت المسابقة":"قريبًا")+'</span><h3>'+esc(c.title)+'</h3><p>'+esc(c.announcement||"")+'</p>'+
    (c.starts_at?'<small>تبدأ: '+new Date(c.starts_at).toLocaleString("ar-SA",{dateStyle:"medium",timeStyle:"short"})+'</small>':"")+
@@ -673,13 +673,13 @@ function accountOwnerPanel(){
 }
 function ownerContestsPanel(){
  const rows=state.ownerContests||[];
- return '<section class="panel"><h2>إنشاء مسابقة وجدولتها</h2><p>اكتب إعلان الانتظار وموعد فتح السؤال. عند وقت المسابقة يظهر السؤال للمستخدمين الذين يدخلون للموقع؛ تقدر تدخل الإجابة الصحيحة لاحقًا لترتيبها.</p>'+
+ return '<section class="panel"><h2>إعلان أو مسابقة للمجتمع</h2><p>أرسل إعلانًا للقراء، أو أضف سؤالًا تفاعليًا وحدد موعده. يظهر المحتوى في مجتمع ديلا وتصل رسالة تنبيه للمستخدمين.</p>'+
  '<form id="ownerContestForm" class="form-grid"><input type="hidden" name="id"><label class="field">اسم المسابقة<input name="title" required maxlength="160" placeholder="مسابقة DEELA"></label>'+
  '<label class="field">موعد فتح السؤال<input name="starts_at" type="datetime-local"></label>'+
  '<label class="field full">إعلان ينتظرونه القراء<textarea name="announcement" maxlength="1000" placeholder="انتظرونا الساعة 10 مساءً في مسابقة ديلا"></textarea></label>'+
  '<label class="field full">السؤال (يمكن إضافته الآن أو لاحقًا)<textarea name="question_text" maxlength="1000"></textarea></label>'+
  '<label class="field full">الإجابة الصحيحة (تستخدم لترتيب النتائج)<input name="correct_answer" maxlength="500"></label>'+
- '<button class="btn btn-primary" type="submit">حفظ وجدولة المسابقة</button><span class="form-msg"></span></form></section>'+
+ '<button class="btn btn-primary" type="submit">نشر الإعلان وجدولة السؤال</button><span class="form-msg"></span></form></section>'+
  '<section class="panel"><h2>المسابقات والإجابات</h2><div class="list-rows">'+(rows.length?rows.map(c=>'<article class="row-card"><div class="row-top"><strong>'+esc(c.title)+'</strong><span class="status">'+esc(c.status)+'</span></div><p>'+esc(c.announcement||"")+'</p><p>الموعد: '+date(c.starts_at)+' · الإجابات: '+(c.answers||[]).length+'</p>'+
  (c.question_text?'<p><strong>السؤال:</strong> '+esc(c.question_text)+'</p>':"")+
  '<div class="contest-answers">'+(c.answers||[]).map((x,i)=>'<div class="contest-answer '+(x.is_correct===true?"correct":x.is_correct===false?"incorrect":"")+'"><b>'+(i+1)+'.</b> '+esc(x.answer)+' <span>'+(x.is_correct===true?"✅ صحيح":x.is_correct===false?"✖ خطأ":"بانتظار التصحيح")+'</span><small>'+date(x.created_at)+'</small></div>').join("")+'</div>'+
@@ -1169,7 +1169,7 @@ async function handleForm(ev){
   }else if(id==="ownerContestForm"){
     const start=raw.starts_at?new Date(raw.starts_at).toISOString():null;
     const result=await api("/owner/contest/save",{method:"POST",data:{...raw,starts_at:start}});
-    toast("تم حفظ المسابقة وإرسال إعلانها للمتابعين");
+    toast("تم نشر إعلان المجتمع وإشعار المستخدمين");
     state.ownerContests=(await api("/owner/contests")).contests||[];await route("owner",false);
   }else if(id==="contestAnswerForm"){
     const result=await api("/contests/answer",{method:"POST",data:{contest_id:raw.contest_id,answer:raw.answer}});
