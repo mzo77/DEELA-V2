@@ -10,7 +10,7 @@ const sar=v=>new Intl.NumberFormat("ar-SA",{style:"currency",currency:"SAR",maxi
 const date=v=>v?new Date(v).toLocaleDateString("ar-SA"):"—";
 const kinds={physical:"ورقي",ebook:"إلكتروني",audiobook:"صوتي"};
 const conditions={new:"جديد",like_new:"شبه جديد",good:"جيد",acceptable:"مقبول",not_applicable:"رقمي"};
-const categories=["الكل","روايات","أدب وشعر","خيال ورعب","تطوير الذات","تاريخ","كتب الأطفال","فلسفة","تقنية","ديني","أخرى"];
+const categories=["الكل","روايات","رومانسية","أكشن","مغامرة","غموض","جريمة","تشويق","رعب","فانتازيا","خيال علمي","تاريخية","اجتماعية","دراما","كوميديا","بوليسية","شعر","أدب","تطوير الذات","أعمال","تعليم","كتب الأطفال","سيرة ذاتية","فلسفة","تقنية","ديني","أخرى"];
 function categoryOptions(){return [...new Set([...categories,...(state.sections||[]).filter(x=>x.kind==="category").map(x=>x.category),...(state.ownerData?.categories||[])].filter(Boolean))];}
 const statusNames={draft:"مسودة",pending:"بانتظار المراجعة",published:"منشور",rejected:"مرفوض",archived:"مؤرشف",
  approved:"معتمد",suspended:"موقوف",pending_review:"بانتظار مراجعة الطلب",awaiting_payment:"بانتظار الدفع",
@@ -241,10 +241,10 @@ function renderManagedHome(){
 function shopCard(s){
  const following=state.me?.following?.includes(s.id);
  return '<article class="shop-card"><span class="shop-avatar">'+esc((s.shop_name||"D").slice(0,1))+'</span>'+
- '<div><h3>'+esc(s.shop_name)+'</h3><p>'+esc(s.city||"متجر كتب مستقل")+' · '+esc(statusNames[s.status]||"")+'</p></div>'+
- '<div class="shop-actions">'+(enabled("enable_author_follows")?'<small>متابعون: '+Number(s.follower_count||0)+'</small>':"")+
- '<button type="button" data-shop="'+esc(s.slug)+'">زيارة</button>'+
- (enabled("enable_author_follows")?'<button type="button" data-follow="'+esc(s.id)+'">'+(following?"إلغاء المتابعة":"متابعة +")+'</button>':"")+'</div></article>';
+ '<div class="shop-copy"><span class="shop-kicker">متجر مستقل</span><h3>'+esc(s.shop_name)+'</h3><p>'+esc(s.city||"متجر كتب مستقل")+'</p>'+
+ (enabled("enable_author_follows")?'<small class="shop-followers">♧ '+Number(s.follower_count||0)+' متابع</small>':"")+'</div>'+
+ '<div class="shop-actions"><button type="button" class="shop-visit" data-shop="'+esc(s.slug)+'">تصفح المتجر <span aria-hidden="true">←</span></button>'+
+ (enabled("enable_author_follows")?'<button type="button" class="shop-follow '+(following?"following":"")+'" data-follow="'+esc(s.id)+'">'+(following?"✓ تتابعه":"＋ متابعة")+'</button>':"")+'</div></article>';
 }
 function heading(title,desc="",label="DEELA BOOKS"){
  return '<div class="breadcrumbs"><a href="#home" data-route="home">الرئيسية</a> › '+esc(title)+'</div>'+
@@ -420,12 +420,13 @@ function editorPage(b=null){
  return '<div class="panel" id="editorPanel"><h2>'+(b?"تعديل الكتاب":"إضافة كتاب جديد")+'</h2>'+
  '<form id="listingForm" data-id="'+esc(b?.id||"")+'">'+
  '<div class="form-grid">'+
- '<label class="field full cover-upload-field">غلاف الرواية من معرض الجوال<input id="coverFile" type="file" accept="image/png,image/jpeg,image/webp" capture="environment"><small>اختر صورة محفوظة في جهازك أو التقط الغلاف بالكاميرا · PNG/JPG/WebP حتى 5MB</small></label>'+
+ '<label class="field full cover-upload-field">غلاف الرواية من معرض الجوال<input id="coverFile" type="file" accept="image/png,image/jpeg,image/webp"><small>اختر صورة من المعرض أو الملفات. ويمكنك استخدام الكاميرا من خيارات الجهاز · PNG/JPG/WebP حتى 5MB</small></label>'+
  field("اسم الرواية أو الكتاب","title","text",true,"اسم روايتك",b?.title||"")+
  field("عنوان فرعي جذاب","subtitle","text",false,"وصف قصير يظهر في بطاقات الكتب",b?.subtitle||"")+
  field("اسم المؤلف","author","text",false,"اسم الكاتب",b?.author||"")+
- '<label class="field">نوع الكتاب<select name="format">'+
- Object.entries(kinds).map(([key,label])=>'<option value="'+key+'" '+(b?.format===key?"selected":"")+'>'+label+'</option>').join("")+'</select></label>'+
+ '<div class="field full format-field"><span>نوع الكتاب</span><div class="format-cards" role="radiogroup" aria-label="نوع الكتاب">'+
+ Object.entries(kinds).map(([key,label])=>'<label class="format-card '+((b?.format||"physical")===key?"active":"")+'"><input type="radio" name="format-choice" value="'+key+'" '+((b?.format||"physical")===key?"checked":"")+' required><span class="format-check" aria-hidden="true">✓</span><strong>'+label+'</strong><small>'+(key==="physical"?"نسخة ورقية":key==="ebook"?"PDF أو EPUB":"ملف صوتي")+'</small></label>').join("")+
+ '</div><select name="format" class="format-select-hidden" aria-hidden="true" tabindex="-1">'+Object.entries(kinds).map(([key,label])=>'<option value="'+key+'" '+((b?.format||"physical")===key?"selected":"")+'>'+label+'</option>').join("")+'</select></div>'+
  '<div class="field full"><span>اختر قسم الرواية</span><div class="category-pills">'+categoryOptions().filter(x=>x!=="الكل").map(x=>'<button type="button" data-editor-category="'+esc(x)+'" class="category-pill '+(selectedCategory===x?"active":"")+'">'+esc(x)+'</button>').join("")+'</div><select name="category" required class="category-select-hidden">'+categoryOptions().filter(x=>x!=="الكل").map(x=>'<option '+(selectedCategory===x?"selected":"")+'>'+esc(x)+'</option>').join("")+'</select></div>'+
  '<label class="field physical-only">حالة الكتاب الورقي<select name="book_condition">'+Object.entries(conditions).map(([key,label])=>
  '<option value="'+key+'" '+(b?.book_condition===key?"selected":"")+'>'+label+'</option>').join("")+'</select></label>'+
@@ -440,7 +441,7 @@ function editorPage(b=null){
  ["عام","الناشئة","للبالغين"].map(x=>'<option '+(b?.audience===x?"selected":"")+'>'+x+'</option>').join("")+'</select></label>'+
  field("رقم ISBN (اختياري)","isbn","text",false,"",b?.isbn||"")+
  field("مدينة الشحن","city","text",false,"جدة",b?.city||"")+
- '<label class="field full">مضمون الرواية وملخص أحداثها (20 حرفًا على الأقل)<textarea name="description" required minlength="20" maxlength="5000" rows="6" placeholder="عن ماذا تتحدث الرواية؟ وما الذي يميزها؟ بدون حرق النهاية">'+esc(b?.description||"")+'</textarea></label>'+
+ '<label class="field full">مضمون الرواية وملخص أحداثها (اختياري، بدون حرق)<textarea name="description" maxlength="5000" rows="6" placeholder="اكتب نبذة قصيرة اختيارية تشجع القارئ دون كشف الأحداث أو النهاية">'+esc(b?.description||"")+'</textarea></label>'+
  '<label class="field full">تنبيهات المحتوى (اختياري)<textarea name="content_warning" maxlength="350" rows="2" placeholder="مثلًا: مشاهد رعب، عنف، موضوعات للكبار">'+esc(b?.content_warning||"")+'</textarea></label>'+
  '<label class="field full">مقتطف للمعاينة (اختياري)<textarea name="preview_excerpt" rows="4">'+esc(b?.preview_excerpt||"")+'</textarea></label>'+
  '<label class="field digital-only">ملف الكتاب الرقمي (PDF/EPUB/MP3، حتى 50MB)<input id="digitalFile" type="file" accept=".pdf,.epub,.mp3"></label>'+
@@ -1120,6 +1121,11 @@ function bind(){
   });
  });
  document.addEventListener("change",ev=>{
+  if(ev.target?.closest("#listingForm")&&ev.target.name==="format-choice"){
+   const form=ev.target.closest("#listingForm"),select=form.querySelector('[name="format"]');if(select)select.value=ev.target.value;
+   form.querySelectorAll(".format-card").forEach(x=>x.classList.toggle("active",x.querySelector("input")===ev.target));
+   const physical=ev.target.value==="physical";form.querySelectorAll(".physical-only").forEach(x=>x.hidden=!physical);form.querySelectorAll(".digital-only").forEach(x=>x.hidden=physical);
+  }
   if(ev.target?.closest("#listingForm")&&ev.target.name==="format"){
    const physical=ev.target.value==="physical";document.querySelectorAll("#listingForm .physical-only").forEach(x=>x.hidden=!physical);document.querySelectorAll("#listingForm .digital-only").forEach(x=>x.hidden=physical);
   }
