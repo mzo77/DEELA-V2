@@ -1273,6 +1273,27 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
         }
         configured.theme_sections=clean;
       }
+      if(Object.prototype.hasOwnProperty.call(b,"theme_element_settings")){
+        const elements=b.theme_element_settings;
+        if(!elements||typeof elements!=="object"||Array.isArray(elements)||Object.keys(elements).length>300)return fail(req,"إعدادات العناصر غير صحيحة",400);
+        const clean:Record<string,unknown>={};
+        for(const [key,value] of Object.entries(elements)){
+          const d=value as any;
+          const colorOk=(v:unknown)=>v===""||typeof v==="string"&&/^#[0-9a-f]{6}$/i.test(v);
+          const numeric=(v:unknown,min:number,max:number)=>Number.isInteger(v)&&Number(v)>=min&&Number(v)<=max;
+          if(!/^[\p{L}\p{N}_.:-]{1,180}$/u.test(key)||!d||typeof d!=="object"||Array.isArray(d)||
+             typeof d.label!=="string"||d.label.length>160||typeof d.description!=="string"||d.description.length>300||
+             !numeric(d.width,0,1200)||!numeric(d.height,0,1200)||!numeric(d.font_size,0,72)||
+             !numeric(d.radius,0,300)||!numeric(d.padding,0,64)||!numeric(d.order,-1000,1000)||
+             typeof d.visible!=="boolean"||!["default","soft","round","square","pill"].includes(d.shape)||
+             !["","start","center","end"].includes(d.align)||!colorOk(d.background_color)||!colorOk(d.accent_color))
+            return fail(req,"إعداد عنصر غير صحيح",400);
+          clean[key]={label:d.label,description:d.description,width:d.width,height:d.height,font_size:d.font_size,
+            radius:d.radius,padding:d.padding,order:d.order,visible:d.visible,shape:d.shape,align:d.align,
+            background_color:d.background_color,accent_color:d.accent_color};
+        }
+        configured.theme_element_settings=clean;
+      }
       if(Object.prototype.hasOwnProperty.call(b,"theme_images")){
         if(!b.theme_images||typeof b.theme_images!=="object"||Array.isArray(b.theme_images))return fail(req,"صور غير صحيحة",400);
         const images:Record<string,string>={};
