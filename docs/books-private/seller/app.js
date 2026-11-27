@@ -37,7 +37,7 @@ function updateNotificationBadge(){
 }
 function errorMessage(e){return e instanceof Error?e.message:String(e)}
 async function api(path,opts={}){
- const headers={"Content-Type":"application/json"};
+ const headers={"Content-Type":"application/json","apikey":KEY};
  if(state.token)headers.Authorization="Bearer "+state.token;
  let r;
  try{
@@ -46,7 +46,7 @@ async function api(path,opts={}){
    credentials:"omit",signal:AbortSignal.timeout(27000)});
  }catch(e){throw Error(e?.name==="TimeoutError"?"انتهت مهلة الاتصال بخادم ديلا":"تعذر الوصول إلى خادم DEELA Books")}
  if(r.status===401&&state.refreshToken&&path!=="/auth/refresh"){
-  try{const renewed=await fetch(API+"/auth/refresh",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({refresh_token:state.refreshToken}),cache:"no-store",credentials:"omit"});const session=await renewed.json().catch(()=>({}));
+  try{const renewed=await fetch(API+"/auth/refresh",{method:"POST",headers:{"Content-Type":"application/json","apikey":KEY},body:JSON.stringify({refresh_token:state.refreshToken}),cache:"no-store",credentials:"omit"});const session=await renewed.json().catch(()=>({}));
    if(renewed.ok&&session.access_token){state.token=session.access_token;state.refreshToken=session.refresh_token||state.refreshToken;sessionStorage.setItem("deela-books-token",state.token);sessionStorage.setItem("deela-books-refresh",state.refreshToken);headers.Authorization="Bearer "+state.token;r=await fetch(API+path,{method:opts.method||"GET",headers,body:opts.data===undefined?undefined:JSON.stringify(opts.data),cache:"no-store",credentials:"omit",signal:AbortSignal.timeout(27000)})}
   }catch{}
  }
@@ -55,7 +55,7 @@ async function api(path,opts={}){
  return body;
 }
 async function reload(){
- if(!state.token){openLogin();return}
+ if(!state.token)return loadGuest();
  try{
   const me=await api("/me");state.me=me;state.email=me.email||me.phone||"";
   const [catalog,shops,contestData]=await Promise.all([api("/catalog"),api("/shops"),api("/contests")]);
@@ -77,7 +77,27 @@ async function reload(){
   document.querySelectorAll(".owner-only").forEach(x=>x.hidden=!state.me?.is_owner);
   if(me.is_owner&&state.view==="seller")state.view="home";
   renderHome();route(state.view,false);
- }catch(e){openLogin(errorMessage(e))}
+ }catch(e){
+  for(const key of ["deela-books-token","deela-books-refresh","deela-books-auth-v1"])sessionStorage.removeItem(key);
+  state.token="";state.refreshToken="";await loadGuest();toast("تعذر تحميل الحساب؛ تقدر تتابع التصفح كزائر.");
+ }
+}
+async function loadGuest(){
+ state.me=null;state.email="";state.ownerData=null;state.sellerListings=[];state.sellerNotifications=[];state.contests=[];
+ state.listings=[];state.shops=[];state.banners=[];state.sections=[];state.settings={};
+ document.querySelectorAll(".owner-only").forEach(x=>x.hidden=true);
+ $("accountButton").innerHTML="الدخول ◌";const mobile=$("mobileAccountButton");if(mobile)mobile.innerHTML="<span>⇥</span>الدخول";
+ try{
+  const [catalog,shops]=await Promise.all([api("/catalog"),api("/shops")]);
+  state.listings=catalog.listings||[];state.shops=shops.shops||[];state.settings=catalog.settings||{};state.sections=catalog.sections||[];state.banners=catalog.banners||[];
+  applyTheme(state.settings.theme_colors);applyMaterial(state.settings.theme_material);applyDesign(state.settings.theme_design);applySections(state.settings.theme_sections);applyImages(state.settings.theme_images);
+  $("heroTitle").textContent=state.settings.hero_title||"لكل كتاب حكاية، ولكل قارئ عالم";
+  $("heroSubtitle").textContent=state.settings.hero_subtitle||"سوق ديلا للكتب والروايات؛ اكتشف، اقرأ، وبع كتبك في مكان واحد.";
+  $("announcement").textContent=state.settings.announcement||"عالم ديلا للكتب والروايات — تصفح مفتوح";
+  document.querySelectorAll('[data-route="messages"],[data-route="favorites"],[data-route="orders"],[data-route="cart"],[data-route="notifications"],[data-route="alerts"],[data-route="profile"]').forEach(el=>el.hidden=true);
+ }catch(e){toast(errorMessage(e));}
+ renderHome();
+ if(["home","catalog","shops","shop","detail"].includes(state.view))await route(state.view,false);else{state.view="home";await route("home",false)}
 }
 const themeKeys={bg:"الخلفية الرئيسية",bg2:"الخلفية الثانوية",panel:"خلفية البطاقات",panel2:"البطاقات الفاتحة",panel3:"البطاقات البارزة",white:"النص الرئيسي",muted:"النص الثانوي",muted2:"النص الخافت",teal:"اللون الأساسي",teal2:"اللون الأساسي الفاتح",purple:"اللون المساعد",gold:"اللون الذهبي",rose:"الوردي",blue:"الأزرق",success:"لون النجاح",line:"الحدود",line2:"الحدود البارزة"};
 const themePresets={
@@ -910,7 +930,7 @@ async function messagesData(){
  const r=await api("/messages");return r.messages||[];
 }
 async function route(view,push=true){
- if(!state.token){openLogin();return}
+ if(!state.token&&!["home","catalog","shops","shop","detail"].includes(view)){openLogin();return}
  if(view==="owner"&&!state.me?.is_owner){toast("مركز الإدارة خاص بالمالك");return}
 
  state.view=view;state.current=state.current||"";
@@ -1444,7 +1464,9 @@ function bind(){
  document.querySelectorAll("[data-oauth]").forEach(b=>b.onclick=oauthLogin);
  $("resendPhoneCode").onclick=resendPhone;$("resendEmailCode").onclick=resendEmail;$("forgotPassword").onclick=requestPasswordReset;
  const savedEmail=localStorage.getItem("deela-books-saved-email");if(savedEmail){$("loginEmail").value=savedEmail;$("rememberPassword").checked=true}
- $("accountButton").onclick=()=>state.me?route("profile"):openLogin();
+ const accountAction=()=>state.me?route("profile"):openLogin();
+ $("accountButton").onclick=accountAction;
+ if($("mobileAccountButton"))$("mobileAccountButton").onclick=accountAction;
  $("closeModal").onclick=closeLogin;$("shade").onclick=closeLogin;
  $("search").addEventListener("input",ev=>{
   state.search=ev.target.value.trim().toLocaleLowerCase();
@@ -1505,7 +1527,7 @@ async function boot(){
    if(data?.session){state.token=data.session.access_token;state.refreshToken=data.session.refresh_token||"";sessionStorage.setItem("deela-books-token",state.token);if(state.refreshToken)sessionStorage.setItem("deela-books-refresh",state.refreshToken)}
   }else if(!state.token&&state.refreshToken){const renewed=await api("/auth/refresh",{method:"POST",data:{refresh_token:state.refreshToken}});state.token=renewed.access_token;state.refreshToken=renewed.refresh_token;sessionStorage.setItem("deela-books-token",state.token);sessionStorage.setItem("deela-books-refresh",state.refreshToken)}
  }catch(e){if(new URLSearchParams(location.search).has("code"))toast("تعذر إكمال تسجيل الدخول الخارجي: "+errorMessage(e))}
- if(!state.token)return openLogin();
+ if(!state.token){await loadGuest();return}
  await reload();
  startSellerNotificationPolling();startContestPolling();
 }
