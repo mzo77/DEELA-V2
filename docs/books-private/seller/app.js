@@ -422,20 +422,21 @@ function cartPage(){
 }
 function ordersPage(){
  const orders=state.orders||[];
- return heading("طلباتي","راجع حالة طلبك ومشتريات الكتب الرقمية والورقية.","MY PURCHASES")+
+ const lineStatus={pending:"بانتظار البائع",accepted:"قبله البائع",rejected:"تعذر القبول",preparing:"قيد التجهيز",shipped:"تم الشحن",delivered:"تم التسليم",cancelled:"ملغي"};
+ return heading("طلباتي","تابع كل منتج ورقمه وحالة التوصيل، أو افتح كتابك الرقمي بعد طلب الاختبار.","MY PURCHASES")+
  '<div class="list-rows">'+(orders.length?orders.map(o=>
- '<article class="row-card"><div class="row-top"><div><h3>'+esc(o.code)+'</h3><p>'+date(o.created_at)+'</p></div>'+
- '<span class="status">'+esc(statusNames[o.status]||o.status)+'</span></div>'+
+ '<article class="row-card"><div class="row-top"><div><h3>'+esc(o.code)+'</h3><p>'+date(o.created_at)+'</p></div><span class="status">'+esc(statusNames[o.status]||o.status)+'</span></div>'+
  '<p>الإجمالي: '+sar(o.total_sar)+'</p>'+
  (o.is_test?'<p class="test-mode-note">طلب اختبار خاص — لم يتم خصم مبلغ حقيقي.</p>':"")+
- (o.is_test?'<p class="test-mode-note">طلب اختبار خاص — لم يتم خصم مبلغ حقيقي.</p>':"")+(o.deela_books_order_items||[]).map(x=>'<div class="cart-line"><div><strong>'+esc(x.title_snapshot)+'</strong>'+
- '<p>الكمية: '+x.quantity+'</p></div><div>'+
- (["paid","preparing","shipped","delivered"].includes(o.status)&&x.format_snapshot!=="physical"?
- '<button data-reader="'+esc(x.listing_id)+'">افتح الكتاب</button> <button data-download="'+esc(x.listing_id)+'">تحميل نسخة</button>':"")+
+ (o.deela_books_order_items||[]).map(x=>'<div class="cart-line"><div><strong>'+esc(x.title_snapshot)+'</strong><p>الكمية: '+x.quantity+' · '+esc(kinds[x.format_snapshot]||"كتاب")+' · '+esc(lineStatus[x.seller_status]||"قيد المعالجة")+'</p>'+
+ (x.shipping_carrier||x.item_tracking_number?'<p>الشحن: '+esc(x.shipping_carrier||"")+' '+esc(x.item_tracking_number||"")+'</p>':"")+'</div><div>'+
+ (["paid","preparing","shipped","delivered"].includes(o.status)&&x.format_snapshot!=="physical"?'<button data-reader="'+esc(x.listing_id)+'">افتح الكتاب</button> <button data-download="'+esc(x.listing_id)+'">تحميل نسخة</button>':"")+
  (enabled("enable_reviews")&&o.status==="delivered"?'<button data-review="'+esc(x.listing_id)+'">قيّم كتابك</button>':"")+
  '</div></div>').join("")+
  (o.tracking_number?'<p>رقم التتبع: '+esc(o.tracking_number)+'</p>':"")+
- (o.owner_note?'<p>ملاحظة الإدارة: '+esc(o.owner_note)+'</p>':"")+'</article>').join(""):
+ (o.owner_note?'<p>ملاحظة الإدارة: '+esc(o.owner_note)+'</p>':"")+
+ '<div class="order-support-status">'+(o.support_status&&o.support_status!=="none"?'<p>الدعم: '+esc(({open:"مفتوح",investigating:"قيد المتابعة",resolved:"تم الحل",rejected:"مرفوض"}[o.support_status])||o.support_status)+(o.support_resolution?" · "+esc(o.support_resolution):"")+'</p>':"")+
+ (["open","investigating"].includes(o.support_status)?'<span class="status muted">لديك طلب مساعدة قيد المتابعة</span>':'<button class="btn btn-outline" data-order-support="'+esc(o.id)+'">مساعدة بخصوص الطلب</button>')+'</div></article>').join(""):
  '<div class="empty-state"><h3>لا توجد طلبات</h3><p>بعد إرسال أول طلب ستتابعه هنا.</p><button class="btn btn-primary" data-route="catalog">تصفح المكتبة</button></div>')+'</div>';
 }
 function sellerActivityPanel(){
@@ -488,6 +489,34 @@ function sellerLaunchAlertPanel(){
  '<h3>تجارب الترويج المفعّلة</h3><div class="list-rows">'+(active.length?active.map(x=>'<article class="row-card"><div class="row-top"><strong>'+(x.kind==="boost"?"🚀 ترويج منتج":"✦ عضوية مميزة")+(x.deela_books_listings?.title?" · "+esc(x.deela_books_listings.title):"")+'</strong><span class="status">اختبار</span></div><p>'+esc(planLabel[x.plan_key]||x.plan_key)+' · ينتهي '+date(x.ends_at)+'</p></article>').join(""):'<p>ما فيه ترويج تجريبي مفعّل.</p>')+'</div></section>'+
  '<section class="panel"><h2>تنبيه إطلاق رواية</h2><p>المساحة الخاصة لا ترسل إعلانًا مدفوعًا للعامة. أوقفنا أي تحويل مالي إلى أن نربط الدفع بعد موافقتك.</p><span class="status muted">الدفع مؤجل · لا تحوّل مبلغًا</span></section>';
 }
+function sellerOrdersPanel(){
+ const rows=state.sellerOrders||[];
+ const labels={pending:"بانتظار ردك",accepted:"قبلت الطلب",rejected:"مرفوض",preparing:"قيد التجهيز",shipped:"تم الشحن",delivered:"تم التسليم",cancelled:"ملغي"};
+ return '<section class="panel seller-orders-panel"><div class="row-top"><div><h2>طلبات القراء والتوصيل</h2><p>اقبل الطلب، حدّث حالة المنتج، وسجّل شركة الشحن ورقم التتبع يدويًا.</p></div><span class="status">'+(state.sellerMetrics?.count||0)+' منتج مطلوب</span></div>'+
+ (rows.length?'<div class="list-rows">'+rows.map(x=>{const o=x.deela_books_orders||{},book=x.deela_books_listings||{};return '<article class="row-card seller-order-card"><div class="row-top"><div><h3>'+esc(x.title_snapshot||"منتج")+' × '+Number(x.quantity||1)+'</h3><p>طلب '+esc(o.code||"—")+' · '+date(o.created_at)+' · '+esc(o.buyer_name||o.buyer_email||"قارئ")+'</p></div><span class="status '+(x.seller_status==="pending"?"muted":"")+'">'+esc(labels[x.seller_status]||x.seller_status||"جديد")+'</span></div><p>قيمة المنتج: '+sar(x.unit_price_sar)+' · طريقة الاستلام: '+(x.fulfillment_method==="digital"?"رقمي":x.fulfillment_method==="pickup"?"استلام من المتجر":"توصيل")+' · '+esc(book.city||"مدينة غير محددة")+'</p>'+
+ (o.address?.line?'<p>عنوان العميل: '+esc(o.address.line)+' · '+esc(o.address.city||"")+'</p>':"")+
+ '<div class="form-grid seller-order-controls"><label class="field">حالة الطلب<select data-seller-order-status="'+esc(x.id)+'">'+Object.entries(labels).filter(([k])=>k!=="pending").map(([k,v])=>'<option value="'+k+'" '+(x.seller_status===k?"selected":"")+'>'+v+'</option>').join("")+'</select></label>'+
+ '<label class="field">شركة الشحن<input data-seller-carrier="'+esc(x.id)+'" value="'+esc(x.shipping_carrier||"")+'" placeholder="مثال: سمسا"></label>'+
+ '<label class="field">رقم التتبع<input data-seller-tracking="'+esc(x.id)+'" value="'+esc(x.item_tracking_number||"")+'" placeholder="رقم الشحنة"></label>'+
+ '<label class="field full">ملاحظة للعميل<textarea data-seller-note="'+esc(x.id)+'">'+esc(x.seller_note||"")+'</textarea></label></div>'+
+ '<div class="form-actions">'+(x.seller_status==="pending"?'<button class="btn btn-primary" data-seller-order="'+esc(x.id)+'" data-status="accepted">قبول الطلب</button><button class="btn btn-outline" data-seller-order="'+esc(x.id)+'" data-status="rejected">تعذر القبول</button>':"")+
+ '<button class="btn btn-soft" data-seller-order="'+esc(x.id)+'" data-status="'+esc(x.seller_status||"accepted")+'">حفظ التحديث</button><button class="btn btn-outline" data-print-shipping="'+esc(x.id)+'">طباعة ورقة تجهيز</button></div></article>'}).join("")+'</div>':'<p class="empty-state">ستظهر هنا مشتريات القراء من متجرك. لا توجد طلبات الآن.</p>')+'</section>';
+}
+async function saveSellerOrder(id,statusOverride){
+ const item=(state.sellerOrders||[]).find(x=>x.id===id);if(!item)return toast("الطلب غير موجود في الصفحة");
+ const status=statusOverride||document.querySelector('[data-seller-order-status="'+CSS.escape(id)+'"]')?.value||item.seller_status;
+ const shipping_carrier=document.querySelector('[data-seller-carrier="'+CSS.escape(id)+'"]')?.value||"";
+ const item_tracking_number=document.querySelector('[data-seller-tracking="'+CSS.escape(id)+'"]')?.value||"";
+ const seller_note=document.querySelector('[data-seller-note="'+CSS.escape(id)+'"]')?.value||"";
+ try{await api("/seller/order-item/status",{method:"POST",data:{id,status,shipping_carrier,item_tracking_number,seller_note}});toast("تم تحديث حالة الطلب وإشعار المشتري");await sellerData();await route("seller",false)}catch(e){toast(errorMessage(e))}
+}
+function printSellerOrder(id){
+ const x=(state.sellerOrders||[]).find(v=>v.id===id);if(!x)return toast("الطلب غير موجود");
+ const o=x.deela_books_orders||{},addr=o.address||{},win=window.open("","_blank","width=760,height=820");
+ if(!win)return toast("اسمح بفتح نافذة الطباعة لهذا الموقع");
+ win.document.write('<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><title>ورقة تجهيز الطلب</title><style>body{font:18px Arial;padding:36px;color:#111}h1{border-bottom:2px solid #111;padding-bottom:10px}section{margin:22px 0;padding:14px;border:1px solid #aaa}small{color:#555}</style><h1>DEELA · ورقة تجهيز الطلب</h1><section><b>رقم الطلب:</b> '+esc(o.code||"—")+'<br><b>المنتج:</b> '+esc(x.title_snapshot||"")+' × '+Number(x.quantity||1)+'<br><b>طريقة الاستلام:</b> '+esc(x.fulfillment_method||"")+'</section><section><b>اسم العميل:</b> '+esc(o.buyer_name||"")+'<br><b>الجوال:</b> '+esc(o.phone||"")+'<br><b>المدينة:</b> '+esc(addr.city||"")+'<br><b>العنوان:</b> '+esc(addr.line||"استلام رقمي/من المتجر")+'</section><section><b>شركة الشحن:</b> '+esc(x.shipping_carrier||"")+'<br><b>رقم التتبع:</b> '+esc(x.item_tracking_number||"")+'</section><small>ورقة اختبار داخل DEELA Books — لا تمثل بوليصة شحن مدفوعة.</small><script>window.onload=()=>window.print()<\\/script></html>');
+ win.document.close();
+}
 function sellerPage(){
  const seller=state.me?.seller;
  if(!seller&&!enabled("enable_seller_registration"))return heading("فتح المتاجر متوقف حاليًا","أوقف المالك استقبال مؤلفين ومتاجر جديدة مؤقتًا.");
@@ -508,10 +537,10 @@ function sellerPage(){
  '<section class="seller-profile-card"><div class="seller-avatar">'+(seller.logo_url?'<img src="'+esc(seller.logo_url)+'" alt="">':esc((seller.shop_name||"D").trim().slice(0,1)))+'</div><div><h2>'+esc(seller.shop_name)+(state.sellerPromotions.some(x=>x.kind==="premium"&&x.status==="active"&&x.is_test===false&&new Date(x.ends_at)>new Date())?'<span class="verified-badge" title="توثيق فعلي">✓</span>':"")+
  (state.sellerPromotions.some(x=>x.kind==="premium"&&x.status==="active"&&x.is_test===true&&new Date(x.ends_at)>new Date())?'<span class="premium-test-badge">✦ عضوية تجريبية</span>':"")+'</h2><p>@'+esc(seller.slug)+' · '+esc(state.email||state.me?.phone||"حساب DEELA Books")+'</p></div><span class="status '+(available?"":"muted")+'">'+(available?"كاتب معتمد":"طلب الكاتب قيد المراجعة")+'</span></section>'+
  '<details class="panel seller-profile-edit"><summary>تعديل واجهة متجري</summary><form id="sellerProfileForm" class="form-grid">'+field("اسم المتجر","shop_name","text",true,"",seller.shop_name)+field("المدينة","city","text",false,"",seller.city||"")+'<label class="field full">نبذة المتجر<textarea name="bio" maxlength="1000">'+esc(seller.bio||"")+'</textarea></label><label class="field full">تغيير الشعار<input id="sellerLogoFile" type="file" accept="image/png,image/jpeg,image/webp"></label><button class="btn btn-primary" type="submit">حفظ واجهة المتجر</button></form></details>'+
- '<div class="seller-stat-grid"><div class="seller-stat"><strong>'+published+'</strong><span>رواية منشورة</span></div><div class="seller-stat"><strong>'+novels+'</strong><span>إجمالي الروايات</span></div><div class="seller-stat"><strong>'+views+'</strong><span>مشاهدة</span></div><div class="seller-stat"><strong>'+likes+'</strong><span>إعجاب</span></div></div>'+
+ '<div class="seller-stat-grid"><div class="seller-stat"><strong>'+published+'</strong><span>رواية منشورة</span></div><div class="seller-stat"><strong>'+novels+'</strong><span>إجمالي الروايات</span></div><div class="seller-stat"><strong>'+views+'</strong><span>مشاهدة</span></div><div class="seller-stat"><strong>'+likes+'</strong><span>إعجاب</span></div><div class="seller-stat"><strong>'+Number(state.sellerMetrics?.accepted||0)+'</strong><span>طلبات مقبولة</span></div></div>'+
  '<section class="seller-promo-card"><div><strong>روّج لروايتك في DEELA Books</strong><p>أضف غلافًا ووصفًا وسعرًا جذابًا، ثم أرسلها للمراجعة.</p></div>'+(enabled("enable_book_submissions")?'<button class="btn btn-primary" data-editor="new">＋ أضف رواية</button>':'<span class="status muted">استقبال الروايات متوقف</span>')+'</section>'+
  '<div class="toolbar"><span class="status '+(available?"":"muted")+'">'+(available?"صفحة الكاتب مفعّلة":"الحساب قيد مراجعة المتجر")+'</span><button class="btn btn-outline" data-route="seller">تحديث الحساب ↻</button></div>'+
- (available?'<div id="sellerEditor"></div>'+sellerLaunchAlertPanel()+'<div class="panel"><h2>تنبيهات وتفاعل القراء</h2><p>تظهر التنبيهات الجديدة هنا وتُحدّث تلقائيًا أثناء فتح الموقع. التعليقات والإعجابات تجدها داخل صفحة كل رواية.</p>'+ ("Notification" in window?(Notification.permission==="granted"?'<span class="status">إشعارات المتصفح مفعّلة</span>':Notification.permission==="denied"?'<span class="status muted">إشعارات المتصفح محظورة من إعدادات الجهاز</span>':'<button class="btn btn-outline" data-enable-seller-notifications>تفعيل إشعارات المتصفح</button>'):"")+'<div class="list-rows">'+(state.sellerNotifications.length?state.sellerNotifications.map(n=>'<article class="row-card '+(n.read_at?"":"notification-unread")+'"><div class="row-top"><strong>'+esc(n.title)+'</strong><small>'+date(n.created_at)+'</small></div><p>'+esc(n.body)+'</p>'+(n.read_at?'<span class="status muted">مقروء</span>':'<button class="btn btn-outline" data-notification-read="'+esc(n.id)+'">تعليم كمقروء</button>')+'</article>').join(""):'<p>لا توجد تنبيهات جديدة حاليًا.</p>')+'</div><button class="btn btn-outline" data-notifications-read-all>تعليم كل التنبيهات كمقروءة</button></div>':'<div class="panel status"><strong>طلبك لدى المالك</strong><p>تقدر ترفع روايتك إلى قائمة المراجعة الخاصة الآن. ستظل مخفية عن القراء حتى اعتماد المتجر والرواية.</p><div id="sellerEditor"></div></div>')+
+ (available?'<div id="sellerEditor"></div>'+sellerOrdersPanel()+sellerLaunchAlertPanel()+'<div class="panel"><h2>تنبيهات وتفاعل القراء</h2><p>تظهر التنبيهات الجديدة هنا وتُحدّث تلقائيًا أثناء فتح الموقع. التعليقات والإعجابات تجدها داخل صفحة كل رواية.</p>'+ ("Notification" in window?(Notification.permission==="granted"?'<span class="status">إشعارات المتصفح مفعّلة</span>':Notification.permission==="denied"?'<span class="status muted">إشعارات المتصفح محظورة من إعدادات الجهاز</span>':'<button class="btn btn-outline" data-enable-seller-notifications>تفعيل إشعارات المتصفح</button>'):"")+'<div class="list-rows">'+(state.sellerNotifications.length?state.sellerNotifications.map(n=>'<article class="row-card '+(n.read_at?"":"notification-unread")+'"><div class="row-top"><strong>'+esc(n.title)+'</strong><small>'+date(n.created_at)+'</small></div><p>'+esc(n.body)+'</p>'+(n.read_at?'<span class="status muted">مقروء</span>':'<button class="btn btn-outline" data-notification-read="'+esc(n.id)+'">تعليم كمقروء</button>')+'</article>').join(""):'<p>لا توجد تنبيهات جديدة حاليًا.</p>')+'</div><button class="btn btn-outline" data-notifications-read-all>تعليم كل التنبيهات كمقروءة</button></div>':'<div class="panel status"><strong>طلبك لدى المالك</strong><p>تقدر ترفع روايتك إلى قائمة المراجعة الخاصة الآن. ستظل مخفية عن القراء حتى اعتماد المتجر والرواية.</p><div id="sellerEditor"></div></div>')+
  '<div class="panel"><h2>رواياتي</h2><p>بعد اعتماد متجرك، تُنشر الرواية تلقائيًا. بعد النشر يمكنك حذفها من متجرك ولا يمكن تعديلها. اضغط اسم الرواية لفتح صفحتها والتفاعل معها.</p><div class="list-rows">'+(state.sellerListings.length?state.sellerListings.map(l=>'<article class="seller-novel-card"><div class="row-top"><div><h3 data-book="'+esc(l.id)+'">'+esc(l.title)+'</h3><p>'+esc(kinds[l.format])+' · '+sar(l.price_sar)+'</p><div class="community-strip"><span class="like-chip">♥ '+Number(l.like_count||0)+' إعجاب</span><span class="rating-chip">◉ '+Number(l.view_count||0)+' مشاهدة</span><span class="rating-chip">★ '+Number(l.review_count||0)+' تقييم</span></div></div><span class="status '+(l.status==="published"?"":"muted")+'">'+esc(statusNames[l.status])+'</span></div><div class="form-actions">'+(l.status==="published"?'<button class="btn danger account-delete-book" data-listing-delete="'+esc(l.id)+'">حذف الرواية</button>':(enabled("enable_book_submissions")?'<button class="btn btn-outline" data-editor="'+esc(l.id)+'">تعديل الرواية</button>':"")+'<button class="btn danger account-delete-book" data-listing-delete="'+esc(l.id)+'">حذف الرواية</button>')+'</div></article>').join(""):'<p>لم ترفع رواية بعد. اضغط «أضف رواية» لبدء النشر.</p>')+'</div></div>'+accountLogoutPanel();
 }
 function editorPage(b=null){
@@ -711,6 +740,7 @@ function ownerPage(){
   '<span class="status">'+esc(statusNames[o.status]||o.status)+'</span></div>'+
   '<p>إجمالي الطلب: '+sar(o.total_sar)+' · الجوال: '+esc(o.phone||"—")+'</p>'+
   '<p>'+(o.deela_books_order_items||[]).map(x=>esc(x.title_snapshot)+' × '+x.quantity).join(" · ")+'</p>'+
+  (o.support_status&&o.support_status!=="none"?'<section class="order-support-status"><strong>طلب مساعدة · '+esc(({open:"مفتوح",investigating:"قيد المتابعة",resolved:"تم الحل",rejected:"مرفوض"}[o.support_status])||o.support_status)+'</strong><p>'+esc(o.support_reason||"")+' — '+esc(o.support_message||"")+'</p>'+(o.support_resolution?'<p>رد المسؤول: '+esc(o.support_resolution)+'</p>':"")+'<button class="btn btn-outline" data-resolve-order-support="'+esc(o.id)+'">تحديث ومراسلة العميل</button></section>':'')+
   '<label class="field">حالة الطلب<select data-order-state="'+esc(o.id)+'">'+Object.entries(statusNames).filter(([key])=>
    ["pending_review","awaiting_payment","paid","preparing","shipped","delivered","cancelled"].includes(key)).map(([key,label])=>
    '<option value="'+key+'" '+(o.status===key?"selected":"")+'>'+esc(label)+'</option>').join("")+'</select></label>'+
@@ -774,7 +804,7 @@ async function ownerData(){
  if(tab==="contests")state.ownerContests=(await api("/owner/contests")).contests||[];
 }
 async function sellerData(){
- const [r,n,a,promo]=await Promise.all([api("/my/listings"),api("/seller/notifications"),api("/seller/launch-alerts"),api("/seller/promotions")]);state.sellerListings=r.listings||[];state.sellerNotifications=n.notifications||[];state.sellerLaunchAlerts=a.campaigns||[];state.launchAlertPrice=Number(a.price_sar||0);state.sellerPromotions=promo.promotions||[];
+ const [r,n,a,promo,orders]=await Promise.all([api("/my/listings"),api("/seller/notifications"),api("/seller/launch-alerts"),api("/seller/promotions"),api("/seller/orders")]);state.sellerListings=r.listings||[];state.sellerNotifications=n.notifications||[];state.sellerLaunchAlerts=a.campaigns||[];state.launchAlertPrice=Number(a.price_sar||0);state.sellerPromotions=promo.promotions||[];state.sellerOrders=orders.orders||[];state.sellerMetrics=orders.metrics||{};
  if(!state.sellerNotificationsReady){state.sellerNotificationIds=new Set(state.sellerNotifications.map(x=>x.id));state.sellerNotificationsReady=true;}
 }
 async function pollLaunchAlerts(){
@@ -1038,6 +1068,10 @@ async function handleForm(ev){
     toast(d.test_access?"تم الشراء التجريبي بلا خصم. الكتاب مفتوح في مكتبتك.":"تم إرسال الطلب "+d.order.code+" دون تحصيل دفع.");
     await reload();await route("orders",false);
     if(d.unlocked_listing_ids?.length)await openReader(d.unlocked_listing_ids[0]);
+  }else if(id==="orderSupportForm"){
+    await api("/order/support",{method:"POST",data:raw});toast("وصل طلب المساعدة للمسؤولين والبائع");await route("orders",false);
+  }else if(id==="ownerOrderSupportForm"){
+    await api("/owner/order-support",{method:"POST",data:raw});toast("تم تحديث طلب المساعدة وإشعار العميل");await ownerData();await route("owner",false);
   }else if(id==="launchAlertRequestForm"){
     const result=await api("/seller/launch-alerts/request",{method:"POST",data:raw});
     toast(result.message||"أُرسل طلب التنبيه للمراجعة");
@@ -1300,6 +1334,10 @@ function bind(){
     ev.preventDefault();return toggleBookFeatured(t.dataset.featureBook,t.dataset.featureStatus,t.dataset.featured==="true");
   }
   if(t.dataset.saveOrder){ev.preventDefault();return saveOrderStatus(t.dataset.saveOrder)}
+  if(t.dataset.sellerOrder){ev.preventDefault();return saveSellerOrder(t.dataset.sellerOrder,t.dataset.status)}
+  if(t.dataset.printShipping){ev.preventDefault();return printSellerOrder(t.dataset.printShipping)}
+  if(t.dataset.orderSupport){ev.preventDefault();return quickModal("طلب مساعدة بخصوص الطلب","orderSupportForm",'<input type="hidden" name="order_id" value="'+esc(t.dataset.orderSupport)+'"><label class="field">الموضوع<select name="reason"><option value="shipping">تأخر أو مشكلة شحن</option><option value="digital_access">فتح الكتاب الرقمي</option><option value="product">مشكلة في المنتج</option><option value="cancel">إلغاء الطلب</option><option value="other">موضوع آخر</option></select></label><label class="field">اشرح المشكلة<textarea name="message" required maxlength="1000"></textarea></label>')}
+  if(t.dataset.resolveOrderSupport){ev.preventDefault();return quickModal("تحديث طلب المساعدة","ownerOrderSupportForm",'<input type="hidden" name="id" value="'+esc(t.dataset.resolveOrderSupport)+'"><label class="field">الحالة<select name="status"><option value="investigating">قيد المتابعة</option><option value="resolved">تم الحل</option><option value="rejected">مرفوض</option></select></label><label class="field">الرد للعميل<textarea name="resolution" maxlength="1000"></textarea></label>')}
   if(t.dataset.reportStatus){ev.preventDefault();return moderate(t.dataset.reportStatus,"report",t.dataset.status)}
   if(t.dataset.reviewStatus){ev.preventDefault();return moderate(t.dataset.reviewStatus,"review",t.dataset.approved)}
   if(t.dataset.editor){ev.preventDefault();return editor(t.dataset.editor)}
