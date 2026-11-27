@@ -1304,7 +1304,18 @@ function visualEditTarget(el){
  if(!state.me?.is_owner)return null;
  if(el.closest("#homeCategories button[data-category]"))return "category";
  if(el.closest(".book-card"))return "book";
+ const section=el.closest("section.container");
+ if(section){const match=Object.entries(sectionDefs).find(([,[,selector]])=>document.querySelector(selector)?.closest("section.container")===section);if(match)return "section:"+match[0];}
  return null;
+}
+function openOwnerStaticSectionSettings(key){
+ if(!state.me?.is_owner)return;
+ const def=sectionDefs[key];if(!def)return;const cfg={...(state.settings.theme_sections||{})},d=cfg[key]||{},idx=Object.keys(sectionDefs).indexOf(key);
+ const shade=document.createElement("div"),modal=document.createElement("section");shade.className="shade";shade.style.zIndex="120";modal.className="modal owner-inline-modal";modal.style.zIndex="121";
+ modal.innerHTML='<button class="close" type="button" aria-label="إغلاق">✕</button><span class="eyebrow">إعدادات القسم المحدد</span><h2>'+esc(def[0])+'</h2><form id="ownerStaticSectionForm" class="form-grid"><label class="field full">عنوان القسم<input name="title" maxlength="100" value="'+esc(d.title||"")+'"></label><label class="field">الترتيب<input name="order" type="number" min="1" max="99" value="'+(Number(d.order)||idx+1)+'"></label><label class="field">الخامة<select name="material">'+Object.entries(materials).map(([v,t])=>'<option value="'+v+'" '+((d.material||"none")===v?"selected":"")+'>'+esc(t)+'</option>').join("")+'</select></label><label class="field">لون الخلفية<input name="background_color" type="color" value="'+(/^#[0-9a-f]{6}$/i.test(d.background_color||"")?d.background_color:"#18283d")+'"></label><label class="field">لون التمييز<input name="accent_color" type="color" value="'+(/^#[0-9a-f]{6}$/i.test(d.accent_color||"")?d.accent_color:"#8bdccf")+'"></label><label class="checkbox-field full"><input name="visible" type="checkbox" '+(d.visible===false?"":"checked")+'> إظهار هذا القسم للزوار</label><div class="form-actions full"><button class="btn btn-outline" type="button" data-owner-inline-close>إلغاء</button><button class="btn btn-primary" type="submit">حفظ وعرض النتيجة</button></div><p class="form-msg full"></p></form>';
+ const close=()=>{shade.remove();modal.remove()};shade.onclick=close;modal.querySelector(".close").onclick=close;modal.querySelector("[data-owner-inline-close]").onclick=close;
+ modal.querySelector("form").onsubmit=async e=>{e.preventDefault();const f=e.currentTarget,b=f.querySelector('[type="submit"]'),raw=Object.fromEntries(new FormData(f)),next={...cfg,[key]:{...d,title:raw.title||"",order:Number(raw.order),material:raw.material,background_color:raw.background_color,accent_color:raw.accent_color,visible:f.elements.visible.checked}};b.disabled=true;try{const r=await api("/owner/settings",{method:"POST",data:{...state.settings,theme_sections:next,site_public:false,payments_live:false}});state.settings={...state.settings,...r.settings,theme_sections:next};applySections(next);renderHome();close();toast("تم حفظ إعدادات "+def[0])}catch(err){f.querySelector(".form-msg").textContent=errorMessage(err);b.disabled=false}};
+ document.body.append(shade,modal);
 }
 async function saveVisualDesign(patch){
  const current={...designDefaults,...state.settings.theme_design},next={...current,...patch};
@@ -1342,9 +1353,9 @@ function openVisualEditor(kind){
  document.body.append(shade,modal);preview();
 }
 function bind(){
- document.addEventListener("pointerdown",ev=>{const kind=visualEditTarget(ev.target);if(!kind)return;clearTimeout(visualPressTimer);visualPressTimer=setTimeout(()=>{visualLongPressed=true;openVisualEditor(kind)},650)},true);
+ document.addEventListener("pointerdown",ev=>{const kind=visualEditTarget(ev.target);if(!kind)return;clearTimeout(visualPressTimer);visualPressTimer=setTimeout(()=>{visualLongPressed=true;if(kind.startsWith("section:"))openOwnerStaticSectionSettings(kind.slice(8));else openVisualEditor(kind)},650)},true);
  ["pointerup","pointercancel"].forEach(name=>document.addEventListener(name,()=>clearTimeout(visualPressTimer),true));
- document.addEventListener("contextmenu",ev=>{const kind=visualEditTarget(ev.target);if(kind){ev.preventDefault();visualLongPressed=true;openVisualEditor(kind)}},true);
+ document.addEventListener("contextmenu",ev=>{const kind=visualEditTarget(ev.target);if(kind){ev.preventDefault();visualLongPressed=true;if(kind.startsWith("section:"))openOwnerStaticSectionSettings(kind.slice(8));else openVisualEditor(kind)}},true);
  document.addEventListener("click",ev=>{if(visualLongPressed){visualLongPressed=false;ev.preventDefault();ev.stopImmediatePropagation()}},true);
  document.addEventListener("click",async ev=>{
   const t=ev.target.closest("button,a,[data-book]");
