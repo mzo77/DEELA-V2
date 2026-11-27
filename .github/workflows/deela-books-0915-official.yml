@@ -128,12 +128,13 @@ jobs:
           SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)"
           yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
           "$SDKMANAGER" --channel=3 --install "platforms;android-37.0" "build-tools;36.1.0"
-      - name: Build official DEELA 0.9.16 without access to signing secrets
+      - name: Build official DEELA 0.9.16 APK and Play bundle without signing secrets
         run: |
           set -euo pipefail
           chmod +x gradlew
-          ./gradlew --no-daemon :app:assembleRelease
+          ./gradlew --no-daemon :app:assembleRelease :app:bundleRelease
           test -s app/build/outputs/apk/release/app-release-unsigned.apk
+          test -s app/build/outputs/bundle/release/app-release.aab
       - name: Decode permanent signing key into temporary runner directory
         env:
           DEELA_RELEASE_KEYSTORE_BASE64: ${{ secrets.DEELA_RELEASE_KEYSTORE_BASE64 }}
@@ -186,7 +187,22 @@ jobs:
           BADGING="$("$ANDROID_HOME/build-tools/36.1.0/aapt" dump badging "$APK" | head -n 1)"
           echo "$BADGING" | grep -F "name='com.deela.apps'"
           echo "$BADGING" | grep -F "versionName='0.9.16'"
-          (cd dist && sha256sum *.apk > SHA256SUMS.txt)
+          AAB="dist/DEELA-v0.9.16-Official-Private-Books.aab"
+          jarsigner -keystore "$RUNNER_TEMP/deela-release.p12" -storetype PKCS12 \
+            -storepass "$DEELA_RELEASE_KEYSTORE_PASSWORD" \
+            -keypass "$DEELA_RELEASE_KEYSTORE_PASSWORD" \
+            -signedjar "$AAB" app/build/outputs/bundle/release/app-release.aab deela_release
+          jarsigner -verify "$AAB" >/dev/null 2>&1
+          keytool -printcert -jarfile "$AAB" > "$RUNNER_TEMP/deela-aab-cert.txt"
+          AAB_SIGNER="$(python3 - "$RUNNER_TEMP/deela-aab-cert.txt" <<'PY'
+          import re,sys
+          text=open(sys.argv[1]).read()
+          match=re.search(r'SHA256:\s*([0-9A-F:]+)',text,re.I)
+          print(match.group(1).replace(':','').lower() if match else '')
+          PY
+          )"
+          test "$AAB_SIGNER" = "$EXPECTED" || { echo "::error::AAB is not signed with the official DEELA identity"; exit 1; }
+          (cd dist && sha256sum *.apk *.aab > SHA256SUMS.txt)
           echo "This signed build is private: no GitHub Release or subscriber update has been published"
       - name: Upload private official-signature test APK for owner review
         uses: actions/upload-artifact@v4
