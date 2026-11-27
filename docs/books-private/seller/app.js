@@ -231,8 +231,8 @@ function card(b){
  '</div><div class="book-tags"><span>'+esc(kinds[b.format]||"كتاب")+'</span>'+
  '<span>'+esc(b.format==="physical"?conditions[b.book_condition]:"ملف رقمي")+'</span></div>'+
  '<div class="book-bottom">'+(enabled("show_book_prices")?'<span class="book-price">'+sar(b.price_sar)+'</span>':'<span class="status muted">السعر مخفي</span>')+
- (enabled("enable_orders")&&enabled("show_book_prices")&&isPublished&&b.stock>0?'<button class="card-action" data-add="'+esc(b.id)+'">أضف للسلة</button>':
- '<span class="status muted">'+(b.stock===0?"نفدت الكمية":"قيد المراجعة")+'</span>')+
+ (enabled("enable_orders")&&enabled("show_book_prices")&&isPublished&&(b.format!=="physical"||Number(b.stock)>0)?'<button class="card-action" data-add="'+esc(b.id)+'">أضف للسلة</button>':
+ '<span class="status muted">'+(b.status!=="published"?"بانتظار النشر":b.format==="physical"&&Number(b.stock)===0?"نفدت النسخ":"غير متاح للشراء")+'</span>')+
  '</div></div></article>';
 }
 function renderContestHome(){
@@ -316,7 +316,7 @@ function catalogPage(){
 function detailPage(){
  const b=state.listings.find(x=>x.id===state.current);
  if(!b)return heading("الكتاب غير موجود","ربما حُذف أو لم يُعتمد بعد.")+'<button class="btn btn-primary" data-route="catalog">العودة للمكتبة</button>';
- const available=b.status==="published"&&b.stock>0;
+ const available=b.status==="published"&&(b.format!=="physical"||Number(b.stock)>0);
  return '<div class="breadcrumbs"><a href="#home" data-route="home">الرئيسية</a> › <a href="#catalog" data-route="catalog">الكتب</a> › '+esc(b.title)+'</div>'+
  '<div class="detail-grid"><div class="detail-cover">'+cover(b)+'</div>'+
  '<div class="detail-desc"><span class="eyebrow">DEELA BOOKS · '+esc(b.category)+'</span><h1>'+esc(b.title)+'</h1>'+
@@ -339,7 +339,7 @@ function detailPage(){
  '<div><small>الفئة العمرية</small><strong>'+esc(b.audience||"عام")+'</strong></div>'+
  (b.publication_year?'<div><small>سنة النشر</small><strong>'+Number(b.publication_year)+'</strong></div>':"")+
  '</div>'+
- '<div class="detail-buttons">'+(available&&enabled("enable_orders")&&enabled("show_book_prices")?'<button class="btn btn-primary" data-add="'+esc(b.id)+'">أضف للسلة ♧</button>':'<span class="status muted">الكتاب قيد المراجعة أو نفد</span>')+
+ '<div class="detail-buttons">'+(available&&enabled("enable_orders")&&enabled("show_book_prices")?'<button class="btn btn-primary" data-add="'+esc(b.id)+'">أضف للسلة ♧</button>':'<span class="status muted">'+(b.status!=="published"?"بانتظار النشر":b.format==="physical"&&Number(b.stock)===0?"نفدت النسخ":"غير متاح للشراء")+'</span>')+
  (enabled("enable_reader_likes")?'<button class="btn btn-outline" data-like="'+esc(b.id)+'">'+(state.me?.likes?.includes(b.id)?"♥ إلغاء الإعجاب":"♡ أعجبني")+'</button>':"")+
  (enabled("enable_favorites")?'<button class="btn btn-outline" data-favorite="'+esc(b.id)+'">'+(state.me?.favorites?.includes(b.id)?"♥ محفوظ في المفضلة":"◇ حفظ للمفضلة")+'</button>':"")+
  (enabled("enable_messages")?'<button class="btn btn-outline" data-ask="'+esc(b.id)+'">راسل البائع ✉</button>':"")+
@@ -506,7 +506,7 @@ function editorPage(b=null){
  '<div class="field full"><div class="seller-price-tip">💰 <strong>حسبة الاختبار: 20% للمنصة و80% للمؤلف.</strong> حسب المثال: إذا كان السعر 10 ريالات، فالحصة 2 ريال للمنصة و8 للمؤلف. <span id="commissionPreviewValue">أدخل السعر لعرض الحسبة.</span><br><small>هذه معاينة فقط؛ لن يتم خصم أو تحويل أي مبلغ قبل تفعيل الدفع بموافقتك.</small></div></div>'+
  field("سعر الكتاب الذي تختاره (ر.س)","price_sar","number",true,"35",b?.price_sar??"")+
  (enabled("enable_discounts")?field("السعر قبل الخصم (اختياري)","compare_at_sar","number",false,"49",b?.compare_at_sar??""):"")+
- field("الكمية المتاحة","stock","number",true,"1",b?.stock??1)+
+ '<label class="field physical-only">الكمية المتاحة<input name="stock" type="number" min="0" max="100000" required value="'+esc(b?.stock??1)+'"></label>'+
  '<label class="field physical-only">تكلفة التوصيل (للكتاب الورقي)<input name="shipping_fee_sar" type="number" min="0" step="0.01" placeholder="0" value="'+esc(b?.shipping_fee_sar??0)+'"></label>'+
  field("عدد الصفحات (اختياري)","page_count","number",false,"240",b?.page_count??"")+
  field("سنة النشر (اختياري)","publication_year","number",false,"2026",b?.publication_year??"")+
@@ -522,7 +522,7 @@ function editorPage(b=null){
  'انشرها فورًا لكل الحسابات المسجّلة في مساحة الاختبار الخاصة. لن تظهر للعامة.</span></label>':"")+
  '<label class="field full"><span class="checkfield"><input type="checkbox" name="rights_confirmed" required '+(b?.rights_confirmed?"checked":"")+'>'+
  'أؤكد أن لي حق نشر أو بيع هذا الكتاب وأنه لا ينتهك حقوق مؤلف أو ناشر آخر.</span></label>'+
- '</div><div class="form-actions"><button type="submit" class="btn btn-primary" id="saveListing">رفع الكتاب للمراجعة</button>'+
+ '</div><div class="form-actions"><button type="submit" class="btn btn-primary" id="saveListing">'+(state.settings.private_test_mode?"حفظ ونشر في مساحة الاختبار":"رفع الكتاب للمراجعة")+'</button>'+
  '<button type="button" class="btn btn-outline" data-editor="close">إغلاق</button></div><p class="form-msg" id="listingMessage"></p></form></div>';
 }
 const FEATURE_GROUPS=[
@@ -827,7 +827,7 @@ function trackBookView(id){
 function openShop(slug){state.current=slug;route("shop")}
 function cartChange(id,delta){
  if(!enabled("enable_orders")||!enabled("show_book_prices"))return toast("استقبال الطلبات متوقف من لوحة المالك");
- const b=state.listings.find(x=>x.id===id);if(!b||b.status!=="published"||b.stock<1)return toast("الكتاب غير متاح للشراء");
+ const b=state.listings.find(x=>x.id===id);if(!b||b.status!=="published"||(b.format==="physical"&&b.stock<1))return toast("الكتاب غير متاح للشراء");
  const current=state.cart.find(x=>x.id===id);
  if(current)current.qty=Math.max(0,Math.min(Math.min(b.stock,10),current.qty+delta));
  else if(delta>0)state.cart.push({id,qty:1});
@@ -991,8 +991,8 @@ async function handleForm(ev){
       page_count:raw.page_count===""?null:Number(raw.page_count),
       publication_year:raw.publication_year===""?null:Number(raw.publication_year)};
     const msg=$("listingMessage");if(msg)msg.textContent="جارٍ رفع الكتاب وحفظه…";
-    await api("/listing",{method:"POST",data:payload});
-    toast(payload.test_publish?"نُشر الكتاب في مساحة الاختبار الخاصة بحسابك.":"تم رفع الكتاب؛ المؤلف المعتمد يُنشر كتابه مباشرة.");
+    const saved=await api("/listing",{method:"POST",data:payload});
+    toast(saved.listing?.status==="published"?"نُشرت الرواية في مساحة الاختبار ويمكن للحسابات المسجّلة رؤيتها.":"تم حفظ الرواية؛ تحقق من الملف الرقمي وحالة النشر.");
     state.editing=null;await reload();await route("seller",false);
   }else if(id==="checkoutForm"){
     const d=await api("/order",{method:"POST",data:{
