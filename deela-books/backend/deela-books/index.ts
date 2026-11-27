@@ -2,6 +2,9 @@ import {createClient} from "npm:@supabase/supabase-js@2.95.0";
 
 const SUPABASE_URL=Deno.env.get("SUPABASE_URL")||"";
 const SERVICE_ROLE=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";
+const ANON_KEY=Deno.env.get("SUPABASE_ANON_KEY")||"";
+const SELLER_PORTAL="https://mzo77.github.io/DEELA-V2/books-private/seller/";
+const guest=ANON_KEY?createClient(SUPABASE_URL,ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false}}):null;
 const db=createClient(SUPABASE_URL,SERVICE_ROLE,{auth:{persistSession:false,autoRefreshToken:false}});
 const fn="/deela-books";
 const FEATURE_FLAGS=["enable_seller_registration","enable_book_submissions","enable_reader_likes","enable_favorites","enable_author_follows","enable_reviews","enable_messages","enable_orders","enable_discounts","enable_featured_section","enable_launch_alerts","show_book_prices"] as const;
@@ -176,15 +179,79 @@ Deno.serve(async req=>{
  const parsed=new URL(req.url),path=parsed.pathname.split(fn)[1]||"/";
  if(req.method==="GET"&&path==="/health")return respond(req,{ok:true,name:"DEELA Books",owner_console_only:true,private_seller_portal:true,payments_live:false,shipping_live:false});
  try{
+  const authProviderNames:Record<string,string>={google:"Google",apple:"Apple",azure:"Microsoft",facebook:"Facebook",github:"GitHub",discord:"Discord",twitter:"X",linkedin_oidc:"LinkedIn",gitlab:"GitLab",spotify:"Spotify",slack:"Slack"};
+  const authGuest=()=>{if(!guest)throw Error("مصادقة البريد غير مهيأة على الخادم");return guest};
+  if(req.method==="GET"&&path==="/seller/registration-info"){
+    const conf=await settings();
+    const cats=await db.from("deela_books_sections").select("id,title,description,category,sort_order").eq("kind","category").eq("visible",true).order("sort_order").limit(1000);
+    if(cats.error)throw cats.error;
+    return respond(req,{site_public:false,registration_enabled:conf.enable_seller_registration===true,submissions_enabled:conf.enable_book_submissions===true,
+      sections:cats.data||[],formats:["ورقي","إلكتروني","صوتي"],seller_review_required:true,
+      pricing_note:"لا توجد رسوم أو عروض مدفوعة مفعّلة حاليًا في البوابة؛ المدفوعات الحقيقية مغلقة."});
+  }
+  if(req.method==="GET"&&path==="/auth/providers"){
+    let enabled:Record<string,boolean>={};
+    if(ANON_KEY){try{const r=await fetch(SUPABASE_URL+"/auth/v1/settings",{headers:{apikey:ANON_KEY},signal:AbortSignal.timeout(7000)});if(r.ok){const x=await r.json();const ext=x.external||{};for(const k of Object.keys(authProviderNames))enabled[k]=ext[k]===true;}}catch{}}
+    return respond(req,{providers:authProviderNames,enabled});
+  }
+  if(req.method==="GET"&&path==="/auth/oauth"){
+    const provider=parsed.searchParams.get("provider")||"";
+    if(!Object.hasOwn(authProviderNames,provider))return fail(req,"مزود تسجيل الدخول غير مدعوم",400);
+    if(!ANON_KEY)return fail(req,"إعدادات تسجيل الدخول الخارجي غير مهيأة",503);
+    const cfg=await fetch(SUPABASE_URL+"/auth/v1/settings",{headers:{apikey:ANON_KEY},signal:AbortSignal.timeout(7000)});
+    const set=cfg.ok?await cfg.json():{};
+    if(set.external?.[provider]!==true)return fail(req,"هذا المزود لم يُربط بعد بحساب المطور",503);
+    const u=new URL(SUPABASE_URL+"/auth/v1/authorize");u.searchParams.set("provider",provider);u.searchParams.set("redirect_to",SELLER_PORTAL);
+    const r=await fetch(u,{headers:{apikey:ANON_KEY},redirect:"manual",signal:AbortSignal.timeout(10000)}),location=r.headers.get("location");
+    if(!location||r.status<300||r.status>=400)return fail(req,"تعذر بدء تسجيل الدخول بهذا المزود",502);
+    return new Response(null,{status:302,headers:{Location:location,"Cache-Control":"no-store","X-Robots-Tag":"noindex, nofollow"}});
+  }
+  if(req.method==="POST"&&path==="/auth/register"){
+    const conf=await settings();if(!conf.enable_seller_registration)return fail(req,"التسجيل مغلق مؤقتًا",403);
+    const b=await req.json(),email=str(b.email,254).toLowerCase(),password=typeof b.password==="string"?b.password:"";
+    if(!/^\S+@\S+\.\S+$/.test(email)||password.length<12||password.length>128)return fail(req,"أدخل بريدًا صحيحًا وكلمة مرور من 12 إلى 128 خانة",400);
+    const r=await authGuest().auth.signUp({email,password,options:{data:{deela_books_account:true},emailRedirectTo:SELLER_PORTAL}});
+    if(r.error){const msg=r.error.message||"";if(/redirect|allow.?list/i.test(msg))return fail(req,"يلزم إضافة رابط بوابة البائع إلى قائمة Redirect URLs في إعدادات مصادقة Supabase",503);return fail(req,"تعذر إنشاء الحساب. تحقق من البيانات أو حاول لاحقًا",400);}
+    return respond(req,{ok:true,email,confirmation_required:!r.data.session,message:r.data.session?"تم إنشاء الحساب وتسجيل الدخول":"أرسلنا رسالة تحقق إلى بريدك. أدخل رمز التحقق أو افتح رابط الرسالة."},201);
+  }
+  if(req.method==="POST"&&path==="/auth/login"){
+    const b=await req.json(),email=str(b.email,254).toLowerCase(),password=typeof b.password==="string"?b.password:"";
+    if(!email||!password)return fail(req,"أدخل البريد وكلمة المرور",400);
+    const r=await authGuest().auth.signInWithPassword({email,password});
+    if(r.error||!r.data.session)return fail(req,"بيانات الدخول غير صحيحة أو لم يتم تأكيد البريد",401);
+    return respond(req,{access_token:r.data.session.access_token,refresh_token:r.data.session.refresh_token,expires_at:r.data.session.expires_at,user:{id:r.data.user.id,email:r.data.user.email}});
+  }
+  if(req.method==="POST"&&path==="/auth/verify-email"){
+    const b=await req.json(),email=str(b.email,254).toLowerCase(),token=str(b.token,20);
+    if(!email||!/^\d{6,8}$/.test(token))return fail(req,"أدخل رمز التحقق المرسل إلى بريدك",400);
+    const r=await authGuest().auth.verifyOtp({email,token,type:"signup"});
+    if(r.error||!r.data.session)return fail(req,"رمز التحقق غير صحيح أو منتهي. اطلب رمزًا جديدًا",400);
+    return respond(req,{access_token:r.data.session.access_token,refresh_token:r.data.session.refresh_token,expires_at:r.data.session.expires_at,user:{id:r.data.user.id,email:r.data.user.email}});
+  }
+  if(req.method==="POST"&&path==="/auth/resend-verification"){
+    const b=await req.json(),email=str(b.email,254).toLowerCase();if(!/^\S+@\S+\.\S+$/.test(email))return fail(req,"أدخل بريدًا صحيحًا",400);
+    const r=await authGuest().auth.resend({type:"signup",email,options:{emailRedirectTo:SELLER_PORTAL}});
+    if(r.error)return fail(req,"تعذر إرسال رسالة التحقق الآن",429);
+    return respond(req,{ok:true,message:"إذا كان البريد مسجلًا، أُرسلت رسالة التحقق."});
+  }
+  if(req.method==="POST"&&path==="/auth/recover"){
+    const b=await req.json(),email=str(b.email,254).toLowerCase();if(!/^\S+@\S+\.\S+$/.test(email))return fail(req,"أدخل بريدًا صحيحًا",400);
+    const r=await authGuest().auth.resetPasswordForEmail(email,{redirectTo:SUPABASE_URL+"/functions/v1/deela-control/recover"});
+    if(r.error&&r.error.status===429)return fail(req,"طلبات الاستعادة كثيرة حاليًا. انتظر قليلًا ثم أعد المحاولة.",429);
+    if(r.error&&r.error.status>=500)return fail(req,"تعذر إرسال رابط الاستعادة الآن",503);
+    return respond(req,{ok:true,message:"إذا كان البريد مسجلًا، أرسلنا رابط استعادة كلمة المرور."});
+  }
   const user=await getUser(req),isOwner=user?await owner(user.id):false;
   if(user&&!isOwner&&await userBlocked(user.id))return fail(req,"تم إيقاف هذا الحساب من إدارة DEELA Books",403);
   const conf=await settings();
   const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
   const privateSeller=!!sellerAccount&&sellerAccount.status==="approved"&&!conf.site_public;
-  // Public marketplace stays closed. Only approved sellers get this isolated private management allowlist.
+  const privateApplicant=!!user&&!isOwner&&!sellerAccount&&!conf.site_public&&conf.enable_seller_registration===true;
+  // The private marketplace permits only the signed-in applicant profile and application endpoints before owner approval.
   if(!isOwner&&!conf.site_public){
-    if(!privateSeller)return fail(req,"موقع DEELA Books خاص، ويتطلب دخول المالك أو بائعًا معتمدًا",403);
-    if(!PRIVATE_SELLER_ROUTES.has(req.method+" "+path))return fail(req,"هذه الخاصية غير متاحة في بوابة البائع الخاصة",403);
+    if(!privateSeller&&!privateApplicant)return fail(req,"موقع DEELA Books خاص، ويتطلب دخول المالك أو بائعًا معتمدًا",403);
+    const allowed=privateSeller?PRIVATE_SELLER_ROUTES.has(req.method+" "+path):new Set(["GET /me","POST /seller/apply"]).has(req.method+" "+path);
+    if(!allowed)return fail(req,"هذه الخاصية غير متاحة قبل اعتماد المتجر",403);
   }
   if(req.method==="GET"&&path==="/catalog"){
     if(privateSeller){
@@ -249,6 +316,7 @@ Deno.serve(async req=>{
   }
   if(req.method==="POST"&&path==="/seller/apply"){
     if(!conf.enable_seller_registration)return fail(req,"فتح المتاجر مقفل مؤقتًا من لوحة المالك",403);
+    if(!isOwner&&!user.email_confirmed_at)return fail(req,"أكد بريدك الإلكتروني أولًا قبل طلب فتح المتجر",403);
     const b=await req.json(),shop_name=str(b.shop_name,100),slug=str(b.slug,60).toLowerCase();
     if(shop_name.length<3||!slugRE.test(slug))return fail(req,"أدخل اسم متجر ورابطًا صحيحًا بالإنجليزية");
     if(await sellerFor(user.id))return fail(req,"يوجد طلب متجر مرتبط بهذا الحساب بالفعل",409);
