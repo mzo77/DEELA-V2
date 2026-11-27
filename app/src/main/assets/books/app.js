@@ -49,7 +49,7 @@ async function reload(){
   const [catalog,shops,me]=await Promise.all([api("/catalog"),api("/shops"),api("/me")]);
   state.listings=catalog.listings||[];state.shops=shops.shops||[];state.me=me;state.settings=catalog.settings||{};
   state.email=me.email||"";
-  applyTheme(state.settings.theme_colors);applyMaterial(state.settings.theme_material);state.cart=state.cart.filter(x=>state.listings.some(b=>b.id===x.id));saveCart();
+  applyTheme(state.settings.theme_colors);applyMaterial(state.settings.theme_material);applyDesign(state.settings.theme_design);state.cart=state.cart.filter(x=>state.listings.some(b=>b.id===x.id));saveCart();
   $("heroTitle").textContent=state.settings.hero_title||"لكل كتاب حكاية، ولكل قارئ عالم";
   $("heroSubtitle").textContent=state.settings.hero_subtitle||"سوق ديلا للكتب والروايات.";
   $("announcement").textContent=state.settings.announcement||"DEELA Books";
@@ -86,6 +86,17 @@ document.addEventListener("input",ev=>{
  if(el.name==="theme_bg"&&/^#[0-9a-f]{6}$/i.test(el.value))preview.style.backgroundColor=el.value;
  if(el.name==="theme_white"&&/^#[0-9a-f]{6}$/i.test(el.value))preview.style.color=el.value;
 });
+const designDefaults={radius:18,font_size:14,banner_motion:"none"};
+function applyDesign(d){
+ const root=document.documentElement;
+ root.style.setProperty("--radius",Math.max(0,Math.min(40,Number(d?.radius??18)||0))+"px");
+ document.body.style.fontSize=Math.max(12,Math.min(22,Number(d?.font_size??14)||14))+"px";
+ document.body.dataset.bannerMotion=d?.banner_motion==="glow"?"glow":"none";
+}
+function designFields(conf){
+ const d={...designDefaults,...conf.theme_design};
+ return '<label class="field">استدارة البطاقات<input name="design_radius" type="number" min="0" max="40" value="'+Number(d.radius)+'"></label><label class="field">حجم الخط<input name="design_font_size" type="number" min="12" max="22" value="'+Number(d.font_size)+'"></label><label class="field">حركة البنر<select name="design_banner_motion"><option value="none">ثابت</option><option value="glow" '+(d.banner_motion==="glow"?"selected":"")+'>لمعان متحرك</option></select></label>';
+}
 function themeFields(conf){
  return Object.entries(themeKeys).map(([key,label])=>'<label class="field">'+esc(label)+'<input type="color" name="theme_'+key+'" value="'+esc(/^#[0-9a-f]{6}$/i.test(conf.theme_colors?.[key]||"")?conf.theme_colors[key]:getComputedStyle(document.documentElement).getPropertyValue("--"+key).trim())+'"></label>').join("");
 }
@@ -476,7 +487,7 @@ function ownerPage(){
   return top+'<form class="panel owner-settings" id="settingsForm"><h2>الهوية والعروض والعمولة</h2>'+
   '<p>غيّر عناوين الموقع وصفه ورسالة الإعلان ووسيلة التواصل دون تعديل أي كود.</p>'+
   '<div class="form-grid">'+
-  themeFields(conf)+materialFields(conf)+field("اسم المنصة","name","text",true,"DEELA Books",conf.name||"DEELA Books")+
+  themeFields(conf)+materialFields(conf)+designFields(conf)+field("اسم المنصة","name","text",true,"DEELA Books",conf.name||"DEELA Books")+
   field("عنوان الواجهة الرئيسية","hero_title","text",true,"لكل كتاب حكاية",conf.hero_title||"")+
   field("الرسالة العلوية","announcement","text",false,"",conf.announcement||"")+
   field("عنوان الحملة أو العرض","home_promo_title","text",false,"أحدث إصدارات ديلا",conf.home_promo_title||"")+
@@ -676,7 +687,7 @@ async function handleForm(ev){
     await reload();await route("owner",false);
   }else if(id==="settingsForm"){
     const payload={...state.settings,...state.ownerData?.settings,...raw,
-      theme_material:raw.theme_material,theme_colors:Object.fromEntries(Object.keys(themeKeys).map(k=>[k,raw["theme_"+k]])),site_public:false,payments_live:false};
+      theme_design:{radius:Number(raw.design_radius),font_size:Number(raw.design_font_size),banner_motion:raw.design_banner_motion},theme_material:raw.theme_material,theme_colors:Object.fromEntries(Object.keys(themeKeys).map(k=>[k,raw["theme_"+k]])),site_public:false,payments_live:false};
     await api("/owner/settings",{method:"POST",data:payload});
     toast("تم حفظ هوية المنصة والعروض");await reload();await route("owner",false);
   }else if(id==="messageForm"){
