@@ -164,7 +164,7 @@ Deno.serve(async req=>{
     settings:{name:conf.name,hero_title:conf.hero_title,hero_subtitle:conf.hero_subtitle,
       announcement:conf.announcement,support_url:conf.support_url,site_public:conf.site_public,
       home_promo_title:conf.home_promo_title,home_promo_description:conf.home_promo_description,
-      theme_colors:conf.theme_colors,theme_material:conf.theme_material,
+      theme_colors:conf.theme_colors,theme_material:conf.theme_material,theme_design:conf.theme_design,
       ...Object.fromEntries(FEATURE_FLAGS.map(k=>[k,conf[k]]))},
     payments_live:false,shipping_live:false,currency:"SAR"
   });
@@ -533,6 +533,11 @@ Deno.serve(async req=>{
       if(Object.prototype.hasOwnProperty.call(b,"theme_material")){
         if(!["none","ceramic","marble","ornament","pearl","metal","velvet","neon","heritage"].includes(b.theme_material))return fail(req,"خامة غير صحيحة",400);
         configured.theme_material=b.theme_material;
+      }
+      if(Object.prototype.hasOwnProperty.call(b,"theme_design")){
+        const d=b.theme_design;
+        if(!d||!Number.isInteger(d.radius)||d.radius<0||d.radius>40||!Number.isInteger(d.font_size)||d.font_size<12||d.font_size>22||!["none","glow"].includes(d.banner_motion))return fail(req,"إعدادات التصميم غير صحيحة",400);
+        configured.theme_design={radius:d.radius,font_size:d.font_size,banner_motion:d.banner_motion};
       }
       if(configured.support_url && !/^https:\/\//.test(String(configured.support_url)))
         return fail(req,"رابط الدعم يجب أن يبدأ بـ https://",400);
