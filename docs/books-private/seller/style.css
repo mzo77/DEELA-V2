@@ -636,3 +636,16 @@ body[data-owner-visual-edit="true"] #homeCategories button,body[data-owner-visua
 .catalog-discovery-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0}
 .catalog-discovery-tools select{min-height:42px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--white);padding:7px 12px}
 .catalog-discovery-tools .filter-check{display:flex;align-items:center;gap:8px}
+
+/* DEELA checkout payment choices (sandbox preview) */
+.payment-choice-panel{margin-top:18px;padding:18px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);grid-column:1/-1}
+.payment-choice-panel h2{margin:0 0 8px;font-size:1.2rem}
+.payment-choice-panel>p{margin:6px 0 14px}
+.payment-method-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.payment-method-card{display:flex;align-items:center;gap:10px;min-height:68px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--bg2);cursor:pointer}
+.payment-method-card:has(input:checked){border-color:var(--teal);box-shadow:0 0 0 1px var(--teal);background:color-mix(in srgb,var(--teal) 9%,var(--bg2))}
+.payment-method-card input{accent-color:var(--teal);width:18px;height:18px;flex:0 0 auto}
+.payment-method-copy{display:grid;gap:3px;flex:1}
+.payment-method-copy small{color:var(--muted);font-size:.82em}
+.payment-method-test{font-size:.72em;color:var(--gold);border:1px solid var(--line);border-radius:999px;padding:3px 7px}
+@media(max-width:520px){.payment-method-grid{grid-template-columns:1fr 1fr}.payment-method-card{padding:9px;gap:7px;min-height:64px}}
