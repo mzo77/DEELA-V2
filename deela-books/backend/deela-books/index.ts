@@ -257,11 +257,56 @@ Deno.serve(async req=>{
       file_path:original.get(p.id)?.file_path,
       rights_confirmed:original.get(p.id)?.rights_confirmed}))});
   }
+  if(req.method==="GET"&&path==="/seller/notifications"){
+    const r=await db.from("deela_books_notifications").select("id,listing_id,event_type,title,body,read_at,created_at")
+      .eq("user_id",user.id).order("created_at",{ascending:false}).limit(100);
+    if(r.error)throw r.error;
+    return respond(req,{notifications:r.data||[]});
+  }
+  if(req.method==="POST"&&path==="/seller/notifications/read"){
+    const b=await req.json(),id=str(b.id,60);
+    let q=db.from("deela_books_notifications").update({read_at:new Date().toISOString()}).eq("user_id",user.id).is("read_at",null);
+    if(id){if(!uuid.test(id))return fail(req,"معرّف التنبيه غير صحيح");q=q.eq("id",id);}
+    const r=await q.select("id");if(r.error)throw r.error;
+    return respond(req,{ok:true,updated:r.data?.length||0});
+  }
+  if(req.method==="POST"&&path==="/view"){
+    const b=await req.json(),id=str(b.listing_id,60);
+    if(!uuid.test(id))return fail(req,"معرّف الرواية غير صحيح");
+    const book=await db.from("deela_books_listings").select("id,title,status,seller_id,view_count,deela_books_sellers!inner(user_id,status)").eq("id",id).maybeSingle();
+    if(book.error||!book.data)return fail(req,"الرواية غير موجودة",404);
+    if(book.data.status!=="published"||(book.data.deela_books_sellers as any)?.status!=="approved")return fail(req,"الرواية غير منشورة",404);
+    const sellerUser=(book.data.deela_books_sellers as any)?.user_id;
+    if(sellerUser===user.id)return respond(req,{ok:true,counted:false,view_count:Number(book.data.view_count||0)});
+    const inserted=await db.from("deela_books_listing_views").insert({listing_id:id,user_id:user.id});
+    if(inserted.error&&inserted.error.code!=="23505")throw inserted.error;
+    const counted=!inserted.error;
+    let current=Number(book.data.view_count||0);
+    if(counted){
+      const fresh=await db.from("deela_books_listings").select("view_count").eq("id",id).single();
+      if(fresh.error)throw fresh.error;current=Number(fresh.data.view_count||0);
+      if(current>0&&current%10===0){
+        const prior=await db.from("deela_books_notifications").select("id").eq("user_id",sellerUser).eq("listing_id",id).eq("event_type","view_milestone").eq("title",`وصلت روايتك إلى ${current} مشاهدة`).limit(1);
+        if(prior.error)throw prior.error;
+        if(!prior.data?.length){
+          const note=await db.from("deela_books_notifications").insert({user_id:sellerUser,listing_id:id,event_type:"view_milestone",title:`وصلت روايتك إلى ${current} مشاهدة`,body:`حققت رواية «${str(book.data.title,120)}» ${current} مشاهدة فريدة.`});
+          if(note.error)throw note.error;
+        }
+      }
+    }
+    return respond(req,{ok:true,counted,view_count:current});
+  }
   if(req.method==="POST"&&path==="/listing"){
     if(!conf.enable_book_submissions)return fail(req,"استقبال الكتب متوقف مؤقتًا",403);
     const b=await req.json(),seller=await sellerFor(user.id);
     if(!seller||(!isOwner&&seller.status!=="approved"))return fail(req,"يجب أن يكون متجرك معتمدًا لإضافة الكتب",403);
     const values=itemInput(b),id=str(b.id,60);
+    const baseCategories=["روايات","أدب وشعر","خيال ورعب","تطوير الذات","تاريخ","كتب الأطفال","فلسفة","تقنية","ديني","أخرى"];
+    if(!baseCategories.includes(values.category)){
+      const custom=await db.from("deela_books_sections").select("id").eq("kind","category").eq("category",values.category).limit(1);
+      if(custom.error)throw custom.error;
+      if(!custom.data?.length)return fail(req,"اختر قسمًا معرفًا في المتجر للرواية",400);
+    }
     if(!conf.enable_discounts&&values.compare_at_sar!==null)
       return fail(req,"خصومات الأسعار معطلة من مركز المالك",403);
     // File ownership is always tied to the authenticated upload identity.
@@ -314,14 +359,21 @@ Deno.serve(async req=>{
     const b=await req.json(),id=str(b.listing_id,60);
     if(!uuid.test(id)||typeof b.liked!=="boolean")return fail(req,"إعجاب غير صالح",400);
     const check=await db.from("deela_books_listings")
-      .select("id,status,deela_books_sellers!inner(status)").eq("id",id).maybeSingle();
+      .select("id,title,status,seller_id,deela_books_sellers!inner(status,user_id)").eq("id",id).maybeSingle();
     if(check.error||!check.data)return fail(req,"الكتاب غير موجود",404);
     if(!isOwner&&(check.data.status!=="published"||
        (check.data.deela_books_sellers as any)?.status!=="approved"))
       return fail(req,"الكتاب لم يُنشر بعد",403);
     if(b.liked){
+      const prior=await db.from("deela_books_likes").select("listing_id").eq("listing_id",id).eq("user_id",user.id).maybeSingle();
+      if(prior.error)throw prior.error;
       const r=await db.from("deela_books_likes").upsert({listing_id:id,user_id:user.id},{onConflict:"user_id,listing_id"});
       if(r.error)throw r.error;
+      const sellerUser=(check.data.deela_books_sellers as any)?.user_id;
+      if(!prior.data&&sellerUser&&sellerUser!==user.id){
+        const note=await db.from("deela_books_notifications").insert({user_id:sellerUser,listing_id:id,event_type:"like",title:"إعجاب جديد بروايتك",body:`أعجب قارئ برواية «${str(check.data.title,120)}».`});
+        if(note.error)throw note.error;
+      }
     }else{
       const r=await db.from("deela_books_likes").delete().eq("listing_id",id).eq("user_id",user.id);
       if(r.error)throw r.error;
@@ -534,8 +586,31 @@ Deno.serve(async req=>{
       if(r.error)throw r.error;return respond(req,{sellers:r.data||[]});
     }
     if(req.method==="GET"&&path==="/owner/listings"){
-      const r=await db.from("deela_books_listings").select("*,deela_books_sellers(shop_name,slug)").order("created_at",{ascending:false}).limit(200);
-      if(r.error)throw r.error;return respond(req,{listings:await enrichBooks(r.data||[])});
+      const [r,categories]=await Promise.all([
+        db.from("deela_books_listings").select("*,deela_books_sellers(shop_name,slug)").order("created_at",{ascending:false}).limit(200),
+        db.from("deela_books_sections").select("category").eq("kind","category")
+      ]);
+      if(r.error||categories.error)throw Error("Owner listings unavailable");
+      return respond(req,{listings:await enrichBooks(r.data||[]),categories:[...new Set((categories.data||[]).map((x:any)=>x.category).filter(Boolean))]});
+    }
+    if(req.method==="POST"&&path==="/owner/listing-category"){
+      const b=await req.json(),id=str(b.id,60),category=str(b.category,80);
+      if(!uuid.test(id)||!category)return fail(req,"اختر الرواية والقسم المطلوب");
+      const existing=await db.from("deela_books_listings").select("id,title,category,seller_id,deela_books_sellers!inner(user_id)").eq("id",id).maybeSingle();
+      if(existing.error||!existing.data)return fail(req,"الرواية غير موجودة",404);
+      if(existing.data.category===category)return respond(req,{ok:true,category,changed:false});
+      const customs=await db.from("deela_books_sections").select("category").eq("kind","category").eq("category",category).limit(1);
+      if(customs.error)throw customs.error;
+      const baseCategories=["روايات","أدب وشعر","خيال ورعب","تطوير الذات","تاريخ","كتب الأطفال","فلسفة","تقنية","ديني","أخرى"];
+      if(!baseCategories.includes(category)&&!customs.data?.length)return fail(req,"القسم غير موجود أو غير مخصص للروايات",400);
+      const updated=await db.from("deela_books_listings").update({category,updated_at:new Date().toISOString()}).eq("id",id).select("id,title,category").single();
+      if(updated.error)throw updated.error;
+      const sellerUser=(existing.data.deela_books_sellers as any)?.user_id;
+      if(sellerUser){
+        const note=await db.from("deela_books_notifications").insert({user_id:sellerUser,listing_id:id,event_type:"section_moved",title:"تم نقل روايتك إلى قسمها الصحيح",body:`نُقلت رواية «${str(existing.data.title,120)}» إلى قسم «${category}».`});
+        if(note.error)throw note.error;
+      }
+      return respond(req,{ok:true,listing:updated.data});
     }
     if(req.method==="GET"&&path==="/owner/orders"){
       const r=await db.from("deela_books_orders").select("*,deela_books_order_items(*)").order("created_at",{ascending:false}).limit(150);
