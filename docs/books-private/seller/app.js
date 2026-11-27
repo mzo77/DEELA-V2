@@ -282,7 +282,7 @@ function renderHome(){
  $("homeListings").innerHTML=state.listings.length?state.listings.slice(0,8).map(card).join(""):demoCovers();
  $("featuredShops").innerHTML=state.shops.length?state.shops.slice(0,6).map(shopCard).join(""):
  '<div class="empty-state"><h3>هنا تبدأ متاجر ديلا</h3><p>بمجرد اعتماد متجرك الأول، ستظهر هنا متاجر المؤلفين والناشرين الحقيقية.</p><button class="btn btn-outline" data-route="seller">سجّل أول متجر</button></div>';
- renderManagedHome();renderContestHome();
+ renderManagedHome();renderContestHome();enhanceOwnerControls();
 }
 function openOwnerSectionSettings(id){
  if(!state.me?.is_owner)return;
@@ -298,8 +298,10 @@ function openOwnerBookActions(id){
  if(!state.me?.is_owner)return;
  const b=state.listings.find(x=>String(x.id)===String(id));if(!b)return;
  const shade=document.createElement("div"),modal=document.createElement("section");shade.className="shade";shade.style.zIndex="120";modal.className="modal owner-inline-modal";modal.style.zIndex="121";
- modal.innerHTML='<button class="close" type="button" aria-label="إغلاق">✕</button><span class="eyebrow">إدارة سريعة داخل المتجر</span><h2>'+esc(b.title)+'</h2><p>الحالة الحالية: '+esc(statusNames[b.status]||b.status)+'</p><div class="owner-book-actions"><button class="btn btn-outline" type="button" data-owner-book-status="published">اعتماد وإظهار</button><button class="btn btn-outline" type="button" data-owner-book-status="archived">إخفاء من المتجر</button><button class="btn btn-primary" type="button" data-owner-book-open>معاينة الكتاب</button></div><p class="form-msg"></p>';
+ modal.innerHTML='<button class="close" type="button" aria-label="إغلاق">✕</button><span class="eyebrow">إدارة سريعة داخل المتجر</span><h2>'+esc(b.title)+'</h2><p>الحالة الحالية: '+esc(statusNames[b.status]||b.status)+'</p><div class="owner-book-actions"><button class="btn btn-outline" type="button" data-owner-book-status="published">اعتماد وإظهار</button><button class="btn btn-outline" type="button" data-owner-book-status="archived">إخفاء من المتجر</button><button class="btn btn-outline" type="button" data-owner-book-design="BOOK_ID">تغيير حجم وشكل البطاقة</button><button class="btn btn-primary" type="button" data-owner-book-open>معاينة الكتاب</button></div><p class="form-msg"></p>';
  const close=()=>{shade.remove();modal.remove()};shade.onclick=close;modal.querySelector(".close").onclick=close;
+ const designButton=modal.querySelector("[data-owner-book-design]");
+ if(designButton){designButton.dataset.ownerBookDesign=id;designButton._ownerTarget=document.querySelector(".owner-book-control[data-owner-book-settings=\\""+id+"\\"]")?.closest(".book-card");}
  modal.querySelector('[data-owner-book-open]').onclick=()=>{close();state.current=id;void route("detail")};
  modal.querySelectorAll("[data-owner-book-status]").forEach(btn=>btn.onclick=async()=>{btn.disabled=true;try{await api("/owner/listing-status",{method:"POST",data:{id,status:btn.dataset.ownerBookStatus}});await reload();renderHome();toast(btn.dataset.ownerBookStatus==="published"?"تم اعتماد الكتاب وإظهاره":"تم إخفاء الكتاب");close()}catch(e){modal.querySelector(".form-msg").textContent=errorMessage(e);btn.disabled=false}});
  document.body.append(shade,modal);
@@ -934,6 +936,7 @@ async function route(view,push=true){
   if(view==="detail")trackBookView(state.current);
   if(view==="catalog"){$("productTypeFilter").value=state.productType;$("nearbyRadius").value=String(state.radiusKm);$("freeShippingFilter").checked=state.freeShippingOnly;$("formatFilter").value=state.format;$("sortFilter").value=state.sort;$("conditionFilter").value=state.condition}
  }
+ if(view!=="home")enhanceOwnerControls();
  window.scrollTo({top:0,behavior:"instant"});
 }
 function book(id){state.current=id;route("detail")}
@@ -1360,6 +1363,193 @@ function openVisualEditor(kind){
  modal.querySelector("[data-visual-save]").onclick=async()=>{const patch=category?{category_icon_size:Number(size.value),category_icon_shape:shape.value}:{book_card_width:Number(width.value),book_cover_height:Number(height.value),book_card_radius:Number(shape.value)};const b=modal.querySelector("[data-visual-save]");b.disabled=true;try{await saveVisualDesign(patch);shade.remove();modal.remove()}catch{b.disabled=false}};
  document.body.append(shade,modal);preview();
 }
+
+function ownerElementSlug(value){
+ return String(value||"").normalize("NFKC").toLocaleLowerCase().trim()
+  .replace(/[^\p{L}\p{N}]+/gu,"-").replace(/^-+|-+$/g,"").slice(0,52)||"item";
+}
+function ownerSectionIdentity(el){
+ const node=el.matches?.("section.container,.feature-banner,.hero,.panel,.row-card")?el:el.closest?.("section.container,.feature-banner,.hero,.panel,.row-card");
+ if(!node)return "page:"+ownerElementSlug(state.view||"home");
+ for(const [key,[,selector]] of Object.entries(sectionDefs)){
+  const fixed=document.querySelector(selector)?.closest("section.container");
+  if(fixed===node)return "home:"+key;
+ }
+ const title=node.querySelector("h1,h2,h3,[data-title]");
+ const text=title?.textContent||node.id||node.className||"section";
+ const roots=[...document.querySelectorAll("section.container,.feature-banner,.hero,.panel,.row-card")];
+ return "page:"+ownerElementSlug(state.view||"home")+":"+ownerElementSlug(text)+":"+Math.max(0,roots.indexOf(node));
+}
+function ownerElementKey(el,type){
+ if(type==="book"){
+  const id=el.querySelector("[data-owner-book-settings]")?.dataset.ownerBookSettings||el.querySelector("[data-book]")?.dataset.book;
+  return "book:"+ownerElementSlug(id||el.querySelector("h3")?.textContent);
+ }
+ if(type==="shop"){
+  const slug=el.querySelector("[data-shop]")?.dataset.shop||el.querySelector("h3")?.textContent;
+  return "shop:"+ownerElementSlug(slug);
+ }
+ if(type==="category")return "category:"+ownerElementSlug(el.dataset.category||el.textContent);
+ if(type==="nav")return "nav:"+ownerElementSlug(el.dataset.route||el.textContent);
+ const section=ownerSectionIdentity(el);
+ if(type==="section")return "section:"+section;
+ if(type==="heading")return "heading:"+section+":"+ownerElementSlug(el.textContent);
+ if(type==="control"){
+  const route=el.dataset.route||el.dataset.shop||el.dataset.category||"";
+  return "control:"+section+":"+(route?ownerElementSlug(route):ownerElementSlug(el.textContent));
+ }
+ return "component:"+section+":"+type;
+}
+function ownerElementSettingsFor(key){return state.settings?.theme_element_settings?.[key]||{}}
+function ownerSettingTextNode(el){
+ const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT,{acceptNode(node){
+  if(!node.nodeValue?.trim()||node.parentElement?.closest(".owner-setting-gear"))return NodeFilter.FILTER_REJECT;
+  return NodeFilter.FILTER_ACCEPT;
+ }});
+ return walker.nextNode();
+}
+function applyOwnerElementConfig(el,d={}){
+ if(!el)return;
+ el.classList.add("owner-setting-target");
+ el.dataset.ownerSettingTarget="true";
+ const txt=ownerSettingTextNode(el);
+ if(txt){txt.__ownerOriginalText??=txt.nodeValue;if(typeof d.label==="string"&&d.label)txt.nodeValue=d.label;else txt.nodeValue=txt.__ownerOriginalText}
+ const firstPara=el.querySelector(":scope > p, .shop-copy > p, .book-info > p");
+ if(firstPara){firstPara.__ownerOriginalText??=firstPara.textContent;if(typeof d.description==="string"&&d.description)firstPara.textContent=d.description;else firstPara.textContent=firstPara.__ownerOriginalText}
+ el.classList.toggle("owner-element-hidden",d.visible===false);
+ const cssProps=["--owner-element-width","--owner-element-height","--owner-element-font-size","--owner-element-radius","--owner-element-padding","--owner-element-order","--owner-element-bg","--owner-element-color","--owner-element-align"];
+ cssProps.forEach(k=>el.style.removeProperty(k));
+ const set=(prop,val,unit="px")=>{const n=Number(val);if(Number.isFinite(n)&&n>0)el.style.setProperty(prop,n+unit)};
+ el.style.width=Number(d.width)>0?Number(d.width)+"px":"";
+ el.style.minHeight=Number(d.height)>0?Number(d.height)+"px":"";
+ el.style.fontSize=Number(d.font_size)>0?Number(d.font_size)+"px":"";
+ el.style.borderRadius=Number(d.radius)>0?Number(d.radius)+"px":(["soft","round","square","pill"].includes(d.shape)?({soft:"18px",round:"50%",square:"0px",pill:"999px"}[d.shape]):"");
+ el.style.padding=Number(d.padding)>0?Number(d.padding)+"px":"";
+ el.style.order=Number(d.order)?String(Number(d.order)):"";
+ el.style.backgroundColor=/^#[0-9a-f]{6}$/i.test(d.background_color||"")?d.background_color:"";
+ el.style.color=/^#[0-9a-f]{6}$/i.test(d.accent_color||"")?d.accent_color:"";
+ el.style.textAlign=["start","center","end"].includes(d.align)?({start:"right",center:"center",end:"left"}[d.align]):"";
+ el.dataset.ownerElementShape=["soft","round","square","pill"].includes(d.shape)?d.shape:"default";
+}
+function addOwnerElementGear(el,type,inline=false){
+ if(el.querySelector(":scope > .owner-setting-gear"))return;
+ const key=ownerElementKey(el,type);
+ el.dataset.ownerSettingKey=key;el.dataset.ownerSettingType=type;
+ applyOwnerElementConfig(el,ownerElementSettingsFor(key));
+ const gear=document.createElement("button");
+ gear.type="button";gear.className="owner-setting-gear "+(inline?"owner-setting-gear-inline":"owner-setting-gear-overlay");
+ gear.setAttribute("aria-label","إعدادات "+(el.querySelector("h1,h2,h3")?.textContent||el.textContent||"هذا العنصر").trim().slice(0,80));
+ gear.title="إعدادات هذا العنصر";
+ gear.dataset.ownerElementSettings=key;
+ gear.dataset.ownerElementType=type;
+ gear._ownerTarget=el;
+ gear.textContent="⚙";
+ if(inline)el.after(gear);else el.append(gear);
+}
+function enhanceOwnerControls(){
+ document.querySelectorAll(".owner-setting-gear").forEach(x=>x.remove());
+ document.querySelectorAll("[data-owner-setting-target]").forEach(x=>{x.removeAttribute("data-owner-setting-target");x.removeAttribute("data-owner-setting-key");x.removeAttribute("data-owner-setting-type");x.classList.remove("owner-setting-target")});
+ if(!state.me?.is_owner)return;
+ const inCard=el=>Boolean(el.closest(".book-card,.shop-card,.community-tile"));
+ const roots=[...document.querySelectorAll("section.container,.feature-banner,.hero,.panel,.row-card,footer")];
+ roots.forEach(el=>{
+  const nested=el.parentElement?.closest("section.container,.feature-banner,.hero,.panel,.row-card,footer");
+  if(el.matches("section.container,.feature-banner,.hero,footer")||!nested)addOwnerElementGear(el,"section",false);
+ });
+ document.querySelectorAll(".book-card").forEach(el=>{
+  const key=ownerElementKey(el,"book");el.dataset.ownerSettingKey=key;el.dataset.ownerSettingType="book";
+  applyOwnerElementConfig(el,ownerElementSettingsFor(key));
+ });
+ document.querySelectorAll(".shop-card").forEach(el=>addOwnerElementGear(el,"shop",false));
+ document.querySelectorAll(".community-tile").forEach(el=>addOwnerElementGear(el,"category",false));
+ document.querySelectorAll("h1,h2,h3").forEach(el=>{if(!inCard(el))addOwnerElementGear(el,"heading",true)});
+ document.querySelectorAll("button[data-route],a[data-route],button.text-button,button.nav-item,button.owner-tool-link").forEach(el=>{
+  if(!inCard(el)&&!el.closest(".modal,form"))addOwnerElementGear(el,el.classList.contains("nav-item")?"nav":"control",true);
+ });
+ document.querySelectorAll(".owner-book-control").forEach(btn=>{btn.title="إدارة الكتاب وإعدادات شكله"});
+}
+function openOwnerElementEditor(target,key,type){
+ if(!state.me?.is_owner||!target)return;
+ const saved={...ownerElementSettingsFor(key)},rect=target.getBoundingClientRect();
+ const shade=document.createElement("div"),modal=document.createElement("section");
+ shade.className="shade";shade.style.zIndex="130";modal.className="modal owner-element-modal";modal.style.zIndex="131";
+ const value=(name,fallback="")=>esc(saved[name]??fallback);
+ const color=(name,fallback)=>/^#[0-9a-f]{6}$/i.test(saved[name]||"")?saved[name]:fallback;
+ const labelNode=ownerSettingTextNode(target),baseLabel=labelNode?.__ownerOriginalText?.trim()||labelNode?.nodeValue?.trim()||target.textContent.trim().slice(0,100);
+ const similarLabel=type==="book"?"كل بطاقات الكتب":type==="shop"?"كل بطاقات المتاجر":type==="category"?"كل أيقونات التصنيفات":"العناصر المشابهة";
+ const sample=document.createElement("div");sample.className="owner-element-live-preview";sample.textContent=saved.label||baseLabel||"معاينة العنصر";
+ modal.innerHTML='<button class="close" type="button" aria-label="إغلاق">✕</button><span class="eyebrow">إعدادات المالك لهذا العنصر</span><h2>تحكم كامل بالمكوّن</h2><p class="muted">اسحب الأحجام وشاهد المعاينة مباشرة. تُحفظ إعدادات هذا العنصر في المتجر.</p><div class="owner-element-preview"></div><form class="form-grid owner-element-form">'+
+ '<label class="field full">النص الظاهر<input name="label" maxlength="160" value="'+value("label",baseLabel)+'"></label>'+
+ '<label class="field full">وصف مختصر<input name="description" maxlength="300" value="'+value("description")+'"></label>'+
+ '<label class="field">العرض <output data-out="width">'+(Number(saved.width)||Math.round(rect.width))+'px</output><input name="width" type="range" min="0" max="1200" value="'+(Number(saved.width)||0)+'"></label>'+
+ '<label class="field">الارتفاع <output data-out="height">'+(Number(saved.height)||Math.round(rect.height))+'px</output><input name="height" type="range" min="0" max="1200" value="'+(Number(saved.height)||0)+'"></label>'+
+ '<label class="field">حجم الخط <output data-out="font_size">'+(Number(saved.font_size)||16)+'px</output><input name="font_size" type="range" min="0" max="72" value="'+(Number(saved.font_size)||0)+'"></label>'+
+ '<label class="field">استدارة الزوايا <output data-out="radius">'+(Number(saved.radius)||0)+'px</output><input name="radius" type="range" min="0" max="300" value="'+(Number(saved.radius)||0)+'"></label>'+
+ '<label class="field">المسافة الداخلية <output data-out="padding">'+(Number(saved.padding)||0)+'px</output><input name="padding" type="range" min="0" max="64" value="'+(Number(saved.padding)||0)+'"></label>'+
+ '<label class="field">شكل العنصر<select name="shape"><option value="default">افتراضي</option><option value="soft">ناعم</option><option value="round">دائري</option><option value="square">مربع</option><option value="pill">كبسولة</option></select></label>'+
+ '<label class="field">محاذاة المحتوى<select name="align"><option value="">افتراضي</option><option value="start">يمين</option><option value="center">وسط</option><option value="end">يسار</option></select></label>'+
+ '<label class="field">ترتيب العنصر<input name="order" type="number" min="-1000" max="1000" value="'+value("order","0")+'"></label>'+
+ '<label class="field">لون الخلفية<input name="background_color" type="color" value="'+color("background_color","#13253a")+'"></label>'+
+ '<label class="checkbox-field"><input type="checkbox" name="use_background" '+(saved.background_color?"checked":"")+'> تفعيل لون الخلفية</label>'+
+ '<label class="field">لون النص أو الإبراز<input name="accent_color" type="color" value="'+color("accent_color","#83dfd0")+'"></label>'+
+ '<label class="checkbox-field"><input type="checkbox" name="use_accent" '+(saved.accent_color?"checked":"")+'> تفعيل لون النص</label>'+
+ '<label class="checkbox-field full"><input type="checkbox" name="visible" '+(saved.visible===false?"":"checked")+'> إظهار العنصر</label>'+
+ '<label class="checkbox-field full"><input type="checkbox" name="apply_similar"> تعميم إعدادات الشكل على '+esc(similarLabel)+'</label>'+
+ '<div class="form-actions full"><button type="button" class="btn btn-outline" data-owner-element-reset>إعادة ضبط هذا العنصر</button><button type="button" class="btn btn-outline" data-owner-element-cancel>إلغاء</button><button type="submit" class="btn btn-primary">حفظ الإعدادات</button></div><p class="form-msg full"></p></form>';
+ modal.querySelector(".owner-element-preview").append(sample);
+ const close=(restore=true)=>{if(restore)applyOwnerElementConfig(target,saved);shade.remove();modal.remove()};
+ shade.onclick=close;modal.querySelector(".close").onclick=close;modal.querySelector("[data-owner-element-cancel]").onclick=close;
+ const form=modal.querySelector("form");
+ const sync=()=>{
+  const data=Object.fromEntries(new FormData(form));
+  for(const name of ["width","height","font_size","radius","padding","order"])modal.querySelector('[data-out="'+name+'"]').textContent=(Number(data[name])||0)+"px";
+  const live={...saved,label:data.label,description:data.description,visible:form.elements.visible.checked,
+   width:Number(data.width)||0,height:Number(data.height)||0,font_size:Number(data.font_size)||0,radius:Number(data.radius)||0,padding:Number(data.padding)||0,
+   order:Number(data.order)||0,shape:data.shape,align:data.align,
+   background_color:form.elements.use_background.checked?data.background_color:"",
+   accent_color:form.elements.use_accent.checked?data.accent_color:""};
+  applyOwnerElementConfig(target,live);
+  sample.textContent=live.label||baseLabel||"معاينة العنصر";
+  sample.style.width=live.width?Math.min(live.width,modal.querySelector(".owner-element-preview").clientWidth)+"px":"auto";
+  sample.style.minHeight=live.height?Math.min(live.height,260)+"px":"70px";
+  sample.style.fontSize=live.font_size?live.font_size+"px":"16px";
+  sample.style.borderRadius=live.radius+"px";
+  sample.style.padding=live.padding+"px";
+  sample.style.textAlign=live.align==="start"?"right":live.align==="end"?"left":live.align||"center";
+  sample.style.background=live.background_color||"var(--panel2)";
+  sample.style.color=live.accent_color||"var(--white)";
+ };
+ form.addEventListener("input",sync);form.addEventListener("change",sync);
+ form.elements.shape.value=saved.shape||"default";form.elements.align.value=saved.align||"";
+ modal.querySelector("[data-owner-element-reset]").onclick=async()=>{
+  const next={...(state.settings.theme_element_settings||{})};delete next[key];
+  try{await api("/owner/settings",{method:"POST",data:{...state.settings,theme_element_settings:next,site_public:false,payments_live:false}});
+   state.settings.theme_element_settings=next;applyOwnerElementConfig(target,{});enhanceOwnerControls();close(false);toast("تمت إعادة ضبط العنصر")}catch(e){toast(errorMessage(e))}
+ };
+ form.onsubmit=async ev=>{
+  ev.preventDefault();const btn=form.querySelector('[type="submit"]');btn.disabled=true;const data=Object.fromEntries(new FormData(form));
+  const config={label:String(data.label||"").trim().slice(0,160),description:String(data.description||"").trim().slice(0,300),
+   width:Number(data.width)||0,height:Number(data.height)||0,font_size:Number(data.font_size)||0,radius:Number(data.radius)||0,padding:Number(data.padding)||0,
+   order:Number(data.order)||0,shape:data.shape||"default",align:data.align||"",
+   background_color:form.elements.use_background.checked?data.background_color:"",
+   accent_color:form.elements.use_accent.checked?data.accent_color:"",
+   visible:form.elements.visible.checked};
+  const next={...(state.settings.theme_element_settings||{}),[key]:config};
+  if(form.elements.apply_similar.checked){
+   document.querySelectorAll("[data-owner-setting-type]").forEach(el=>{
+    if(el.dataset.ownerSettingType===type&&el.dataset.ownerSettingKey!==key){
+     const copy={...config,label:"",description:""};next[el.dataset.ownerSettingKey]=copy;
+    }
+   });
+  }
+  try{
+   const r=await api("/owner/settings",{method:"POST",data:{...state.settings,theme_element_settings:next,site_public:false,payments_live:false}});
+   state.settings={...state.settings,...r.settings,theme_element_settings:next};enhanceOwnerControls();close(false);toast("تم حفظ إعدادات العنصر"+(form.elements.apply_similar.checked?" وتعميم الشكل":""));
+  }catch(e){form.querySelector(".form-msg").textContent=errorMessage(e);btn.disabled=false}
+ };
+ document.body.append(shade,modal);sync();
+}
+
 function bind(){
  document.addEventListener("pointerdown",ev=>{const kind=visualEditTarget(ev.target);if(!kind)return;clearTimeout(visualPressTimer);visualPressTimer=setTimeout(()=>{visualLongPressed=true;if(kind.startsWith("section:"))openOwnerStaticSectionSettings(kind.slice(8));else openVisualEditor(kind)},650)},true);
  ["pointerup","pointercancel"].forEach(name=>document.addEventListener(name,()=>clearTimeout(visualPressTimer),true));
@@ -1368,6 +1558,8 @@ function bind(){
  document.addEventListener("click",async ev=>{
   const t=ev.target.closest("button,a,[data-book]");
   if(!t)return;
+  if(t.dataset.ownerElementSettings){ev.preventDefault();ev.stopPropagation();return openOwnerElementEditor(t._ownerTarget,t.dataset.ownerElementSettings,t.dataset.ownerElementType||"component")}
+  if(t.dataset.ownerBookDesign){ev.preventDefault();return openOwnerElementEditor(t._ownerTarget,"book:"+ownerElementSlug(t.dataset.ownerBookDesign),"book")}
   if(t.dataset.ownerSectionSettings){ev.preventDefault();ev.stopPropagation();return openOwnerSectionSettings(t.dataset.ownerSectionSettings)}
   if(t.closest("[data-owner-book-settings]")){ev.preventDefault();ev.stopPropagation();return openOwnerBookActions(t.closest("[data-owner-book-settings]").dataset.ownerBookSettings)}
   if(t.dataset.book){ev.preventDefault();return book(t.dataset.book)}
