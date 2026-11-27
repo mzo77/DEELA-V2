@@ -30,6 +30,10 @@ function saveCart(){
  localStorage.setItem("deela-books-cart-v1",JSON.stringify(state.cart));
  $("cartCount").textContent=state.cart.reduce((n,x)=>n+x.qty,0);
 }
+function updateNotificationBadge(){
+ const unread=(state.sellerNotifications||[]).filter(n=>!n.read_at).length,badge=$("notificationCount");
+ if(badge){badge.textContent=unread>99?"99+":String(unread);badge.hidden=unread===0;}
+}
 function errorMessage(e){return e instanceof Error?e.message:String(e)}
 async function api(path,opts={}){
  const headers={"Content-Type":"application/json"};
@@ -347,7 +351,7 @@ function detailPage(){
  (enabled("enable_favorites")?'<button class="btn btn-outline" data-favorite="'+esc(b.id)+'">'+(state.me?.favorites?.includes(b.id)?"♥ محفوظ في المفضلة":"◇ حفظ للمفضلة")+'</button>':"")+
  (enabled("enable_messages")?'<button class="btn btn-outline" data-ask="'+esc(b.id)+'">راسل البائع ✉</button>':"")+
  '<button class="btn btn-outline" data-report="'+esc(b.id)+'">إبلاغ</button>'+
- (state.me?.is_owner&&b.format!=="physical"&&b.file_path?'<button class="btn btn-soft" data-download="'+esc(b.id)+'">تحميل نسخة المالك</button>':"")+
+ (state.me?.is_owner&&b.format!=="physical?'<button class="btn btn-soft" data-reader="'+esc(b.id)+'">معاينة محتوى الكتاب للمالك</button><button class="btn danger" data-owner-archive="'+esc(b.id)+'">حذف / إخفاء الكتاب</button>':"")+
  '</div><p style="margin-top:16px;font-size:11px">الشراء يعتمد على مراجعة المالك؛ لا يوجد دفع أو شحن تلقائي حاليًا.</p></div></div>'+
  '<div class="detail-story"><h2>ملخص الرواية ومضمونها</h2><p>'+esc(b.description||"لم يضف البائع وصفًا بعد.")+'</p></div>'+
  (b.content_warning?'<div class="content-warning"><strong>تنبيه المحتوى</strong><p>'+esc(b.content_warning)+'</p></div>':"")+
@@ -415,7 +419,7 @@ function ordersPage(){
  '<span class="status">'+esc(statusNames[o.status]||o.status)+'</span></div>'+
  '<p>الإجمالي: '+sar(o.total_sar)+'</p>'+
  (o.is_test?'<p class="test-mode-note">طلب اختبار خاص — لم يتم خصم مبلغ حقيقي.</p>':"")+
- (o.deela_books_order_items||[]).map(x=>'<div class="cart-line"><div><strong>'+esc(x.title_snapshot)+'</strong>'+
+ (o.is_test?'<p class="test-mode-note">طلب اختبار خاص — لم يتم خصم مبلغ حقيقي.</p>':"")+(o.deela_books_order_items||[]).map(x=>'<div class="cart-line"><div><strong>'+esc(x.title_snapshot)+'</strong>'+
  '<p>الكمية: '+x.quantity+'</p></div><div>'+
  (["paid","preparing","shipped","delivered"].includes(o.status)&&x.format_snapshot!=="physical"?
  '<button data-reader="'+esc(x.listing_id)+'">افتح الكتاب</button> <button data-download="'+esc(x.listing_id)+'">تحميل نسخة</button>':"")+
@@ -780,10 +784,10 @@ async function pollSellerNotifications(){
  if(!state.token||!state.me)return;
  try{
   const r=await api("/seller/notifications"),items=r.notifications||[];
-  if(!state.sellerNotificationsReady){state.sellerNotificationIds=new Set(items.map(x=>x.id));state.sellerNotifications=items;state.sellerNotificationsReady=true;return;}
+  if(!state.sellerNotificationsReady){state.sellerNotificationIds=new Set(items.map(x=>x.id));state.sellerNotifications=items;state.sellerNotificationsReady=true;updateNotificationBadge();return;}
   const fresh=items.filter(x=>!state.sellerNotificationIds.has(x.id));
   for(const x of items)state.sellerNotificationIds.add(x.id);
-  state.sellerNotifications=items;
+  state.sellerNotifications=items;updateNotificationBadge();
   if(fresh.length){
    toast(fresh.length===1?fresh[0].title:"لديك "+fresh.length+" تنبيهات جديدة للبائع");
    if("Notification" in window&&Notification.permission==="granted"){
@@ -1113,7 +1117,7 @@ async function moderateLaunchAlert(id,status){
  try{await api("/owner/launch-alert-status",{method:"POST",data:{id,status}});toast(status==="published"?"تم تأكيد المبلغ ونشر الإعلان داخل موجز التطبيق":"تم رفض الطلب");await route("owner",false)}catch(e){toast(errorMessage(e))}
 }
 async function markSellerNotifications(id=""){
- try{await api("/seller/notifications/read",{method:"POST",data:id?{id}:{}});await sellerData();await route("seller",false)}catch(e){toast(errorMessage(e))}
+ try{await api("/seller/notifications/read",{method:"POST",data:id?{id}:{}});await sellerData();updateNotificationBadge();await route("seller",false)}catch(e){toast(errorMessage(e))}
 }
 async function saveOrderStatus(id){
  const status=document.querySelector('[data-order-state="'+id+'"]')?.value;
@@ -1160,6 +1164,12 @@ function editor(id){
  $("sellerEditor").innerHTML=editorPage(state.editing);
  const initialFormat=state.editing?.format||"physical";document.querySelectorAll("#listingForm .physical-only").forEach(x=>x.hidden=initialFormat!=="physical");document.querySelectorAll("#listingForm .digital-only").forEach(x=>x.hidden=initialFormat==="physical");
  $("sellerEditor").scrollIntoView({behavior:"smooth",block:"start"});
+}
+async function ownerArchiveListing(id){
+ if(!state.me?.is_owner)return;
+ if(!confirm("إخفاء هذا الكتاب من المتجر؟ يمكنك إعادته لاحقًا من إدارة الكتب."))return;
+ try{await api("/owner/listing-status",{method:"POST",data:{id,status:"archived"}});toast("تم إخفاء الكتاب");await reload();await route("catalog",false)}
+ catch(e){toast(errorMessage(e))}
 }
 async function download(id){
  try{const x=await api("/download?id="+encodeURIComponent(id));window.open(x.url,"_blank","noopener")}
@@ -1231,6 +1241,7 @@ function bind(){
   if(t.dataset.editor){ev.preventDefault();return editor(t.dataset.editor)}
   if(t.dataset.download){ev.preventDefault();return download(t.dataset.download)}
   if(t.dataset.reader){ev.preventDefault();return openReader(t.dataset.reader)}
+  if(t.dataset.ownerArchive){ev.preventDefault();return ownerArchiveListing(t.dataset.ownerArchive)}
   if(t.dataset.ask){ev.preventDefault();return quickModal("راسل بائع الكتاب","messageForm",
    '<input type="hidden" name="listing_id" value="'+esc(t.dataset.ask)+'"><label class="field">رسالتك<textarea name="body" required minlength="2" maxlength="1000"></textarea></label>')}
   if(t.dataset.reply){ev.preventDefault();return quickModal("الرد على رسالة","replyForm",
