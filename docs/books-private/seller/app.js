@@ -270,7 +270,7 @@ function heading(title,desc="",label="DEELA BOOKS"){
 }
 function listingGrid(items,showSamples=false){
  return '<div class="books-grid">'+(items.length?items.map(card).join(""):showSamples?demoCovers():
- '<div class="empty-state"><h3>ما فيه كتب مطابقة حاليًا</h3><p>تظهر الكتب فور اعتمادها من مركز المالك.</p><button class="btn btn-outline" data-route="seller">أضف أول كتاب</button></div>')+'</div>';
+ '<div class="empty-state"><h3>ما فيه كتب مطابقة حاليًا</h3><p>تظهر الكتب فور نشرها في مساحة الاختبار الخاصة.</p><button class="btn btn-outline" data-route="seller">أضف أول كتاب</button></div>')+'</div>';
 }
 function catalogPage(){
  let books=state.listings.filter(b=>{
@@ -449,8 +449,8 @@ function sellerLaunchAlertPanel(){
 function sellerPage(){
  const seller=state.me?.seller;
  if(!seller&&!enabled("enable_seller_registration"))return heading("فتح المتاجر متوقف حاليًا","أوقف المالك استقبال مؤلفين ومتاجر جديدة مؤقتًا.");
- if(!seller)return heading("حساب الكاتب","أنشئ واجهتك داخل DEELA Books وابدأ بإضافة رواياتك.","DEELA AUTHOR")+
- '<div class="panel"><h2>ابدأ صفحة الكاتب</h2><p>صفحتك تظهر لك داخل حسابك فقط. أرسل أول رواية للمراجعة، ولن تظهر للقراء قبل اعتمادها.</p>'+
+ if(!seller)return heading("حساب الكاتب","أنشئ واجهتك داخل DEELA Books، وبعد اعتماد حسابك انشر رواياتك مباشرة في المساحة الخاصة.","DEELA AUTHOR")+
+ '<div class="panel"><h2>ابدأ صفحة الكاتب</h2><p>صفحتك تظهر لك داخل حسابك فقط. بعد اعتماد صفحة الكاتب، تقدر تنشر أي رواية فورًا ليشاهدها مستخدمو مساحة الاختبار الخاصة.</p>'+
  '<form id="sellerApplyForm" class="form-grid">'+
  field("اسم الكاتب الظاهر للقراء","shop_name","text",true,"اسمك أو اسمك الأدبي")+
  field("معرّف صفحة الكاتب بالإنجليزية","slug","text",true,"my-novels")+
