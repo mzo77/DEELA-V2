@@ -249,11 +249,15 @@ function card(b){
 function renderContestHome(){
  let host=document.getElementById("contestHome");if(!host){host=document.createElement("div");host.id="contestHome";$("home").append(host)}
  const rows=(state.contests||[]).filter(x=>["announced","open"].includes(x.status));
- host.innerHTML=rows.length?'<section class="container section contest-section"><div class="section-title"><div><span class="eyebrow">DEELA COMMUNITY</span><h2>مجتمع ديلا</h2><p>إعلانات المالك، أسئلة القراء ومسابقات DEELA</p></div></div><div class="contest-grid">'+rows.map(c=>{
-  const open=c.status==="open"&&c.question_text,answered=c.my_answer;
-  return '<article class="contest-card"><span class="status">'+(open?"بدأت المسابقة":"قريبًا")+'</span><h3>'+esc(c.title)+'</h3><p>'+esc(c.announcement||"")+'</p>'+
-   (c.starts_at?'<small>تبدأ: '+new Date(c.starts_at).toLocaleString("ar-SA",{dateStyle:"medium",timeStyle:"short"})+'</small>':"")+
-   (open?'<h4>'+esc(c.question_text)+'</h4>'+(answered?'<span class="status">وصلت إجابتك'+(answered.is_correct===true?" · إجابة صحيحة":answered.is_correct===false?" · إجابة غير صحيحة":" · بانتظار التصحيح")+'</span>':'<form id="contestAnswerForm" class="contest-answer-form"><input type="hidden" name="contest_id" value="'+esc(c.id)+'"><label class="field">إجابتك<input name="answer" required maxlength="1000"></label><button class="btn btn-primary" type="submit">إرسال الإجابة</button></form>'):"")+'</article>';
+ host.innerHTML=rows.length?'<section class="container section contest-section"><div class="section-title"><div><span class="eyebrow">DEELA COMMUNITY</span><h2>مجتمع ديلا</h2><p>إعلانات المالك، أسئلة القراء واستطلاعاتهم</p></div></div><div class="contest-grid">'+rows.map(c=>{
+  const poll=Array.isArray(c.poll_options)&&c.poll_options.length>=2,open=c.status==="open"&&c.question_text,answered=c.my_answer,counts=c.poll_counts||{},total=Object.values(counts).reduce((sum,n)=>sum+Number(n||0),0);
+  let interaction="";
+  if(open&&poll){
+   interaction=answered?'<div class="community-poll-results">'+c.poll_options.map(option=>{const count=Number(counts[option]||0),percent=total?Math.round(count*100/total):0;return '<div class="community-poll-result '+(answered.answer===option?"selected":"")+'"><div><span>'+esc(option)+'</span><b>'+percent+'% · '+count+'</b></div><i><span style="width:'+percent+'%"></span></i></div>'}).join("")+'<small>تم تسجيل صوتك · '+total+' تصويت</small></div>':'<form id="contestAnswerForm" class="contest-answer-form community-poll-form"><input type="hidden" name="contest_id" value="'+esc(c.id)+'"><fieldset><legend>اختر إجابة واحدة</legend>'+c.poll_options.map((option,k)=>'<label class="community-poll-option"><input type="radio" name="answer" value="'+esc(option)+'" '+(k===0?"required":"")+'><span>'+esc(option)+'</span></label>').join("")+'</fieldset><button class="btn btn-primary" type="submit">صوّت الآن</button></form>';
+  }else if(open){
+   interaction=answered?'<span class="status">وصلت إجابتك'+(answered.is_correct===true?" · إجابة صحيحة":answered.is_correct===false?" · إجابة غير صحيحة":" · بانتظار التصحيح")+'</span>':'<form id="contestAnswerForm" class="contest-answer-form"><input type="hidden" name="contest_id" value="'+esc(c.id)+'"><label class="field">إجابتك<input name="answer" required maxlength="1000"></label><button class="btn btn-primary" type="submit">إرسال الإجابة</button></form>';
+  }
+  return '<article class="contest-card"><span class="status">'+(open?(poll?"استطلاع مفتوح":"المسابقة بدأت"):"قريبًا")+'</span><h3>'+esc(c.title)+'</h3><p>'+esc(c.announcement||"")+'</p>'+(c.starts_at?'<small>تبدأ: '+new Date(c.starts_at).toLocaleString("ar-SA",{dateStyle:"medium",timeStyle:"short"})+'</small>':"")+(open?'<h4>'+esc(c.question_text)+'</h4>'+interaction:"")+'</article>';
  }).join("")+'</div></section>':"";
 }
 async function refreshContests(){
@@ -677,9 +681,10 @@ function ownerContestsPanel(){
  '<form id="ownerContestForm" class="form-grid"><input type="hidden" name="id"><label class="field">اسم المسابقة<input name="title" required maxlength="160" placeholder="مسابقة DEELA"></label>'+
  '<label class="field">موعد فتح السؤال<input name="starts_at" type="datetime-local"></label>'+
  '<label class="field full">إعلان ينتظرونه القراء<textarea name="announcement" maxlength="1000" placeholder="انتظرونا الساعة 10 مساءً في مسابقة ديلا"></textarea></label>'+
- '<label class="field full">السؤال (يمكن إضافته الآن أو لاحقًا)<textarea name="question_text" maxlength="1000"></textarea></label>'+
- '<label class="field full">الإجابة الصحيحة (تستخدم لترتيب النتائج)<input name="correct_answer" maxlength="500"></label>'+
- '<button class="btn btn-primary" type="submit">نشر الإعلان وجدولة السؤال</button><span class="form-msg"></span></form></section>'+
+ '<label class="field full">السؤال أو موضوع الاستطلاع<textarea name="question_text" maxlength="1000"></textarea></label>'+
+ '<label class="field full">خيارات الاستطلاع (كل خيار في سطر، من 2 إلى 6)<textarea name="poll_options" maxlength="700" placeholder="الخيار الأول&#10;الخيار الثاني&#10;الخيار الثالث"></textarea></label>'+
+ '<label class="field full">الإجابة الصحيحة (للمسابقة فقط، اتركها فارغة للاستطلاع)<input name="correct_answer" maxlength="500"></label>'+
+ '<button class="btn btn-primary" type="submit">نشر الإعلان أو الاستطلاع</button><span class="form-msg"></span></form></section>'+
  '<section class="panel"><h2>المسابقات والإجابات</h2><div class="list-rows">'+(rows.length?rows.map(c=>'<article class="row-card"><div class="row-top"><strong>'+esc(c.title)+'</strong><span class="status">'+esc(c.status)+'</span></div><p>'+esc(c.announcement||"")+'</p><p>الموعد: '+date(c.starts_at)+' · الإجابات: '+(c.answers||[]).length+'</p>'+
  (c.question_text?'<p><strong>السؤال:</strong> '+esc(c.question_text)+'</p>':"")+
  '<div class="contest-answers">'+(c.answers||[]).map((x,i)=>'<div class="contest-answer '+(x.is_correct===true?"correct":x.is_correct===false?"incorrect":"")+'"><b>'+(i+1)+'.</b> '+esc(x.answer)+' <span>'+(x.is_correct===true?"✅ صحيح":x.is_correct===false?"✖ خطأ":"بانتظار التصحيح")+'</span><small>'+date(x.created_at)+'</small></div>').join("")+'</div>'+
@@ -1168,12 +1173,13 @@ async function handleForm(ev){
     else await route("detail",false);
   }else if(id==="ownerContestForm"){
     const start=raw.starts_at?new Date(raw.starts_at).toISOString():null;
-    const result=await api("/owner/contest/save",{method:"POST",data:{...raw,starts_at:start}});
-    toast("تم نشر إعلان المجتمع وإشعار المستخدمين");
+    const poll_options=(raw.poll_options||"").split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+    const result=await api("/owner/contest/save",{method:"POST",data:{...raw,starts_at:start,poll_options}});
+    toast(poll_options.length?"تم نشر الاستطلاع وإشعار المستخدمين":"تم نشر إعلان المجتمع وإشعار المستخدمين");
     state.ownerContests=(await api("/owner/contests")).contests||[];await route("owner",false);
   }else if(id==="contestAnswerForm"){
     const result=await api("/contests/answer",{method:"POST",data:{contest_id:raw.contest_id,answer:raw.answer}});
-    toast("تم تسجيل إجابتك");
+    toast("تم تسجيل مشاركتك");
     const c=await api("/contests");state.contests=c.contests||[];await route("home",false);
   }else if(id==="reportForm"){
     await api("/reports",{method:"POST",data:{listing_id:raw.listing_id,reason:raw.reason}});
