@@ -1698,3 +1698,88 @@ body #main #home h1#heroTitle,
 body #main #home p#heroSubtitle{
  color:#0D3042!important;-webkit-text-fill-color:#0D3042!important
 }
+
+
+/* Keep membership accents while using the same pearl silk canvas site-wide. */
+:root{--deela-pearl:#F9E9E7;--deela-champagne:#F9DFC2;--deela-ink:#0D3042;--deela-brown:#51321B}
+html,body,body[class*="member-tier-page"],body[class*="member-public-store"]{
+ background-color:#F9E9E7!important;
+ background-image:var(--deela-pearl-texture,none)!important;
+ background-size:100% auto!important;background-repeat:repeat-y!important;
+ background-position:center top!important;background-attachment:scroll!important;
+ color:#0D3042!important
+}
+body[class*="member-tier-page"] #main,body[class*="member-public-store"] #main,
+body[class*="member-tier-page"] #dynamicPage,body[class*="member-public-store"] #dynamicPage{background:transparent!important;color:#0D3042!important}
+body[class*="member-tier-page"] .header,body[class*="member-public-store"] .header,
+body[class*="member-tier-page"] .footer,body[class*="member-public-store"] .footer{
+ background:rgba(249,233,231,.88)!important;color:#0D3042!important;border-color:#e5c9c4!important
+}
+body[class*="member-tier-page"] .mobile-nav,body[class*="member-public-store"] .mobile-nav{
+ background:linear-gradient(180deg,#fff8ee 0%,#F9DFC2 58%,#f4d8b4 100%)!important;
+ color:#51321B!important;border-color:#e4c6a8!important
+}
+body[class*="member-tier-page"] .mobile-nav button,body[class*="member-public-store"] .mobile-nav button{color:#51321B!important}
+body[class*="member-tier-page"] .mobile-nav button span,body[class*="member-public-store"] .mobile-nav button span{color:#51321B!important}
+body .member-store-stage,body .member-book-page,body .member-seller-workspace{
+ color:#0D3042!important;background:transparent!important;background-image:none!important;
+ box-shadow:none!important;border-color:transparent!important
+}
+body .member-store-stage{position:relative!important;isolation:isolate}
+body .member-store-stage.member-store-month{border:2px solid #46c9b7!important;box-shadow:0 0 0 1px #46c9b722,0 0 26px #46c9b744!important}
+body .member-store-stage.member-store-half-year{border:2px solid #d69c77!important;box-shadow:0 0 0 1px #d69c7722,0 0 28px #d69c774c!important}
+body .member-store-stage.member-store-year{border:2px solid #d6ae43!important;box-shadow:0 0 0 1px #d6ae4344,0 0 32px #d6ae4366!important}
+body .member-store-stage:before,body .member-seller-workspace:before{
+ display:block!important;content:""!important;position:absolute!important;inset:0!important;pointer-events:none!important;
+ z-index:0!important;border-radius:inherit!important;opacity:.48!important;
+ background:linear-gradient(112deg,transparent 0%,#fff0 34%,#ffffff80 49%,#fff0 58%,transparent 100%)!important;
+ background-size:240% 100%!important;animation:deelaCeramicBacklight 8s ease-in-out infinite!important
+}
+body .member-store-stage>* ,body .member-seller-workspace>*{position:relative;z-index:1}
+body .member-store-stage .shop-profile,body .shop-profile.member-profile-tier-year,
+body .shop-profile.member-profile-tier-half_year,body .shop-profile.member-profile-tier-month{
+ background:rgba(255,248,245,.94)!important;color:#0D3042!important;border-color:#e5c9c4!important;
+ box-shadow:0 8px 24px #51321b18!important
+}
+body .member-store-stage.member-store-year .shop-profile{border:2px solid #d6ae43!important;box-shadow:0 0 0 1px #fff4c855,0 0 22px #d9ad3a45!important}
+body .member-store-stage.member-store-half-year .shop-profile{border:2px solid #d9a27a!important;box-shadow:0 0 18px #d99c7445!important}
+body .member-store-stage.member-store-month .shop-profile{border:2px solid #68cabb!important;box-shadow:0 0 16px #55cabb44!important}
+body .member-store-stage .book-card,body .member-book-page .book-card,
+body .member-book-page .detail-desc,body .member-book-page .detail-story,
+body .member-book-page .detail-spec div,body .member-book-page .reader-review,
+body .member-book-page .member-reviews-panel{
+ background:rgba(255,248,245,.96)!important;background-image:none!important;color:#51321B!important;
+ border-color:#e5c9c4!important;box-shadow:0 8px 24px #51321b18!important
+}
+body .member-book-page :where(h1,h2,h3,h4,strong,b,label){color:#0D3042!important}
+body .member-book-page p,body .member-book-page small,body .member-store-stage p{color:#775f51!important}
+body .member-store-stage.member-store-year .book-card{border:1px solid #d6ae43!important;box-shadow:0 0 0 1px #d6ae4333,0 0 20px #d6ae4345!important}
+body .member-store-stage.member-store-half-year .book-card{border:1px solid #d9a27a!important;box-shadow:0 0 18px #d99c7433!important}
+body .member-store-stage.member-store-month .book-card{border:1px solid #68cabb!important;box-shadow:0 0 16px #55cabb33!important}
+body .member-glow{animation:deelaPremiumPulse 4.2s ease-in-out infinite!important}
+body .premium-avatar-frame{
+ border:2px solid transparent!important;
+ background:linear-gradient(#fff8f5,#fff8f5) padding-box,linear-gradient(135deg,#65eee0,#d5a64b,#a08cff,#65eee0) border-box!important;
+ box-shadow:0 0 20px #71a99c66!important;animation:deelaFrameGlow 5s linear infinite!important
+}
+body .premium-avatar-frame-gold{box-shadow:0 0 0 3px #d6ae43,0 0 24px #d6ae4388!important}
+body .premium-avatar-frame-rose{box-shadow:0 0 0 3px #d9a27a,0 0 24px #d99c7488!important}
+body .premium-avatar-frame-diamond{box-shadow:0 0 0 3px #64c9c1,0 0 26px #7cefe9aa!important}
+body .member-book-frame-gold{border:2px solid #d6ae43!important;box-shadow:0 0 24px #d6ae4377!important}
+body .member-book-frame-rose{border:2px solid #d9a27a!important;box-shadow:0 0 22px #d99c7466!important}
+body .member-book-frame-diamond{border:2px solid #64c9c1!important;box-shadow:0 0 24px #64c9c177!important}
+body .member-book-shine:after,body .member-book-shine-prism:after,body .seller-novel-card.member-book-frame:after{
+ animation:deelaUniversalShine 6s ease-in-out infinite!important
+}
+body .member-book-shine-prism:after{animation:deelaPrismShine 5.4s ease-in-out infinite!important}
+body .member-tier-ribbon,body .member-tier-pill{
+ color:#51321B!important;background:#fff8f5!important;box-shadow:0 3px 12px #51321b20!important
+}
+body .member-name-style{color:#815a2f!important;text-shadow:0 0 10px #d6ae4355!important}
+body .member-feature-grid .checkbox-field,body .member-control,body .owner-member-grant{
+ background:#fff8f5!important;color:#51321B!important;border-color:#e5c9c4!important
+}
+@media(prefers-reduced-motion:reduce){
+ body .member-glow,body .premium-avatar-frame,body .member-store-stage:before,body .member-seller-workspace:before,
+ body .member-book-shine:after,body .member-book-shine-prism:after{animation:none!important}
+}
