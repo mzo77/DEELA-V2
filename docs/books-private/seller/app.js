@@ -64,6 +64,7 @@ async function api(path,opts={}){
  return body;
 }
 async function reload(){
+ sellerDataCacheAt=0;
  if(!state.token)return loadGuest();
  try{
   const me=await api("/me");state.me=me;state.email=me.email||me.phone||"";applyMemberTierTheme(me.member_plan);
@@ -912,8 +913,10 @@ async function ownerData(){
  if(tab==="alerts")state.ownerData=await api("/owner/launch-alerts");
  if(tab==="contests")state.ownerContests=(await api("/owner/contests")).contests||[];
 }
+let sellerDataCacheAt=0;
 async function sellerData(){
- const [r,n,a,promo,orders,paid]=await Promise.all([api("/my/listings?limit=40&offset=0"),api("/seller/notifications"),api("/seller/launch-alerts"),api("/seller/promotions"),api("/seller/orders"),api("/seller/paid-requests")]);state.sellerPaidRequests=paid;state.sellerListings=r.listings||[];state.sellerListingsOffset=r.next_offset||state.sellerListings.length;state.sellerListingsHasMore=!!r.has_more;state.sellerNotifications=n.notifications||[];state.sellerLaunchAlerts=a.campaigns||[];state.launchAlertPrice=Number(a.price_sar||0);state.sellerPromotions=promo.promotions||[];state.sellerOrders=orders.orders||[];state.sellerMetrics=orders.metrics||{};
+ if(Date.now()-sellerDataCacheAt<15000&&(state.sellerListings.length||state.sellerPaidRequests))return;
+ const [r,n,a,promo,orders,paid]=await Promise.all([api("/my/listings?limit=40&offset=0"),api("/seller/notifications"),api("/seller/launch-alerts"),api("/seller/promotions"),api("/seller/orders"),api("/seller/paid-requests")]);state.sellerPaidRequests=paid;state.sellerListings=r.listings||[];state.sellerListingsOffset=r.next_offset||state.sellerListings.length;state.sellerListingsHasMore=!!r.has_more;state.sellerNotifications=n.notifications||[];state.sellerLaunchAlerts=a.campaigns||[];state.launchAlertPrice=Number(a.price_sar||0);state.sellerPromotions=promo.promotions||[];state.sellerOrders=orders.orders||[];state.sellerMetrics=orders.metrics||{};sellerDataCacheAt=Date.now();
  if(!state.sellerNotificationsReady){state.sellerNotificationIds=new Set(state.sellerNotifications.map(x=>x.id));state.sellerNotificationsReady=true;}
 }
 async function pollLaunchAlerts(){
@@ -976,6 +979,7 @@ async function messagesData(){
  const r=await api("/messages");return r.messages||[];
 }
 async function route(view,push=true){
+ const routeId=(window.__deelaRouteId=(window.__deelaRouteId||0)+1);
  if(!state.token&&!["home","catalog","shops","shop","detail","subscriptions"].includes(view)){openLogin();return}
  if(view==="owner"&&!state.me?.is_owner){toast("مركز الإدارة خاص بالمالك");return}
 
@@ -987,8 +991,10 @@ async function route(view,push=true){
  if(push)history.replaceState(null,"","#"+(view==="detail"?"book/"+state.current:view));
  if(view==="home")renderHome();
  else{
+  $("pageContent").innerHTML='<div class="route-loading" role="status" aria-live="polite">جارٍ فتح القسم…</div>';
   if(view==="shop"&&state.shopLoadedSlug!==state.current){state.shopListings=[];state.shopBooksOffset=0;const shopBooks=await api("/catalog?limit=24&offset=0&shop="+encodeURIComponent(state.current));state.shopListings=shopBooks.listings||[];state.shopBooksOffset=shopBooks.next_offset||state.shopListings.length;state.shopBooksHasMore=!!shopBooks.has_more;state.shopLoadedSlug=state.current;}
-  if((view==="seller"||view==="profile"||view==="subscriptions")&&state.me?.seller)await sellerData();
+  if(view==="subscriptions"&&state.me?.seller)state.sellerPaidRequests=await api("/seller/paid-requests");
+  else if((view==="seller"||view==="profile")&&state.me?.seller)await sellerData();
   if(view==="notifications"){const r=await api("/seller/notifications");state.sellerNotifications=r.notifications||[];updateNotificationBadge();}
   if(view==="alerts"){const d=await api("/launch-alerts/feed");state.launchAlertFeed=d.alerts||[];for(const x of state.launchAlertFeed)state.launchAlertIds.add(x.id);state.launchAlertsReady=true;}
   if(view==="orders"){const d=await api("/orders");state.orders=d.orders||[];}
@@ -998,6 +1004,7 @@ async function route(view,push=true){
    view==="orders"?ordersPage():view==="seller"?sellerPage():view==="alerts"?launchAlertsPage():view==="notifications"?notificationsPage():view==="profile"?accountPage():view==="owner"?ownerPage():"";
   if(view==="messages")markup=messagesPage(enabled("enable_messages")?await messagesData():[]);
   if(view==="owner")markup+=accountLogoutPanel();
+  if(routeId!==window.__deelaRouteId)return;
   $("pageContent").innerHTML=markup;
   if(view==="detail")trackBookView(state.current);
   if(view==="catalog"){$("productTypeFilter").value=state.productType;$("nearbyRadius").value=String(state.radiusKm);$("formatFilter").value=state.format;$("sortFilter").value=state.sort;$("priceSortFilter").value=state.priceOrder;$("conditionFilter").value=state.condition;$("cityFilter").value=state.cityFilter}
