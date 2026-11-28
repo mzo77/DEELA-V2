@@ -978,11 +978,27 @@ async function enableSellerNotifications(){
 async function messagesData(){
  const r=await api("/messages");return r.messages||[];
 }
+function routeMarkup(view){
+ let markup=view==="catalog"?catalogPage():view==="detail"?detailPage():view==="shops"?shopsPage():
+  view==="shop"?shopPage():view==="subscriptions"?subscriptionsPage():view==="favorites"?favoritesPage():view==="cart"?cartPage():
+  view==="orders"?ordersPage():view==="seller"?sellerPage():view==="alerts"?launchAlertsPage():view==="notifications"?notificationsPage():view==="profile"?accountPage():view==="owner"?ownerPage():"";
+ if(view==="messages")markup=messagesPage(state.messages||[]);
+ if(view==="owner")markup+=accountLogoutPanel();
+ return markup;
+}
+function paintRoute(view,routeId){
+ if(routeId!==window.__deelaRouteId)return;
+ $("pageContent").innerHTML=routeMarkup(view);
+ if(view==="catalog"){
+  $("productTypeFilter").value=state.productType;$("nearbyRadius").value=String(state.radiusKm);
+  $("formatFilter").value=state.format;$("sortFilter").value=state.sort;$("priceSortFilter").value=state.priceOrder;
+  $("conditionFilter").value=state.condition;$("cityFilter").value=state.cityFilter;
+ }
+}
 async function route(view,push=true){
  const routeId=(window.__deelaRouteId=(window.__deelaRouteId||0)+1);
- if(!state.token&&!["home","catalog","shops","shop","detail","subscriptions"].includes(view)){openLogin();return}
+ if(!state.token&&!("home,catalog,shops,shop,detail,subscriptions".split(",").includes(view))){openLogin();return}
  if(view==="owner"&&!state.me?.is_owner){toast("مركز الإدارة خاص بالمالك");return}
-
  state.view=view;state.current=state.current||"";
  if(view!=="shop"&&view!=="detail")applyPublicStorePageTheme("");
  document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("active",b.dataset.route===view));
@@ -991,27 +1007,30 @@ async function route(view,push=true){
  if(push)history.replaceState(null,"","#"+(view==="detail"?"book/"+state.current:view));
  if(view==="home")renderHome();
  else{
-  $("pageContent").innerHTML='<div class="route-loading" role="status" aria-live="polite">جارٍ فتح القسم…</div>';
-  if(view==="shop"&&state.shopLoadedSlug!==state.current){state.shopListings=[];state.shopBooksOffset=0;const shopBooks=await api("/catalog?limit=24&offset=0&shop="+encodeURIComponent(state.current));state.shopListings=shopBooks.listings||[];state.shopBooksOffset=shopBooks.next_offset||state.shopListings.length;state.shopBooksHasMore=!!shopBooks.has_more;state.shopLoadedSlug=state.current;}
-  if(view==="subscriptions"&&state.me?.seller)state.sellerPaidRequests=await api("/seller/paid-requests");
-  else if((view==="seller"||view==="profile")&&state.me?.seller)await sellerData();
-  if(view==="notifications"){const r=await api("/seller/notifications");state.sellerNotifications=r.notifications||[];updateNotificationBadge();}
-  if(view==="alerts"){const d=await api("/launch-alerts/feed");state.launchAlertFeed=d.alerts||[];for(const x of state.launchAlertFeed)state.launchAlertIds.add(x.id);state.launchAlertsReady=true;}
-  if(view==="orders"){const d=await api("/orders");state.orders=d.orders||[];}
-  if(view==="owner")await ownerData();
-  let markup=view==="catalog"?catalogPage():view==="detail"?detailPage():view==="shops"?shopsPage():
-   view==="shop"?shopPage():view==="subscriptions"?subscriptionsPage():view==="favorites"?favoritesPage():view==="cart"?cartPage():
-   view==="orders"?ordersPage():view==="seller"?sellerPage():view==="alerts"?launchAlertsPage():view==="notifications"?notificationsPage():view==="profile"?accountPage():view==="owner"?ownerPage():"";
-  if(view==="messages")markup=messagesPage(enabled("enable_messages")?await messagesData():[]);
-  if(view==="owner")markup+=accountLogoutPanel();
-  if(routeId!==window.__deelaRouteId)return;
-  $("pageContent").innerHTML=markup;
-  if(view==="detail")trackBookView(state.current);
-  if(view==="catalog"){$("productTypeFilter").value=state.productType;$("nearbyRadius").value=String(state.radiusKm);$("formatFilter").value=state.format;$("sortFilter").value=state.sort;$("priceSortFilter").value=state.priceOrder;$("conditionFilter").value=state.condition;$("cityFilter").value=state.cityFilter}
+  paintRoute(view,routeId);
+  (async()=>{
+   try{
+    if(view==="shop"&&state.shopLoadedSlug!==state.current){
+     state.shopListings=[];state.shopBooksOffset=0;
+     const shopBooks=await api("/catalog?limit=24&offset=0&shop="+encodeURIComponent(state.current));
+     state.shopListings=shopBooks.listings||[];state.shopBooksOffset=shopBooks.next_offset||state.shopListings.length;
+     state.shopBooksHasMore=!!shopBooks.has_more;state.shopLoadedSlug=state.current;
+    }
+    if(view==="subscriptions"&&state.me?.seller)state.sellerPaidRequests=await api("/seller/paid-requests");
+    else if((view==="seller"||view==="profile")&&state.me?.seller)await sellerData();
+    if(view==="notifications"){const r=await api("/seller/notifications");state.sellerNotifications=r.notifications||[];updateNotificationBadge();}
+    if(view==="alerts"){const d=await api("/launch-alerts/feed");state.launchAlertFeed=d.alerts||[];for(const x of state.launchAlertFeed)state.launchAlertIds.add(x.id);state.launchAlertsReady=true;}
+    if(view==="orders"){const d=await api("/orders");state.orders=d.orders||[];}
+    if(view==="owner")await ownerData();
+    if(view==="messages")state.messages=enabled("enable_messages")?await messagesData():[];
+    if(routeId!==window.__deelaRouteId)return;
+    paintRoute(view,routeId);
+    if(view==="detail")trackBookView(state.current);
+   }catch(e){if(routeId===window.__deelaRouteId)toast(errorMessage(e));}
+  })();
  }
  window.scrollTo({top:0,behavior:"instant"});
-}
-async function loadMoreSellerBooks(){if(!state.sellerListingsHasMore)return;const btn=document.querySelector("[data-load-seller-books]");if(btn)btn.disabled=true;const y=window.scrollY;try{const r=await api("/my/listings?limit=40&offset="+state.sellerListingsOffset);state.sellerListings.push(...(r.listings||[]));state.sellerListingsOffset=r.next_offset??state.sellerListings.length;state.sellerListingsHasMore=!!r.has_more;$("pageContent").innerHTML=sellerPage();window.scrollTo({top:y,behavior:"instant"})}catch(e){toast(errorMessage(e))}}
+}async function loadMoreSellerBooks(){if(!state.sellerListingsHasMore)return;const btn=document.querySelector("[data-load-seller-books]");if(btn)btn.disabled=true;const y=window.scrollY;try{const r=await api("/my/listings?limit=40&offset="+state.sellerListingsOffset);state.sellerListings.push(...(r.listings||[]));state.sellerListingsOffset=r.next_offset??state.sellerListings.length;state.sellerListingsHasMore=!!r.has_more;$("pageContent").innerHTML=sellerPage();window.scrollTo({top:y,behavior:"instant"})}catch(e){toast(errorMessage(e))}}
 async function loadMoreCatalog(){if(!state.catalogHasMore)return;const btn=document.querySelector("[data-load-catalog]");if(btn)btn.disabled=true;const y=window.scrollY;try{const r=await api("/catalog?limit=24&offset="+state.catalogOffset);state.listings.push(...(r.listings||[]));state.catalogOffset=r.next_offset??state.listings.length;state.catalogHasMore=!!r.has_more;await route("catalog",false);window.scrollTo({top:y,behavior:"instant"})}catch(e){toast(errorMessage(e))}}
 async function loadMoreShopBooks(){if(!state.shopBooksHasMore)return;const btn=document.querySelector("[data-load-shop-books]");if(btn)btn.disabled=true;const y=window.scrollY;try{const r=await api("/catalog?limit=24&offset="+state.shopBooksOffset+"&shop="+encodeURIComponent(state.current));state.shopListings.push(...(r.listings||[]));state.shopBooksOffset=r.next_offset??state.shopListings.length;state.shopBooksHasMore=!!r.has_more;await route("shop",false);window.scrollTo({top:y,behavior:"instant"})}catch(e){toast(errorMessage(e))}}
 async function loadMoreShops(){if(!state.shopsHasMore)return;const btn=document.querySelector("[data-load-shops]");if(btn)btn.disabled=true;const y=window.scrollY;try{const r=await api("/shops?limit=24&offset="+state.shopsOffset);state.shops.push(...(r.shops||[]));state.shopsOffset=r.next_offset??state.shops.length;state.shopsHasMore=!!r.has_more;await route("shops",false);window.scrollTo({top:y,behavior:"instant"})}catch(e){toast(errorMessage(e))}}
