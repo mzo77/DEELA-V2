@@ -221,7 +221,7 @@ async function enrichBooks(books:any[],includeTest=false){
    reviews:r?.items||[]};
  });
 }
-async function currentListings(isOwner:boolean,search:URLSearchParams,featureEnabled=true,includeTest=false){
+async function currentListings(isOwner:boolean,search:URLSearchParams,featureEnabled=true,includeTest=false,showTestTiers=false){
  let q=db.from("deela_books_listings")
    .select("*,deela_books_sellers!inner(id,user_id,shop_name,slug,status,city,latitude,longitude)");
  if(featureEnabled)q=q.order("featured",{ascending:false});
@@ -237,16 +237,17 @@ async function currentListings(isOwner:boolean,search:URLSearchParams,featureEna
  const category=str(search.get("category"),80);
  const words=str(search.get("q"),100).toLocaleLowerCase();
  const hasMore=(result.data||[]).length>pageSize,selected=(result.data||[]).slice(0,pageSize).filter(p=>(!category||p.category===category)&&(!words||[p.title,p.author,p.category,p.description].some((v:string)=>String(v||"").toLocaleLowerCase().includes(words))));
- const enriched=await enrichBooks(selected,includeTest),sellerMap=new Map<string,any>();
+ const previewMode=includeTest||showTestTiers;
+ const enriched=await enrichBooks(selected,previewMode),sellerMap=new Map<string,any>();
  const sellerRows=[...new Map(enriched.map((x:any)=>[x.deela_books_sellers?.id,x.deela_books_sellers]).filter((x:any)=>x[0]&&x[1]?.user_id)).values()];
  const sellerIds=sellerRows.map((x:any)=>x.id);
  if(sellerIds.length){
   let pq=db.from("deela_books_promotions").select("seller_id,is_test").in("seller_id",sellerIds).eq("kind","premium").eq("status","active").gt("ends_at",new Date().toISOString());
-  const promos=await (includeTest?pq:pq.eq("is_test",false));if(promos.error)throw promos.error;
+  const promos=await (previewMode?pq:pq.eq("is_test",false));if(promos.error)throw promos.error;
   const ids=new Set((promos.data||[]).map((x:any)=>x.seller_id));
   await Promise.all(sellerRows.filter((s:any)=>ids.has(s.id)).map(async(s:any)=>{
    const auth=await db.auth.admin.getUserById(s.user_id);if(auth.error||!auth.data.user)return;
-   const member=await memberEntitlements(auth.data.user,includeTest,s);
+   const member=await memberEntitlements(auth.data.user,previewMode,s);
    if(member.premium_active)sellerMap.set(s.id,{features:member.member_features,appearance:member.member_appearance,avatar_url:member.avatar_url,plan:member.member_plan});
   }));
  }
@@ -454,7 +455,7 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
         if(mine.error)throw mine.error;
         ownListings=await enrichBooks(mine.data||[],true);
       }
-      const otherPublished=await currentListings(true,new URLSearchParams("only_public=1&limit=24&offset=0"),true,true);
+      const otherPublished=await currentListings(true,new URLSearchParams("only_public=1&limit=24&offset=0"),true,true,true);
       const seen=new Set(ownListings.map(x=>x.id));
       ownListings=[...ownListings,...otherPublished.listings.filter(x=>!seen.has(x.id))];
       const sellerSettings={site_public:false,private_test_mode:true,seller_pending:pendingSeller,...Object.fromEntries(FEATURE_FLAGS.map(k=>[k,conf[k]]))};
@@ -472,7 +473,7 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
       theme_colors:conf.theme_colors,theme_material:conf.theme_material,theme_design:conf.theme_design,
       theme_sections:conf.theme_sections,theme_images:theme.theme_images,
       ...Object.fromEntries(FEATURE_FLAGS.map(k=>[k,conf[k]]))};
-    const catalogPage=await currentListings(isOwner,parsed.searchParams,conf.enable_featured_section,!conf.site_public&&!!user);
+    const catalogPage=await currentListings(isOwner,parsed.searchParams,conf.enable_featured_section,!conf.site_public&&!!user,!conf.site_public);
     return respond(req,{
     listings:catalogPage.listings.map((x:any)=>!isOwner&&!conf.show_book_prices?
       {...x,price_sar:null,compare_at_sar:null}:x),has_more:catalogPage.has_more,next_offset:catalogPage.next_offset,
