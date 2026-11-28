@@ -1692,3 +1692,9 @@ body #home .hero-text h1,
 body #home .hero-text p,
 body #home .hero-text .hero-kicker,
 body #home .hero-text .hero-footer{color:#0D3042!important}
+
+/* Win over the legacy high-specificity title color so the reference navy stays exact. */
+body #main #home h1#heroTitle,
+body #main #home p#heroSubtitle{
+ color:#0D3042!important;-webkit-text-fill-color:#0D3042!important
+}
