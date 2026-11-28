@@ -1041,3 +1041,11 @@ body.member-public-store-year .mobile-nav{background:linear-gradient(90deg,#432b
 body.member-public-store-month .member-store-stage,body.member-public-store-half_year .member-store-stage,body.member-public-store-year .member-store-stage{min-height:calc(100vh - 170px)}
 @keyframes deelaWholePageColor{0%,100%{background-position:0% 0%}50%{background-position:100% 100%}}
 @media(prefers-reduced-motion:reduce){body.member-public-store-month,body.member-public-store-half_year,body.member-public-store-year{animation:none!important}}
+
+/* Keep the storefront content-fit; the full-page theme is painted on body instead. */
+body.member-public-store-month .member-store-stage,body.member-public-store-half_year .member-store-stage,body.member-public-store-year .member-store-stage{min-height:0!important}
+@media(max-width:700px){
+ body.member-public-store-month .member-store-stage,body.member-public-store-half_year .member-store-stage,body.member-public-store-year .member-store-stage{min-height:0!important;padding:10px!important;margin-block:8px!important}
+ body.member-public-store-month .shop-profile,body.member-public-store-half_year .shop-profile,body.member-public-store-year .shop-profile{min-height:0!important;padding:15px!important;margin:9px 0 14px!important}
+ body.member-public-store-month .member-tier-ribbon,body.member-public-store-half_year .member-tier-ribbon,body.member-public-store-year .member-tier-ribbon{margin-bottom:10px!important}
+}
