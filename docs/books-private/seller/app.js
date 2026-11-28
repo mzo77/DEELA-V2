@@ -687,8 +687,8 @@ function editorPage(b=null){
  field("عنوان فرعي جذاب","subtitle","text",false,"وصف قصير يظهر في بطاقات الكتب",b?.subtitle||"")+
  field("اسم المؤلف","author","text",false,"اسم الكاتب",b?.author||"")+
  '<div class="field full format-field"><span>نوع الكتاب</span><div class="format-cards" role="radiogroup" aria-label="نوع الكتاب">'+
- Object.entries(kinds).map(([key,label])=>'<label class="format-card '+((b?.format||"physical")===key?"active":"")+'"><input type="radio" name="format-choice" value="'+key+'" '+((b?.format||"physical")===key?"checked":"")+' required><span class="format-check" aria-hidden="true">✓</span><strong>'+label+'</strong><small>'+(key==="physical"?"نسخة ورقية":key==="ebook"?"PDF أو EPUB":"ملف صوتي")+'</small></label>').join("")+
- '</div><select name="format" class="format-select-hidden" aria-hidden="true" tabindex="-1">'+Object.entries(kinds).map(([key,label])=>'<option value="'+key+'" '+((b?.format||"physical")===key?"selected":"")+'>'+label+'</option>').join("")+'</select></div>'+
+ Object.entries(kinds).map(([key,label])=>'<label class="format-card '+((b?.format||"ebook")===key?"active":"")+'"><input type="radio" name="format-choice" value="'+key+'" '+((b?.format||"ebook")===key?"checked":"")+' required><span class="format-check" aria-hidden="true">✓</span><strong>'+label+'</strong><small>'+(key==="physical"?"نسخة ورقية":key==="ebook"?"PDF أو EPUB":"ملف صوتي")+'</small></label>').join("")+
+ '</div><select name="format" class="format-select-hidden" aria-hidden="true" tabindex="-1">'+Object.entries(kinds).map(([key,label])=>'<option value="'+key+'" '+((b?.format||"ebook")===key?"selected":"")+'>'+label+'</option>').join("")+'</select></div>'+
  '<div class="field full"><span>اختر قسم الرواية</span><div class="category-pills">'+categoryOptions().filter(x=>x!=="الكل").map(x=>'<button type="button" data-editor-category="'+esc(x)+'" class="category-pill '+(selectedCategory===x?"active":"")+'">'+esc(x)+'</button>').join("")+'</div><select name="category" required class="category-select-hidden">'+categoryOptions().filter(x=>x!=="الكل").map(x=>'<option '+(selectedCategory===x?"selected":"")+'>'+esc(x)+'</option>').join("")+'</select></div>'+
  '<label class="field physical-only">حالة الكتاب الورقي<select name="book_condition">'+Object.entries(conditions).map(([key,label])=>
  '<option value="'+key+'" '+(b?.book_condition===key?"selected":"")+'>'+label+'</option>').join("")+'</select></label>'+
@@ -707,7 +707,7 @@ function editorPage(b=null){
  '<label class="field full">مضمون الرواية وملخص أحداثها (اختياري، بدون حرق)<textarea name="description" maxlength="5000" rows="6" placeholder="اكتب نبذة قصيرة اختيارية تشجع القارئ دون كشف الأحداث أو النهاية">'+esc(b?.description||"")+'</textarea></label>'+
  '<label class="field full">تنبيهات المحتوى (اختياري)<textarea name="content_warning" maxlength="350" rows="2" placeholder="مثلًا: مشاهد رعب، عنف، موضوعات للكبار">'+esc(b?.content_warning||"")+'</textarea></label>'+
  '<label class="field full">مقتطف للمعاينة (اختياري)<textarea name="preview_excerpt" rows="4">'+esc(b?.preview_excerpt||"")+'</textarea></label>'+
- '<label class="field digital-only">ملف الكتاب الرقمي (PDF/EPUB/MP3، حتى 50MB)<input id="digitalFile" type="file" accept=".pdf,.epub,.mp3"></label>'+
+ '<label class="field full digital-only">إرفاق ملف الكتاب أو الرواية (PDF/EPUB/MP3، حتى 50MB)<input id="digitalFile" type="file" accept=".pdf,.epub,.mp3"><small id="digitalFileStatus">اختر الملف من جهازك.</small></label>'+
  (state.settings.private_test_mode?'<label class="field full"><span class="checkfield"><input type="checkbox" name="test_publish" checked>'+
  'انشرها فورًا لكل الحسابات المسجّلة في مساحة الاختبار الخاصة. لن تظهر للعامة.</span></label>':"")+
  '<label class="field full"><span class="checkfield"><input type="checkbox" name="rights_confirmed" required '+(b?.rights_confirmed?"checked":"")+'>'+
@@ -1232,6 +1232,7 @@ async function handleForm(ev){
     if((form.querySelector("#galleryFiles")?.files?.length||0)>7)throw Error("يمكنك إضافة 7 صور إضافية كحد أقصى");
     const digital=form.querySelector("#digitalFile")?.files?.[0];
     const existing=state.editing;
+    if(raw.format!=="physical"&&!digital&&!existing?.file_path)throw Error("يرجى إرفاق ملف الكتاب الرقمي");
     const coverPath=cover?await upload(cover,"cover"):existing?.cover_path||"";
     const galleryPaths=await Promise.all(gallery.map(file=>upload(file,"cover")));
     const imagePaths=[...new Set([...(coverPath?[coverPath]:[]),...galleryPaths,...(existing?.image_paths||[])])].slice(0,8);
@@ -1406,7 +1407,7 @@ function editor(id){
  if(id==="close"){state.editing=null;$("sellerEditor").innerHTML="";return}
  state.editing=id==="new"?null:state.sellerListings.find(x=>x.id===id)||null;
  $("sellerEditor").innerHTML=editorPage(state.editing);
- const initialFormat=state.editing?.format||"physical";document.querySelectorAll("#listingForm .physical-only").forEach(x=>x.hidden=initialFormat!=="physical");document.querySelectorAll("#listingForm .digital-only").forEach(x=>x.hidden=initialFormat==="physical");
+ const initialFormat=state.editing?.format||"ebook";document.querySelectorAll("#listingForm .physical-only").forEach(x=>x.hidden=initialFormat!=="physical");document.querySelectorAll("#listingForm .digital-only").forEach(x=>x.hidden=initialFormat==="physical");
  $("sellerEditor").scrollIntoView({behavior:"smooth",block:"start"});
 }
 async function ownerArchiveListing(id){
@@ -1642,3 +1643,7 @@ async function boot(){
 }
 boot();
 })();
+
+/* Mobile menu and digital file feedback */
+(()=>{let y=0,locked=false;const menu=document.getElementById("topMenu");if(menu){const sync=()=>{const mobile=matchMedia("(max-width:700px)").matches;if(menu.open&&mobile&&!locked){y=window.scrollY;document.body.style.top="-"+y+"px";document.body.classList.add("mobile-menu-locked");locked=true;}else if((!menu.open||!mobile)&&locked){document.body.classList.remove("mobile-menu-locked");document.body.style.top="";locked=false;window.scrollTo(0,y);}};menu.addEventListener("toggle",sync);window.addEventListener("resize",sync);}
+document.addEventListener("change",e=>{if(e.target.id!=="digitalFile")return;const f=e.target.files?.[0],status=document.getElementById("digitalFileStatus");if(!f||!status)return;if(f.size>50*1024*1024||!/\\.(pdf|epub|mp3)$/i.test(f.name)){e.target.value="";status.textContent="اختر ملف PDF أو EPUB أو MP3 لا يتجاوز 50MB.";return;}status.textContent=f.name+" · "+(f.size/1048576).toFixed(2)+" MB — جاهز للرفع عند الحفظ.";});})();
