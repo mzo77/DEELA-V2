@@ -1825,3 +1825,65 @@ body.member-public-store-year .member-store-stage.member-store-year{
 body.member-public-store-month .member-store-stage.member-store-month{border-color:#46c9b7!important;box-shadow:0 0 0 1px #46c9b722,0 0 26px #46c9b744!important}
 body.member-public-store-half_year .member-store-stage.member-store-half-year{border-color:#d69c77!important;box-shadow:0 0 0 1px #d69c7722,0 0 28px #d69c774c!important}
 body.member-public-store-year .member-store-stage.member-store-year{border-color:#d6ae43!important;box-shadow:0 0 0 1px #d6ae4344,0 0 32px #d6ae4366!important}
+
+
+/* DEELA Books member identity: pearl silk stays consistent across the entire signed-in and public member experience. */
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year){
+ --deela-tier-accent:#9b734d;
+ --bg:#F9E9E7;--bg2:#F5DEDC;--panel:#fff8f5;--panel2:#fff2ee;--panel3:#f7e6e2;
+ --line:#e5c9c4;--line2:#d2b4ab;--white:#0D3042;--muted:#5d7077;--muted2:#806e63;
+ color-scheme:light;color:#0D3042!important;background-color:#F9E9E7!important;
+ background-image:linear-gradient(112deg,transparent 0%,#fff8 42%,#fff0 57%,transparent 78%),var(--deela-pearl-texture)!important;
+ background-size:240% 220%,100% auto!important;background-repeat:no-repeat,repeat-y!important;
+ background-position:0% 50%,center top!important;animation:deelaMemberSilkFlow 16s ease-in-out infinite!important;
+}
+body.member-tier-page-month,body.member-public-store-month{--deela-tier-accent:#168d82}
+body.member-tier-page-half_year,body.member-public-store-half_year{--deela-tier-accent:#a56e54}
+body.member-tier-page-year,body.member-public-store-year{--deela-tier-accent:#92702d}
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) #main,
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) #dynamicPage,
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) .member-store-stage,
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) .member-book-page{background:transparent!important;color:#0D3042!important}
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) .header,
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) .footer{
+ background:linear-gradient(120deg,#fff9f5ed,#f5dedce8,#fff9f5ed)!important;color:#0D3042!important;border-color:#e5c9c4!important;backdrop-filter:none!important
+}
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) .mobile-nav{
+ background:linear-gradient(120deg,#fff8f1f7,#F9DFC2f5,#fff8f1f7)!important;color:#51321B!important;border-color:#ead3bf!important
+}
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) .brand-words strong,
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) .brand-words small,
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) .nav-item,
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) .icon-button{color:#0D3042!important}
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) .header-search{position:relative!important;inset:auto!important;height:auto!important;z-index:auto!important}
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) .header-search input{background:#fffaf8!important;color:#0D3042!important;border-color:#e5c9c4!important}
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year) #dynamicPage .panel,
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) .shop-profile,
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) .member-book-page .detail-desc,
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) .member-book-page .detail-story{
+ background:linear-gradient(125deg,#fffaf8ed,#f5e2deeb,#fffaf8ed)!important;color:#0D3042!important;
+ border-color:color-mix(in srgb,var(--deela-tier-accent) 50%,#e5c9c4)!important;
+ box-shadow:0 8px 25px #51321b20,0 0 22px color-mix(in srgb,var(--deela-tier-accent) 22%,transparent)!important;
+ animation:deelaMemberPanelGlow 8s ease-in-out infinite!important
+}
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) #dynamicPage :is(h1,h2,h3,strong,.member-shop-identity,.detail-desc,.breadcrumbs){color:#0D3042}
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) #dynamicPage p{color:#536a73}
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) .member-tier-ribbon,
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) .member-active-status{
+ border-color:var(--deela-tier-accent)!important;box-shadow:0 0 15px color-mix(in srgb,var(--deela-tier-accent) 38%,transparent)!important
+}
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) .member-glow,
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) .premium-avatar-frame,
+body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) .premium-book-frame{animation:deelaMemberPanelGlow 4s ease-in-out infinite!important}
+@keyframes deelaMemberSilkFlow{0%,100%{background-position:0% 50%,center top}50%{background-position:100% 50%,center top}}
+@keyframes deelaMemberPanelGlow{0%,100%{filter:drop-shadow(0 3px 9px color-mix(in srgb,var(--deela-tier-accent) 12%,transparent))}50%{filter:drop-shadow(0 4px 20px color-mix(in srgb,var(--deela-tier-accent) 32%,transparent))}}
+/* The search stays in the header flow and never overlays page content. */
+body .header{position:relative!important;top:auto!important}
+body .header-search{position:relative!important;inset:auto!important;height:auto!important;z-index:auto!important}
+body .header-search input{position:relative!important}
+@media(prefers-reduced-motion:reduce){
+ body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year){animation-duration:24s!important}
+ body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) .shop-profile,
+ body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) .member-book-page .detail-desc,
+ body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) .member-book-page .detail-story{animation-duration:16s!important}
+}
