@@ -1407,3 +1407,25 @@ body:not([class*="member-public-store"]):not([class*="member-tier-page"]) .autho
   padding-top:calc(env(safe-area-inset-top,0px) + 206px)!important;
  }
 }
+
+
+/* Keep typed and autofilled text readable in every ordinary form. */
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) input,
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) select,
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) textarea{
+ background:#fffaf8!important;color:#51321B!important;-webkit-text-fill-color:#51321B!important;
+ caret-color:#51321B!important;border-color:#ddc4bd!important;color-scheme:light
+}
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) input::placeholder,
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) textarea::placeholder{color:#927b6d!important;opacity:1}
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) input:-webkit-autofill,
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) input:-webkit-autofill:hover,
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) input:-webkit-autofill:focus{
+ -webkit-text-fill-color:#51321B!important;caret-color:#51321B!important;
+ -webkit-box-shadow:0 0 0 1000px #fffaf8 inset!important;box-shadow:0 0 0 1000px #fffaf8 inset!important
+}
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) input:focus,
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) select:focus,
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) textarea:focus{
+ outline:2px solid #c9a88d!important;outline-offset:1px
+}
