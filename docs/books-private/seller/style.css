@@ -1429,3 +1429,10 @@ body:not([class*="member-public-store"]):not([class*="member-tier-page"]) select
 body:not([class*="member-public-store"]):not([class*="member-tier-page"]) textarea:focus{
  outline:2px solid #c9a88d!important;outline-offset:1px
 }
+
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) #heroTitle,
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) #heroTitle em,
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) #heroTitle span{
+ color:#51321B!important;text-decoration-color:#51321B!important
+}
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) #heroTitle em{font-style:normal}
