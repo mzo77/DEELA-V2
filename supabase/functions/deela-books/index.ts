@@ -8,8 +8,32 @@ const SELLER_PORTAL="https://mzo77.github.io/DEELA-V2/books-private/seller/";
 const guest=ANON_KEY?createClient(SUPABASE_URL,ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false}}):null;
 const db=createClient(SUPABASE_URL,SERVICE_ROLE,{auth:{persistSession:false,autoRefreshToken:false}});
 const fn="/deela-books";
+const MEMBER_FEATURE_IDS=["profile_glow","display_name_style","profile_avatar","avatar_frame","book_frame","verified_badge","book_shine","custom_banner","advanced_analytics","priority_support"] as const;
+const MEMBER_TIER_LABELS:Record<string,string>={day:"أساسية · يوم",week:"متقدمة · أسبوع",month:"الأعلى · شهر"};
+const MEMBER_DEFAULT_TIERS:Record<string,string[]>={day:["profile_glow","display_name_style"],week:["profile_glow","display_name_style","profile_avatar","avatar_frame","book_frame"],month:["profile_glow","display_name_style","profile_avatar","avatar_frame","book_frame","verified_badge","book_shine","custom_banner","advanced_analytics","priority_support"]};
+async function memberTiers(){
+ const r=await db.from("deela_books_membership_tiers").select("tiers").eq("id",1).maybeSingle();
+ if(r.error)throw r.error;
+ return r.data?.tiers||MEMBER_DEFAULT_TIERS;
+}
+async function memberEntitlements(account:any,privateMode:boolean,knownSeller?:any){
+ const seller=knownSeller||await sellerFor(account.id);
+ if(!seller)return {premium_active:false,member_plan:"",member_plan_label:"مجاني",member_features:[],member_custom_features:false,premium_ends_at:null,avatar_url:null,member_appearance:{}};
+ const q=db.from("deela_books_promotions").select("plan_key,is_test,ends_at").eq("seller_id",seller.id).eq("kind","premium").eq("status","active").gt("ends_at",new Date().toISOString()).order("ends_at",{ascending:false}).limit(10);
+ const rows=await q;if(rows.error)throw rows.error;
+ const active=(rows.data||[]).filter((x:any)=>!x.is_test||privateMode);
+ const rank:Record<string,number>={day:1,week:2,month:3};
+ const membership=active.sort((a:any,b:any)=>(rank[b.plan_key]||0)-(rank[a.plan_key]||0))[0];
+ if(!membership)return {premium_active:false,member_plan:"",member_plan_label:"مجاني",member_features:[],member_custom_features:false,premium_ends_at:null,avatar_url:null,member_appearance:{}};
+ const tiers=await memberTiers(),metadata=account.user_metadata||{};
+ const custom=Array.isArray(metadata.deela_member_features)?metadata.deela_member_features.filter((x:string)=>MEMBER_FEATURE_IDS.includes(x as any)):null;
+ const features=custom||tiers[membership.plan_key]||MEMBER_DEFAULT_TIERS[membership.plan_key]||[];
+ const avatarPath=String(metadata.deela_member_avatar_path||"");
+ const avatar=avatarPath.startsWith(account.id+"/avatars/")?await db.storage.from("deela-books-covers").createSignedUrl(avatarPath,600):null;
+ return {premium_active:true,member_plan:membership.plan_key,member_plan_label:MEMBER_TIER_LABELS[membership.plan_key]||"عضوية مميزة",member_features:features,member_custom_features:Array.isArray(custom),premium_ends_at:membership.ends_at||null,avatar_url:avatar&&!avatar.error?avatar.data.signedUrl:null,member_appearance:{display_name:String(metadata.deela_member_display_name||"").slice(0,90),avatar_path:avatarPath,avatar_frame:String(metadata.deela_member_avatar_frame||"aurora"),book_frame:String(metadata.deela_member_book_frame||"starlight"),shine:metadata.deela_member_shine!==false}};
+}
 const FEATURE_FLAGS=["enable_seller_registration","enable_book_submissions","enable_reader_likes","enable_favorites","enable_author_follows","enable_reviews","enable_messages","enable_orders","enable_discounts","enable_featured_section","enable_launch_alerts","show_book_prices"] as const;
-const PRIVATE_SELLER_ROUTES=new Set(["GET /catalog","GET /shops","GET /me","GET /my/listings","GET /seller/activity","GET /seller/orders","POST /seller/order-item/status","POST /seller/apply","POST /seller/profile","POST /listing/delete","GET /orders","POST /order","POST /order/support","GET /download","POST /like","POST /follow","POST /favorite","POST /view","POST /reports","GET /reviews","POST /reviews","GET /messages","POST /messages","POST /messages/reply","GET /seller/notifications","POST /seller/notifications/read","POST /push/subscribe","POST /push/unsubscribe","GET /seller/launch-alerts","POST /seller/launch-alerts/request","GET /seller/promotions","POST /seller/promotions/test","GET /contests","POST /contests/answer","GET /launch-alerts/feed","POST /listing","POST /upload/sign"]);
+const PRIVATE_SELLER_ROUTES=new Set(["GET /catalog","GET /shops","GET /me","GET /my/listings","POST /seller/premium-appearance","GET /owner/member-tiers","POST /owner/member-tiers","POST /owner/user-premium-features","GET /seller/activity","GET /seller/orders","POST /seller/order-item/status","POST /seller/apply","POST /seller/profile","POST /listing/delete","GET /orders","POST /order","POST /order/support","GET /download","POST /like","POST /follow","POST /favorite","POST /view","POST /reports","GET /reviews","POST /reviews","GET /messages","POST /messages","POST /messages/reply","GET /seller/notifications","POST /seller/notifications/read","POST /push/subscribe","POST /push/unsubscribe","GET /seller/launch-alerts","POST /seller/launch-alerts/request","GET /seller/promotions","POST /seller/promotions/test","GET /contests","POST /contests/answer","GET /launch-alerts/feed","POST /listing","POST /upload/sign"]);
 
 const trusted=new Set(["https://mzo77.github.io","https://appassets.androidplatform.net"]);
 const allowedOrigins=(req:Request)=>trusted.has(req.headers.get("origin")||"")?req.headers.get("origin")!:"https://mzo77.github.io";
@@ -435,10 +459,16 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
     const premiumQ=db.from("deela_books_promotions").select("seller_id,is_test").in("seller_id",sellerIds).eq("kind","premium").eq("status","active").gt("ends_at",new Date().toISOString());
     const premium=await (conf.site_public?premiumQ.eq("is_test",false):premiumQ);if(premium.error)throw premium.error;
     const verifiedIds=new Set((premium.data||[]).filter(x=>x.is_test===false).map(x=>x.seller_id)),trialIds=new Set((premium.data||[]).filter(x=>x.is_test===true).map(x=>x.seller_id));
+    const memberProfiles=new Map<string,any>();
+    await Promise.all(sellers.filter(s=>verifiedIds.has(s.id)||(!conf.site_public&&trialIds.has(s.id))).map(async s=>{
+      const auth=await db.auth.admin.getUserById(s.user_id);if(auth.error||!auth.data.user)return;
+      const ent=await memberEntitlements(auth.data.user,!conf.site_public,s);
+      if(ent.premium_active)memberProfiles.set(s.id,{features:ent.member_features,appearance:ent.member_appearance,avatar_url:ent.avatar_url,plan:ent.member_plan});
+    }));
     const shops=await Promise.all(sellers.map(async s=>{
       const z=stats.get(s.id)||{products:0,featured:0,sum:0,count:0};
       const logo=s.logo_path?await db.storage.from("deela-books-covers").createSignedUrl(s.logo_path,600):null;
-      return {...s,logo_url:logo&&!logo.error?logo.data.signedUrl:null,follower_count:follows.get(s.id)||0,product_count:z.products,featured_count:z.featured,rating:z.count?Math.round(z.sum/z.count*10)/10:0,rating_count:z.count,premium_active:verifiedIds.has(s.id),premium_test_active:trialIds.has(s.id)};
+      return {...s,logo_url:logo&&!logo.error?logo.data.signedUrl:null,follower_count:follows.get(s.id)||0,product_count:z.products,featured_count:z.featured,rating:z.count?Math.round(z.sum/z.count*10)/10:0,rating_count:z.count,premium_active:verifiedIds.has(s.id),premium_test_active:trialIds.has(s.id),member_profile:memberProfiles.get(s.id)||null};
     }));
     return respond(req,{shops});
   }
@@ -452,7 +482,8 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
       db.from("deela_books_orders").select("id,code,status,total_sar,created_at,tracking_number,owner_note").eq("buyer_id",user.id).order("created_at",{ascending:false}).limit(50)
     ]);
     if(favs.error||likes.error||follows.error||myOrders.error)throw Error("customer profile unavailable");
-    return respond(req,{id:user.id,email:user.email||"",phone:user.phone||user.user_metadata?.phone||"",display_name:String(user.user_metadata?.display_name||user.user_metadata?.full_name||user.user_metadata?.name||"").slice(0,90),country:String(user.user_metadata?.country||""),city:String(user.user_metadata?.city||""),address:String(user.user_metadata?.address||""),seller:seller?await signedSeller(seller):null,
+    const membership=await memberEntitlements(user,!conf.site_public);
+    return respond(req,{id:user.id,email:user.email||"",phone:user.phone||user.user_metadata?.phone||"",display_name:String(user.user_metadata?.display_name||user.user_metadata?.full_name||user.user_metadata?.name||"").slice(0,90),country:String(user.user_metadata?.country||""),city:String(user.user_metadata?.city||""),address:String(user.user_metadata?.address||""),seller:seller?await signedSeller(seller):null,...membership,
       favorites:(favs.data||[]).map((x:any)=>x.listing_id),
       likes:(likes.data||[]).map((x:any)=>x.listing_id),
       following:(follows.data||[]).map((x:any)=>x.seller_id),
@@ -473,6 +504,19 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
     const r=await db.from("deela_books_sellers").insert(payload).select("id,shop_name,slug,status").single();
     if(r.error)return fail(req,r.error.code==="23505"?"رابط المتجر محجوز":"تعذر فتح المتجر",409);
     return respond(req,{shop:r.data},201);
+  }
+  if(req.method==="POST"&&path==="/seller/premium-appearance"){
+    const ent=await memberEntitlements(user,!conf.site_public);if(!ent.premium_active)return fail(req,"هذه المزايا للمشتركين النشطين فقط",403);
+    const b=await req.json(),metadata={...(user.user_metadata||{})},features=ent.member_features as string[];
+    const display_name=str(b.display_name,90),avatar_path=str(b.avatar_path,240);
+    if(display_name&&!features.includes("display_name_style"))return fail(req,"اسم العرض المميز غير متاح في باقتك",403);
+    if(avatar_path&&(!features.includes("profile_avatar")||!avatar_path.startsWith(user.id+"/avatars/")))return fail(req,"صورة العرض غير متاحة في باقتك أو مسار الصورة غير صالح",403);
+    const avatar_frame=str(b.avatar_frame,20),book_frame=str(b.book_frame,20);
+    if(avatar_frame&&!features.includes("avatar_frame"))return fail(req,"إطار الصورة غير متاح في باقتك",403);
+    if(book_frame&&!features.includes("book_frame"))return fail(req,"إطار الكتاب غير متاح في باقتك",403);
+    Object.assign(metadata,{deela_member_display_name:display_name||"",deela_member_avatar_path:avatar_path||"",deela_member_avatar_frame:["aurora","gold","velvet","crystal"].includes(avatar_frame)?avatar_frame:"aurora",deela_member_book_frame:["starlight","gold","velvet","crystal"].includes(book_frame)?book_frame:"starlight",deela_member_shine:features.includes("book_shine")&&b.shine!==false});
+    const saved=await db.auth.admin.updateUserById(user.id,{user_metadata:metadata});if(saved.error)throw saved.error;
+    return respond(req,{ok:true,message:"تم حفظ هوية العضوية المميزة"});
   }
   if(req.method==="POST"&&path==="/seller/profile"){
     const seller=await sellerFor(user.id);if(!seller)return fail(req,"أنشئ صفحة متجرك أولًا",404);
@@ -767,19 +811,21 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
   }
   if(req.method==="POST"&&path==="/upload/sign"){
     const b=await req.json(),type=str(b.type,16),extension=str(b.extension,12).toLowerCase();
-    if(type!=="branding"&&!conf.enable_book_submissions)return fail(req,"رفع الكتب متوقف مؤقتًا",403);
+    if(type!=="branding"&&type!=="avatar"&&!conf.enable_book_submissions)return fail(req,"رفع الكتب متوقف مؤقتًا",403);
     if(type==="branding"&&!isOwner)return fail(req,"رفع صور الهوية متاح للمالك فقط",403);
-    const seller=type==="branding"||type==="shop_logo"?null:await sellerFor(user.id);
-    if(type!=="branding"&&type!=="shop_logo"&&(!seller||(!isOwner&&seller.status!=="approved"&&!(seller.status==="pending"&&!conf.site_public))))return fail(req,"حساب متجر معتمد مطلوب",403);
-    const imageType=["branding","shop_logo","cover"].includes(type);
+    const membership=type==="avatar"?await memberEntitlements(user,!conf.site_public):null;
+    if(type==="avatar"&&(!membership?.premium_active||!membership.member_features.includes("profile_avatar")))return fail(req,"رفع صورة العرض ضمن مزايا العضوية المفعلة فقط",403);
+    const seller=type==="branding"||type==="shop_logo"||type==="avatar"?null:await sellerFor(user.id);
+    if(type!=="branding"&&type!=="shop_logo"&&type!=="avatar"&&(!seller||(!isOwner&&seller.status!=="approved"&&!(seller.status==="pending"&&!conf.site_public))))return fail(req,"حساب متجر معتمد مطلوب",403);
+    const imageType=["branding","shop_logo","cover","avatar"].includes(type);
     const extOk=imageType?["jpg","jpeg","png","webp"]:["pdf","epub","mp3"];
     if(!extOk.includes(extension))return fail(req,"نوع الملف غير مدعوم",400);
-    const folder=type==="branding"?"branding":type==="shop_logo"?"seller-logos":type==="cover"?"covers":"books";
+    const folder=type==="branding"?"branding":type==="shop_logo"?"seller-logos":type==="avatar"?"avatars":type==="cover"?"covers":"books";
     const bucket=type==="file"?"deela-books-private-files":"deela-books-covers";
     const path=user.id+"/"+folder+"/"+crypto.randomUUID()+"."+extension;
     const result=await db.storage.from(bucket).createSignedUploadUrl(path);
     if(result.error)throw result.error;
-    return respond(req,{bucket,path,token:result.data.token,max_bytes:type==="branding"||type==="shop_logo"?3145728:type==="cover"?5242880:52428800});
+    return respond(req,{bucket,path,token:result.data.token,max_bytes:type==="branding"||type==="shop_logo"||type==="avatar"?3145728:type==="cover"?5242880:52428800});
   }
   if(req.method==="GET"&&path==="/download"){
     const id=str(parsed.searchParams.get("id"),60);
@@ -1090,6 +1136,32 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
       const r=await db.from("deela_books_settings").update({payment_test_config:config,updated_at:new Date().toISOString()}).eq("id",1).select("payment_test_config").single();
       if(r.error)throw r.error;return respond(req,{ok:true,config:r.data.payment_test_config,payments_live:false});
     }
+    if(req.method==="GET"&&path==="/owner/member-tiers"){
+      if(!isOwner)return fail(req,"هذه العملية للمالك فقط",403);
+      return respond(req,{tiers:await memberTiers(),features:MEMBER_FEATURE_IDS});
+    }
+    if(req.method==="POST"&&path==="/owner/member-tiers"){
+      if(!isOwner)return fail(req,"هذه العملية للمالك فقط",403);
+      const b=await req.json(),tiers=b.tiers;
+      if(!tiers||typeof tiers!=="object"||Array.isArray(tiers))return fail(req,"إعدادات الباقات غير صحيحة",400);
+      const clean:Record<string,string[]>={};
+      for(const key of ["day","week","month"]){const values=tiers[key];if(!Array.isArray(values)||values.some((x:any)=>!MEMBER_FEATURE_IDS.includes(x)))return fail(req,"ميزة غير معروفة في باقة "+key,400);clean[key]=[...new Set(values)];}
+      const saved=await db.from("deela_books_membership_tiers").upsert({id:1,tiers:clean,updated_by:user.id,updated_at:new Date().toISOString()},{onConflict:"id"});
+      if(saved.error)throw saved.error;
+      return respond(req,{ok:true,tiers:clean});
+    }
+    if(req.method==="POST"&&path==="/owner/user-premium-features"){
+      if(!isOwner)return fail(req,"هذه العملية للمالك فقط",403);
+      const b=await req.json(),id=str(b.user_id,60),features=b.features;
+      if(!uuid.test(id)||!Array.isArray(features)||features.some((x:any)=>!MEMBER_FEATURE_IDS.includes(x)))return fail(req,"قائمة مزايا المشترك غير صحيحة",400);
+      if(await owner(id))return fail(req,"لا يمكن تعديل صلاحيات حساب المالك من هنا",403);
+      const seller=await sellerFor(id);if(!seller)return fail(req,"إدارة مزايا العضوية متاحة لبائعي DEELA Books فقط",404);
+      const auth=await db.auth.admin.getUserById(id);if(auth.error||!auth.data.user)return fail(req,"الحساب غير موجود",404);
+      const ent=await memberEntitlements(auth.data.user,!conf.site_public);if(!ent.premium_active)return fail(req,"لا توجد عضوية نشطة لهذا الحساب؛ فعّل الباقة من نظام الاشتراك أولًا",409);
+      const metadata={...(auth.data.user.user_metadata||{}),deela_member_features:[...new Set(features)],deela_member_custom_features:true};
+      const saved=await db.auth.admin.updateUserById(id,{user_metadata:metadata});if(saved.error)throw saved.error;
+      return respond(req,{ok:true,user_id:id,features:metadata.deela_member_features});
+    }
     if(req.method==="GET"&&path==="/owner/users"){
       const sellers=await db.from("deela_books_sellers").select("user_id,shop_name,slug,status,created_at").order("created_at",{ascending:false}).limit(500);
       if(sellers.error)throw Error("تعذر قراءة حسابات بائعي DEELA Books");
@@ -1098,7 +1170,7 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
       const controls=await db.from("deela_books_user_controls").select("user_id,blocked,note,changed_at").in("user_id",ids);
       if(controls.error)throw Error("تعذر قراءة إعدادات بائعي DEELA Books");
       const controlMap=new Map((controls.data||[]).map((x:any)=>[x.user_id,x]));
-      const out=[];for(const seller of sellers.data||[]){if(await owner(seller.user_id))continue;const auth=await db.auth.admin.getUserById(seller.user_id);if(auth.error)continue;const u=auth.data.user,c=controlMap.get(seller.user_id) as any;out.push({id:u.id,email:u.email||"",phone:u.phone||"",created_at:seller.created_at||u.created_at,last_sign_in_at:u.last_sign_in_at,is_owner:false,blocked:c?.blocked===true,note:c?.note||"",shop_name:seller.shop_name||"",slug:seller.slug||"",seller_status:seller.status||""});}
+      const out=[];for(const seller of sellers.data||[]){if(await owner(seller.user_id))continue;const auth=await db.auth.admin.getUserById(seller.user_id);if(auth.error)continue;const u=auth.data.user,c=controlMap.get(seller.user_id) as any;const member=await memberEntitlements(u,!conf.site_public);out.push({id:u.id,email:u.email||"",phone:u.phone||"",created_at:seller.created_at||u.created_at,last_sign_in_at:u.last_sign_in_at,is_owner:false,blocked:c?.blocked===true,note:c?.note||"",shop_name:seller.shop_name||"",slug:seller.slug||"",seller_status:seller.status||"",...member});}
       return respond(req,{users:out});
     }
     if(req.method==="POST"&&path==="/owner/user-status"){
