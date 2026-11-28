@@ -469,10 +469,12 @@ function shopsPage(){
  '<div class="shops-grid">'+(state.shops.length?state.shops.map(shopCard).join(""):
  '<div class="empty-state"><h3>افتتح أول متجر!</h3><p>تبدأ أسماء المتاجر الحقيقية بالظهور بعد تقديم الطلبات واعتمادها.</p><button class="btn btn-primary" data-route="seller">افتح متجرك</button></div>')+'</div>'+(state.shopsHasMore?'<div class="pagination-control"><button class="btn btn-outline" data-load-shops>عرض المزيد من المتاجر</button></div>':"");
 }
+function applyPublicStorePageTheme(plan){const tiers=["month","half_year","year"];document.body.classList.remove(...tiers.map(x=>"member-public-store-"+x));if(tiers.includes(plan))document.body.classList.add("member-public-store-"+plan)}
 function shopPage(){
  const s=state.shops.find(x=>x.slug===state.current);
- if(!s)return heading("المتجر غير موجود","قد يكون قيد المراجعة");
+ if(!s){applyPublicStorePageTheme("");return heading("المتجر غير موجود","قد يكون قيد المراجعة");}
  const profile=s.member_profile,features=profile?.features||[],tier=profile?.plan||"";
+ applyPublicStorePageTheme(tier);
  const tierClass=tier==="year"?"member-store-year":tier==="half_year"?"member-store-half-year":tier==="month"?"member-store-month":"";
  const tierLabel=tier==="year"?"العضوية السنوية":tier==="half_year"?"عضوية نصف السنة":tier==="month"?"عضوية الشهر":"";
  const memberAppearance=profile?.appearance||{};
@@ -981,6 +983,7 @@ async function route(view,push=true){
  if(view==="owner"&&!state.me?.is_owner){toast("مركز الإدارة خاص بالمالك");return}
 
  state.view=view;state.current=state.current||"";
+ if(view!=="shop")applyPublicStorePageTheme("");
  document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("active",b.dataset.route===view));
  $("home").classList.toggle("active",view==="home");$("home").hidden=view!=="home";
  $("dynamicPage").hidden=view==="home";$("dynamicPage").classList.toggle("active",view!=="home");
