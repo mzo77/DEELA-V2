@@ -802,3 +802,32 @@ body[data-owner-visual-edit="true"] #homeCategories button,body[data-owner-visua
 .member-tier-box.member-tier-month{border-color:rgba(94,218,202,.34)}.member-tier-box.member-tier-half_year{border-color:rgba(228,188,97,.45)}.member-tier-box.member-tier-year{border-color:rgba(193,155,255,.5)}
 @keyframes deelaStoreAmbient{0%,100%{background-position:0% 20%}50%{background-position:100% 80%}}
 @media(prefers-reduced-motion:reduce){.member-store-stage{animation:none;background-position:center}}
+
+/* Visible default member cosmetics by paid duration */
+.premium-avatar-frame-gold{border:3px solid transparent!important;background:linear-gradient(#07162a,#07162a) padding-box,linear-gradient(135deg,#fff6bd 0%,#d7a321 20%,#fff0a1 37%,#9a6810 51%,#ffe57a 68%,#b98117 82%,#fff5b3 100%) border-box!important;box-shadow:0 0 0 1px #76520e,0 0 0 4px #efc95a44,0 0 28px #f0c64d9c!important;animation:deelaGoldFramePulse 3.2s ease-in-out infinite}
+@keyframes deelaGoldFramePulse{0%,100%{filter:brightness(.96);box-shadow:0 0 0 1px #76520e,0 0 0 4px #efc95a33,0 0 20px #f0c64d66}50%{filter:brightness(1.12);box-shadow:0 0 0 1px #76520e,0 0 0 5px #ffe27a77,0 0 34px #ffd55acc}}
+.member-tier-ribbon{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;width:100%;padding:9px 13px;margin:0 0 15px;border-radius:13px;border:1px solid #62d4c366;background:linear-gradient(110deg,#0c302f,#102239);font-weight:900;color:#a5efdf}
+.member-tier-ribbon small{font-size:11px;color:var(--muted)}
+.member-tier-ribbon-half_year{border-color:#dda24c;background:linear-gradient(110deg,#3d2a13,#14283b);color:#ffe0a1}
+.member-tier-ribbon-year{border-color:#f1c54e;background:linear-gradient(110deg,#46320c,#282046 60%,#111c35);color:#ffe79b;box-shadow:inset 0 0 18px #f4cd5b22,0 0 22px #efc54733}
+.shop-profile.member-profile-tier-year{border:1px solid #e7bd49!important;background:radial-gradient(ellipse at 92% 5%,#ffd76c22,transparent 36%),linear-gradient(135deg,#15152a,#09172c 48%,#261d35)!important;box-shadow:0 0 0 1px #c79828,0 0 35px #ecbd4a35,inset 0 0 40px #efc54512!important}
+.shop-profile.member-profile-tier-half_year{border:1px solid #dda75b!important;background:radial-gradient(ellipse at 92% 8%,#e6a6a330,transparent 42%),linear-gradient(135deg,#201526,#09172c 55%,#173038)!important}
+.shop-profile.member-profile-tier-month{border-color:#4fc8b7!important;background:linear-gradient(135deg,#09282b,#09172c 58%,#112643)!important}
+.shop-profile.member-profile-tier-year .shop-avatar{transform:scale(1.08)}
+.shop-profile.member-profile-tier-year .member-shop-identity h2{color:#ffe29a}
+.member-verified-gold{background:linear-gradient(145deg,#fff3a2,#d48b12 50%,#8f5e08)!important;box-shadow:0 0 0 2px #ffe48a55,0 0 14px #ffd34d99!important;color:#251900!important}
+.seller-profile-card.member-store-year{border:1px solid #eac44f;background:radial-gradient(ellipse at 90% 0%,#ffd75b44,transparent 44%),linear-gradient(130deg,#4b350f,#1b1a38 58%,#102645);box-shadow:0 0 0 1px #eac44f55,0 0 28px #d6a73855}
+.seller-profile-card.member-store-half-year{border:1px solid #dfad68;background:linear-gradient(120deg,#39251d,#17334a,#18274b)}
+.seller-profile-card.member-store-month{border:1px solid #5ed2be;background:linear-gradient(120deg,#103638,#17365a)}
+.seller-profile-card .seller-avatar.premium-avatar-frame-gold{background:linear-gradient(#09172a,#09172a) padding-box,linear-gradient(135deg,#fff7b1,#d49a1d,#fff1a4,#825509,#ffe16b) border-box!important}
+.member-store-year .book-card.member-book-frame-gold,.member-store-year .seller-novel-card.member-book-frame-gold{border:2px solid #e9bf4c!important;box-shadow:0 0 0 1px #ffe58166,0 0 24px #e5b84355!important}
+@media(prefers-reduced-motion:reduce){.premium-avatar-frame-gold{animation:none!important}}
+
+/* Ensure gold borders remain visible around avatars even when an image fills the frame. */
+.premium-avatar-frame-gold{outline:2px solid #f2cb57!important;outline-offset:2px}
+.premium-avatar-frame-rose{outline:2px solid #e7b089!important;outline-offset:2px}
+.premium-avatar-frame-diamond{outline:2px solid #c9f5ff!important;outline-offset:2px}
+.shop-profile.member-profile-tier-year .shop-avatar{outline-offset:4px}
+.member-shop-identity{min-width:0;flex:1}
+.member-profile-actions{width:100%;justify-content:flex-start}
+.member-profile-tier-year .member-tier-ribbon{margin-bottom:20px}
