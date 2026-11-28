@@ -70,8 +70,8 @@ async function reload(){
   const [catalog,shops,contestData]=await Promise.all([api("/catalog?limit=24&offset=0"),api("/shops?limit=24&offset=0"),api("/contests")]);
   state.contests=contestData.contests||[];state.listings=catalog.listings||[];state.shops=shops.shops||[];state.catalogOffset=catalog.next_offset||state.listings.length;state.catalogHasMore=!!catalog.has_more;state.shopsOffset=shops.next_offset||state.shops.length;state.shopsHasMore=!!shops.has_more;state.me=me;state.settings=catalog.settings||{};state.sections=catalog.sections||[];state.banners=catalog.banners||[];
   applyTheme(state.settings.theme_colors);applyMaterial(state.settings.theme_material);applyDesign(state.settings.theme_design);applySections(state.settings.theme_sections);applyImages(state.settings.theme_images);state.cart=state.cart.filter(x=>state.listings.some(b=>b.id===x.id));saveCart();
-  $("heroTitle").textContent=state.settings.hero_title||"ستجد بين السطور ما عجزت عن قوله!";
-  $("heroSubtitle").textContent=state.settings.hero_subtitle||"ليست مجرد كلمات، بل مشاعر…";
+  $("heroTitle").textContent=(state.settings.hero_title&&state.settings.hero_title!=="لكل كتاب حكاية، ولكل قارئ عالم"?state.settings.hero_title:"ستجد بين السطور ما عجزت عن قوله!");
+  $("heroSubtitle").textContent=(state.settings.hero_subtitle&&!["سوق ديلا للكتب والروايات.","سوق ديلا للكتب والروايات؛ اكتشف، اقرأ، وبع كتبك في مكان واحد."].includes(state.settings.hero_subtitle)?state.settings.hero_subtitle:"ليست مجرد كلمات، بل مشاعر…");
   $("announcement").textContent=state.settings.announcement||"DEELA Books";
   const promo=document.querySelector(".feature-banner");
   if(promo){
@@ -104,8 +104,8 @@ async function loadGuest(){
   const [catalog,shops]=await Promise.all([api("/catalog?limit=24&offset=0"),api("/shops?limit=24&offset=0")]);
   state.listings=catalog.listings||[];state.shops=shops.shops||[];state.catalogOffset=catalog.next_offset||state.listings.length;state.catalogHasMore=!!catalog.has_more;state.shopsOffset=shops.next_offset||state.shops.length;state.shopsHasMore=!!shops.has_more;state.settings=catalog.settings||{};state.sections=catalog.sections||[];state.banners=catalog.banners||[];
   applyTheme(state.settings.theme_colors);applyMaterial(state.settings.theme_material);applyDesign(state.settings.theme_design);applySections(state.settings.theme_sections);applyImages(state.settings.theme_images);
-  $("heroTitle").textContent=state.settings.hero_title||"ستجد بين السطور ما عجزت عن قوله!";
-  $("heroSubtitle").textContent=state.settings.hero_subtitle||"ليست مجرد كلمات، بل مشاعر…";
+  $("heroTitle").textContent=(state.settings.hero_title&&state.settings.hero_title!=="لكل كتاب حكاية، ولكل قارئ عالم"?state.settings.hero_title:"ستجد بين السطور ما عجزت عن قوله!");
+  $("heroSubtitle").textContent=(state.settings.hero_subtitle&&!["سوق ديلا للكتب والروايات.","سوق ديلا للكتب والروايات؛ اكتشف، اقرأ، وبع كتبك في مكان واحد."].includes(state.settings.hero_subtitle)?state.settings.hero_subtitle:"ليست مجرد كلمات، بل مشاعر…");
   $("announcement").textContent=state.settings.announcement||"عالم ديلا للكتب والروايات — تصفح مفتوح";
   document.querySelectorAll('[data-route="messages"],[data-route="favorites"],[data-route="orders"],[data-route="cart"],[data-route="notifications"],[data-route="alerts"],[data-route="profile"]').forEach(el=>el.hidden=true);
  }catch(e){toast(errorMessage(e));}
