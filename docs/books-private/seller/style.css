@@ -1814,3 +1814,14 @@ body.member-public-store-half_year .member-book-page .detail-desc,
 body.member-public-store-year .member-book-page .detail-desc{
  background:rgba(255,248,245,.96)!important;color:#51321B!important;border-color:#e5c9c4!important
 }
+
+
+/* Clear legacy purple tier fills while keeping the plan's metallic outline and animated sheen. */
+body.member-public-store-month .member-store-stage.member-store-month,
+body.member-public-store-half_year .member-store-stage.member-store-half-year,
+body.member-public-store-year .member-store-stage.member-store-year{
+ background:transparent!important;background-color:transparent!important;background-image:none!important
+}
+body.member-public-store-month .member-store-stage.member-store-month{border-color:#46c9b7!important;box-shadow:0 0 0 1px #46c9b722,0 0 26px #46c9b744!important}
+body.member-public-store-half_year .member-store-stage.member-store-half-year{border-color:#d69c77!important;box-shadow:0 0 0 1px #d69c7722,0 0 28px #d69c774c!important}
+body.member-public-store-year .member-store-stage.member-store-year{border-color:#d6ae43!important;box-shadow:0 0 0 1px #d6ae4344,0 0 32px #d6ae4366!important}
