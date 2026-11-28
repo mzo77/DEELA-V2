@@ -188,14 +188,29 @@ async function enrichBooks(books:any[],includeTest=false){
  const [likes,reviews,views,sales]=await Promise.all([likeQuery,reviewQuery,viewQuery,salesQuery]);
  if(likes.error||reviews.error||views.error||sales.error)throw Error("book community data unavailable");
  const actorIds=[...(likes.data||[]).map(x=>x.user_id),...(reviews.data||[]).map(x=>x.user_id)],names=await displayNames(actorIds);
+ const shownReviewCounts=new Map<string,number>(),shownReviewerIds:string[]=[];
+ for(const row of reviews.data||[]){const count=shownReviewCounts.get(row.listing_id)||0;if(count<8){shownReviewCounts.set(row.listing_id,count+1);shownReviewerIds.push(row.user_id);}}
+ const reviewerPlans=new Map<string,string>(),reviewerSellerResult=shownReviewerIds.length
+  ?await db.from("deela_books_sellers").select("id,user_id").in("user_id",[...new Set(shownReviewerIds)].slice(0,240))
+  :{data:[],error:null};
+ if(!reviewerSellerResult.error&&reviewerSellerResult.data?.length){
+  const sellerIds=reviewerSellerResult.data.map((x:any)=>x.id),sellerUserIds=new Map(reviewerSellerResult.data.map((x:any)=>[x.id,x.user_id]));
+  let premiumRowsQuery=db.from("deela_books_promotions").select("seller_id,plan_key,is_test,ends_at").in("seller_id",sellerIds).eq("kind","premium").eq("status","active").gt("ends_at",new Date().toISOString()).limit(1000);
+  if(!includeTest)premiumRowsQuery=premiumRowsQuery.eq("is_test",false);
+  const premiumRows=await premiumRowsQuery;
+  if(!premiumRows.error){
+   const rank:Record<string,number>={sub_month:1,sub_half_year:2,sub_year:3,month:3},tier=(key:string)=>key==="sub_month"?"month":key==="sub_half_year"?"half_year":key==="sub_year"||key==="month"?"year":"";
+   for(const row of premiumRows.data||[]){const uid=sellerUserIds.get(row.seller_id),next=tier(row.plan_key);if(!uid||!next)continue;const prev=reviewerPlans.get(uid)||"",score=(p:string)=>p==="year"?3:p==="half_year"?2:p==="month"?1:0;if(score(next)>score(prev))reviewerPlans.set(uid,next);}
+  }
+ }
  const likeMap=new Map<string,any[]>(),viewMap=new Map<string,number>(),salesMap=new Map<string,number>(),reviewMap=new Map<string,{count:number,sum:number,items:any[]}>();
- for(const x of likes.data||[]){const items=likeMap.get(x.listing_id)||[];items.push({actor_name:names.get(x.user_id)||("قارئ #"+x.user_id.slice(0,6)),created_at:x.created_at});likeMap.set(x.listing_id,items);}
+ for(const x of likes.data||[]){const items=likeMap.get(x.listing_id)||[];items.push({actor_name:names.get(x.user_id)||("قارئ #"+x.user_id.slice(0,6)),member_plan:reviewerPlans.get(x.user_id)||"",created_at:x.created_at});likeMap.set(x.listing_id,items);}
  for(const x of views.data||[])viewMap.set(x.listing_id,(viewMap.get(x.listing_id)||0)+1);
  for(const x of sales.data||[])salesMap.set(x.listing_id,(salesMap.get(x.listing_id)||0)+Number(x.quantity||0));
  for(const x of reviews.data||[]){
   const v=reviewMap.get(x.listing_id)||{count:0,sum:0,items:[]};
   v.count++;v.sum+=x.rating;
-  if(v.items.length<8)v.items.push({id:x.id,rating:x.rating,body:x.body,created_at:x.created_at,actor_name:names.get(x.user_id)||("قارئ #"+x.user_id.slice(0,6)),is_test:x.is_test});
+  if(v.items.length<8)v.items.push({id:x.id,rating:x.rating,body:x.body,created_at:x.created_at,actor_name:names.get(x.user_id)||("قارئ #"+x.user_id.slice(0,6)),member_plan:reviewerPlans.get(x.user_id)||"",is_test:x.is_test});
   reviewMap.set(x.listing_id,v);
  }
  const signed=await signedCovers(books);
