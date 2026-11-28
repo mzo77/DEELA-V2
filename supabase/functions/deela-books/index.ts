@@ -8,9 +8,9 @@ const SELLER_PORTAL="https://mzo77.github.io/DEELA-V2/books-private/seller/";
 const guest=ANON_KEY?createClient(SUPABASE_URL,ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false}}):null;
 const db=createClient(SUPABASE_URL,SERVICE_ROLE,{auth:{persistSession:false,autoRefreshToken:false}});
 const fn="/deela-books";
-const MEMBER_FEATURE_IDS=["profile_glow","display_name_style","profile_avatar","avatar_frame","book_frame","verified_badge","book_shine","custom_banner","advanced_analytics","priority_support"] as const;
+const MEMBER_FEATURE_IDS=["profile_glow","display_name_style","profile_avatar","avatar_frame","book_frame","verified_badge","book_shine"] as const;
 const MEMBER_TIER_LABELS:Record<string,string>={day:"أساسية · يوم",week:"متقدمة · أسبوع",month:"الأعلى · شهر"};
-const MEMBER_DEFAULT_TIERS:Record<string,string[]>={day:["profile_glow","display_name_style"],week:["profile_glow","display_name_style","profile_avatar","avatar_frame","book_frame"],month:["profile_glow","display_name_style","profile_avatar","avatar_frame","book_frame","verified_badge","book_shine","custom_banner","advanced_analytics","priority_support"]};
+const MEMBER_DEFAULT_TIERS:Record<string,string[]> = {"day":["profile_glow","display_name_style"],"week":["profile_glow","display_name_style","profile_avatar","avatar_frame","book_frame"],"month":["profile_glow","display_name_style","profile_avatar","avatar_frame","book_frame","verified_badge","book_shine"]};
 async function memberTiers(){
  const r=await db.from("deela_books_membership_tiers").select("tiers").eq("id",1).maybeSingle();
  if(r.error)throw r.error;
@@ -194,7 +194,7 @@ async function enrichBooks(books:any[],includeTest=false){
 }
 async function currentListings(isOwner:boolean,search:URLSearchParams,featureEnabled=true,includeTest=false){
  let q=db.from("deela_books_listings")
-  .select("*,deela_books_sellers!inner(id,shop_name,slug,status,city,latitude,longitude)");
+   .select("*,deela_books_sellers!inner(id,user_id,shop_name,slug,status,city,latitude,longitude)");
  if(featureEnabled)q=q.order("featured",{ascending:false});
  q=q.order("created_at",{ascending:false}).limit(80);
  if(!isOwner||search.get("only_public")==="1")q=q.eq("status","published");
@@ -206,7 +206,20 @@ async function currentListings(isOwner:boolean,search:URLSearchParams,featureEna
  const category=str(search.get("category"),80);
  const words=str(search.get("q"),100).toLocaleLowerCase();
  const selected=(result.data||[]).filter(p=>(!category||p.category===category)&&(!words||[p.title,p.author,p.category,p.description].some((v:string)=>String(v||"").toLocaleLowerCase().includes(words))));
- return await enrichBooks(selected,includeTest);
+ const enriched=await enrichBooks(selected,includeTest),sellerMap=new Map<string,any>();
+ const sellerRows=[...new Map(enriched.map((x:any)=>[x.deela_books_sellers?.id,x.deela_books_sellers]).filter((x:any)=>x[0]&&x[1]?.user_id)).values()];
+ const sellerIds=sellerRows.map((x:any)=>x.id);
+ if(sellerIds.length){
+  let pq=db.from("deela_books_promotions").select("seller_id,is_test").in("seller_id",sellerIds).eq("kind","premium").eq("status","active").gt("ends_at",new Date().toISOString());
+  const promos=await (includeTest?pq:pq.eq("is_test",false));if(promos.error)throw promos.error;
+  const ids=new Set((promos.data||[]).map((x:any)=>x.seller_id));
+  await Promise.all(sellerRows.filter((s:any)=>ids.has(s.id)).map(async(s:any)=>{
+   const auth=await db.auth.admin.getUserById(s.user_id);if(auth.error||!auth.data.user)return;
+   const member=await memberEntitlements(auth.data.user,!conf.site_public,s);
+   if(member.premium_active)sellerMap.set(s.id,{features:member.member_features,appearance:member.member_appearance,avatar_url:member.avatar_url,plan:member.member_plan});
+  }));
+ }
+ return enriched.map((x:any)=>({...x,deela_books_sellers:{...x.deela_books_sellers,member_profile:sellerMap.get(x.deela_books_sellers?.id)||null}}));
 }
 async function ownerOverview(req:Request){
  const checks=[
