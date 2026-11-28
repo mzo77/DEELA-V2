@@ -1664,6 +1664,7 @@ async function loadHeroStorybook(){
  try{
   const response=await fetch("./blush-texture.webp.b64?v=20261128-blush-exact-v1",{cache:"force-cache"});
   if(response.ok){const encoded=(await response.text()).trim();if(encoded){
+   document.documentElement.style.setProperty("--deela-pearl-texture",'url("data:image/webp;base64,'+encoded+'")');
    document.body.style.backgroundColor="#F9E9E7";
    document.body.style.backgroundImage="url(\"data:image/webp;base64,"+encoded+"\")";
    document.body.style.backgroundSize="100% auto";
