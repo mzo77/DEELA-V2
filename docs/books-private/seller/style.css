@@ -1887,3 +1887,14 @@ body .header-search input{position:relative!important}
  body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) .member-book-page .detail-desc,
  body:is(.member-tier-page-month,.member-tier-page-half_year,.member-tier-page-year,.member-public-store-month,.member-public-store-half_year,.member-public-store-year) .member-book-page .detail-story{animation-duration:16s!important}
 }
+
+body.member-tier-page-month #dynamicPage .seller-profile-card,body.member-tier-page-half_year #dynamicPage .seller-profile-card,body.member-tier-page-year #dynamicPage .seller-profile-card,
+body.member-tier-page-month #dynamicPage .member-seller-workspace,body.member-tier-page-half_year #dynamicPage .member-seller-workspace,body.member-tier-page-year #dynamicPage .member-seller-workspace{
+ background:linear-gradient(125deg,#fffaf8ed,#f5e2deeb,#fffaf8ed)!important;color:#0D3042!important;
+ border-color:color-mix(in srgb,var(--deela-tier-accent) 55%,#e5c9c4)!important;
+ box-shadow:0 8px 25px #51321b20,0 0 22px color-mix(in srgb,var(--deela-tier-accent) 22%,transparent)!important;
+ animation:deelaMemberPanelGlow 8s ease-in-out infinite!important
+}
+body.member-public-store-month .member-store-stage,body.member-public-store-half_year .member-store-stage,body.member-public-store-year .member-store-stage{
+ background:transparent!important;background-color:transparent!important;background-image:none!important
+}
