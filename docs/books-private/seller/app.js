@@ -23,6 +23,19 @@ const MEMBER_TIER_NAMES={month:"عضوية الشهر",half_year:"عضوية ن�
 const MEMBER_TIER_COPY={month:"إطار أنيق للصورة والغلاف، اسم عرض مميز، وهالة ديلا خفيفة للحساب.",half_year:"كل مزايا الشهر، مع رفع صورة العرض، إطارات ذهبية ووردية، ثيم متجر خاص ولمعان كتب متحرك.",year:"كل المزايا: إطارات ألماسية، شارة موثّق، خلفية متجر متدرجة، ولمعان منشوري فاخر للكتب."};
 const MEMBER_STYLE_OPTIONS={avatar:[["aurora","هالة الشفق","avatar_frame"],["velvet","مخمل ليلي","avatar_frame"],["crystal","كريستال","avatar_frame"],["gold","ذهب ملكي","avatar_frame_gold"],["rose","ذهب وردي","avatar_frame_rose"],["diamond","ألماس لامع","avatar_frame_diamond"]],book:[["starlight","نجوم مضيئة","book_frame"],["velvet","مخمل ليلي","book_frame"],["crystal","كريستال","book_frame"],["gold","ذهب ملكي","book_frame_gold"],["rose","ذهب وردي","book_frame_rose"],["diamond","ألماس لامع","book_frame_diamond"]]};
 function memberStyleOptions(kind,current,features){return MEMBER_STYLE_OPTIONS[kind].map(([value,label,gate])=>'<option value="'+value+'" '+(current===value?"selected":"")+' '+(!features.includes(gate)?"disabled":"")+'>'+label+(!features.includes(gate)?" · مقفلة":"")+'</option>').join("")};
+function filterOwnerRows(){
+ const search=document.querySelector(".owner-search")?.value.trim().toLocaleLowerCase()||"";
+ const status=document.getElementById("ownerStatusFilter")?.value||"all";
+ const membership=document.getElementById("ownerMembershipFilter")?.value||"all";
+ const accountType=document.getElementById("ownerAccountTypeFilter")?.value||"all";
+ document.querySelectorAll("[data-owner-row]").forEach(row=>{
+  const byText=!search||row.textContent.toLocaleLowerCase().includes(search);
+  const byStatus=status==="all"||row.dataset.ownerState===status;
+  const byMember=membership==="all"||row.dataset.memberState===membership;
+  const byType=accountType==="all"||row.dataset.accountType===accountType;
+  row.hidden=!(byText&&byStatus&&byMember&&byType);
+ });
+}
 function memberChecks(user){const active=user.premium_active===true;const features=Array.isArray(user.member_features)?user.member_features:[];return '<details class="member-control"><summary>⚙ تخصيص مزايا المشترك</summary><form id="userPremiumForm" class="member-feature-form" data-member-feature-form><input type="hidden" name="user_id" value="'+esc(user.id)+'"><p class="muted">الباقة الحالية: <b>'+esc(user.member_plan_label||"مجاني")+'</b>'+ (user.premium_ends_at?' · تنتهي '+date(user.premium_ends_at):"")+'</p><div class="member-feature-grid">'+MEMBER_FEATURES.map(([key,label])=>'<label class="checkbox-field"><input type="checkbox" name="feature" value="'+key+'" '+(features.includes(key)?"checked":"")+' '+(active?"":"disabled")+'><span>'+label+'</span></label>').join("")+'</div>'+(!active?'<small>فعّل العضوية أولًا لتحديد المزايا.</small>':"")+'<div class="form-actions"><button class="btn btn-primary" type="submit" '+(active?"":"disabled")+'>حفظ مزايا المشترك</button><span class="form-msg"></span></div></form></details>'}
 
 const state={token:window.__DEELA_BOOKS_TOKEN||sessionStorage.getItem("deela-books-token")||"",refreshToken:sessionStorage.getItem("deela-books-refresh")||"",
@@ -731,7 +744,13 @@ function paymentOwnerPanel(){
 function accountOwnerPanel(){
  const rows=state.ownerData?.users||[],tiers=state.ownerData?.tiers||{month:[],half_year:[],year:[],prices:{}};
  const tierForm='<section class="panel"><h2>مزايا وأسعار العضوية</h2><p>حدد مربعات كل مدة؛ المزايا تتفعل تلقائيًا عند تفعيل العضوية. اترك السعر فارغًا الآن أو أدخله لاحقًا من لوحة المالك.</p><form id="memberTiersForm" class="form-grid">'+["month","half_year","year"].map(k=>'<fieldset class="member-tier-box member-tier-'+k+'"><legend>'+MEMBER_TIER_NAMES[k]+'</legend><p class="tier-note">'+MEMBER_TIER_COPY[k]+'</p><label class="field">سعر '+MEMBER_TIER_NAMES[k]+' (ريال) <input type="number" name="price_'+k+'" min="0" step="0.01" placeholder="اتركه فارغًا لتحديده لاحقًا" value="'+esc(tiers.prices?.[k]??"")+'"></label><div class="member-feature-grid">'+MEMBER_FEATURES.map(([key,label])=>'<label class="checkbox-field"><input type="checkbox" name="'+k+'" value="'+key+'" '+((tiers[k]||[]).includes(key)?"checked":"")+'><span>'+label+'</span></label>').join("")+'</div></fieldset>').join("")+'<button class="btn btn-primary" type="submit">حفظ مزايا وأسعار الباقات</button><span class="form-msg"></span></form></section>';
- return tierForm+'<section class="panel"><h2>حسابات المؤلفين والمتاجر</h2><p>تظهر هنا حسابات البائعين المسجلين في DEELA Books فقط. حسابات مشتركي تطبيق DEELA للبرامج لا تُعرض ولا تُدار من هذه اللوحة.</p><div class="list-rows">'+(rows.length?rows.map(u=>'<article class="row-card"><div class="row-top"><div><strong>'+esc(u.shop_name||"متجر كتب")+'</strong><p>'+esc(u.email||u.phone||u.id)+' · آخر دخول: '+date(u.last_sign_in_at)+' · إنشاء: '+date(u.created_at)+'</p></div><span class="status">'+(u.blocked?"موقوف":esc(statusNames[u.seller_status]||u.seller_status||"بائع كتب"))+'</span></div>'+memberChecks(u)+'<label class="field">ملاحظة إدارية<input data-user-note="'+esc(u.id)+'" value="'+esc(u.note)+'" maxlength="500"></label><button class="btn '+(u.blocked?"btn-outline":"danger")+'" data-user-toggle="'+esc(u.id)+'" data-blocked="'+(!u.blocked)+'">'+(u.blocked?"إعادة تفعيل حساب البائع":"إيقاف حساب البائع")+'</button></article>').join(""):'<div class="empty-state"><h3>لا توجد حسابات بائعين في DEELA Books بعد</h3><p>حسابات مشتركي تطبيق البرامج منفصلة ولن تظهر هنا.</p></div>')+'</div>'+(state.ownerUsersHasMore?'<div class="pagination-control"><button class="btn btn-outline" data-load-owner-users>تحميل المزيد من الحسابات</button></div>':"")+'<p>القائمة تشمل بائعي الكتب فقط؛ إجراء الإيقاف محمي كذلك على الخادم.</p></section>';
+ const accountFilters='<div class="owner-filter-box owner-account-filters"><input type="search" class="owner-search" placeholder="ابحث بالاسم أو البريد أو الجوال…"><select id="ownerMembershipFilter"><option value="all">كل العضويات</option><option value="premium">المميزة</option><option value="free">غير المميزة</option></select><select id="ownerAccountTypeFilter"><option value="all">كل الحسابات</option><option value="seller">المؤلفون والمتاجر</option><option value="reader">القراء</option></select></div>';
+ return tierForm+'<section class="panel"><h2>حسابات DEELA Books</h2><p>تظهر هنا كل الحسابات المسجلة، مع تمييز المؤلفين والمتاجر والقراء، ويمكن تصفية الحسابات المميزة وغير المميزة.</p>'+accountFilters+'<div class="list-rows">'+(rows.length?rows.map(u=>{
+  const name=u.shop_name||u.display_name||u.email||u.phone||"حساب قارئ";
+  const memberLabel=u.premium_active?"عضوية مميزة":"غير مشترك";
+  const accountLabel=u.is_seller?(statusNames[u.seller_status]||u.seller_status||"مؤلف أو متجر"):"قارئ";
+  return '<article class="row-card" data-owner-row data-owner-state="'+(u.blocked?"blocked":"active")+'" data-member-state="'+(u.premium_active?"premium":"free")+'" data-account-type="'+(u.is_seller?"seller":"reader")+'"><div class="row-top"><div><strong>'+esc(name)+'</strong><p>'+esc(u.email||u.phone||u.id)+' · '+(u.is_seller?esc(u.slug||"صفحة المؤلف"):"حساب قارئ")+' · آخر دخول: '+date(u.last_sign_in_at)+' · إنشاء: '+date(u.created_at)+'</p></div><div class="owner-account-badges"><span class="status">'+(u.blocked?"موقوف":esc(accountLabel))+'</span><span class="status '+(u.premium_active?"member-active-status":"muted")+'">'+memberLabel+(u.member_plan_label&&u.premium_active?" · "+esc(u.member_plan_label):"")+'</span></div></div>'+memberChecks(u)+'<label class="field">ملاحظة إدارية<input data-user-note="'+esc(u.id)+'" value="'+esc(u.note||"")+'" maxlength="500"></label><button class="btn '+(u.blocked?"btn-outline":"danger")+'" data-user-toggle="'+esc(u.id)+'" data-blocked="'+(!u.blocked)+'">'+(u.blocked?"إعادة تفعيل الحساب":u.is_seller?"إيقاف حساب المؤلف أو المتجر":"إيقاف الحساب")+'</button></article>';
+ }).join(""):'<div class="empty-state"><h3>ما فيه حسابات مسجلة حتى الآن</h3><p>تظهر الحسابات هنا مباشرة بعد إنشائها.</p></div>')+'</div>'+(state.ownerUsersHasMore?'<div class="pagination-control"><button class="btn btn-outline" data-load-owner-users>تحميل المزيد من الحسابات</button></div>':"")+'<p>تحديث العضوية والميزات ينعكس على حساب المشترك فورًا.</p></section>';
 }
 function ownerContestsPanel(){
  const rows=state.ownerContests||[];
@@ -1002,6 +1021,7 @@ async function route(view,push=true){
  if(!state.token&&!("home,catalog,shops,shop,detail,subscriptions".split(",").includes(view))){openLogin();return}
  if(view==="owner"&&!state.me?.is_owner){toast("مركز الإدارة خاص بالمالك");return}
  state.view=view;state.current=state.current||"";
+ const topMenu=$("topMenu");if(topMenu){if(view!=="home")topMenu.open=false;topMenu.hidden=view!=="home";}
  if(view!=="shop"&&view!=="detail")applyPublicStorePageTheme("");
  document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("active",b.dataset.route===view));
  $("home").classList.toggle("active",view==="home");$("home").hidden=view!=="home";
@@ -1469,11 +1489,8 @@ function addOwnerHomeSettingsGears(){
 }
 
 function bind(){
- const topMenu=$("topMenu");let menuScrollY=0;
- topMenu?.addEventListener("toggle",()=>{
-  if(topMenu.open&&window.matchMedia("(max-width:700px)").matches){menuScrollY=window.scrollY;document.documentElement.classList.add("mobile-menu-open");document.body.style.position="fixed";document.body.style.top=`-${menuScrollY}px`;document.body.style.left="0";document.body.style.right="0";document.body.style.width="100%"}
-  else{document.documentElement.classList.remove("mobile-menu-open");document.body.style.position="";document.body.style.top="";document.body.style.left="";document.body.style.right="";document.body.style.width="";if(menuScrollY)window.scrollTo(0,menuScrollY)}
- });
+ const topMenu=$("topMenu");
+ topMenu?.addEventListener("toggle",()=>topMenu.setAttribute("aria-expanded",String(topMenu.open)));
  document.addEventListener("click",ev=>{const menu=$("topMenu");if(menu?.open&&!menu.contains(ev.target))menu.open=false});
  document.addEventListener("keydown",ev=>{if(ev.key==="Escape"){const menu=$("topMenu");if(menu?.open)menu.open=false}});
  document.addEventListener("click",async ev=>{
@@ -1588,13 +1605,7 @@ function bind(){
   else if(state.view==="catalog")route("catalog",false);
  });
  document.addEventListener("input",ev=>{
-  if(!ev.target?.classList?.contains("owner-search"))return;
-  const filter=ev.target.value.trim().toLocaleLowerCase();
-  document.querySelectorAll("[data-owner-row]").forEach(row=>{
-    const byText=!filter||row.textContent.toLocaleLowerCase().includes(filter);
-    const status=document.getElementById("ownerStatusFilter")?.value||"all";
-    row.hidden=!(byText&&(status==="all"||row.dataset.ownerState===status));
-  });
+  if(ev.target?.classList?.contains("owner-search"))filterOwnerRows();
  });
  document.addEventListener("change",ev=>{
   if(ev.target?.closest("#listingForm")&&ev.target.name==="format-choice"){
@@ -1610,12 +1621,7 @@ function bind(){
   if(ev.target?.id==="nearbyRadius"){state.radiusKm=Number(ev.target.value)||25;route("catalog",false)}
   if(ev.target?.id==="formatFilter"){state.format=ev.target.value;route("catalog",false)}
   if(ev.target?.id==="sortFilter"){state.sort=ev.target.value;route("catalog",false)}
-  if(ev.target?.id==="ownerStatusFilter"){
-    const status=ev.target.value,search=document.querySelector(".owner-search")?.value.trim().toLocaleLowerCase()||"";
-    document.querySelectorAll("[data-owner-row]").forEach(row=>{
-      row.hidden=!((status==="all"||row.dataset.ownerState===status)&&(!search||row.textContent.toLocaleLowerCase().includes(search)));
-    });
-  }
+  if(["ownerStatusFilter","ownerMembershipFilter","ownerAccountTypeFilter"].includes(ev.target?.id))filterOwnerRows();
  });
  window.addEventListener("hashchange",()=>{
   const hash=location.hash.slice(1);
@@ -1628,7 +1634,21 @@ async function logout(){
  for(const key of ["deela-books-token","deela-books-refresh","deela-books-auth-v1","deela-books-pending-phone"])sessionStorage.removeItem(key);
  state.token="";state.refreshToken="";state.me=null;state.email="";state.sellerListings=[];state.sellerNotifications=[];state.sellerLaunchAlerts=[];state.listings=[];state.shops=[];state.sections=[];state.banners=[];state.ownerData=null;state.settings={};state.view="home";renderHome();openLogin("تم تسجيل الخروج من DEELA Books.");
 }
-async function loadHeroStorybook(){const img=$("heroStorybook");if(img){try{const response=await fetch("./storybook.webp.b64",{cache:"force-cache"});if(response.ok){const encoded=(await response.text()).trim();if(encoded)img.src="data:image/webp;base64,"+encoded}}catch{}}try{const response=await fetch("./blush-texture.webp.b64?v=20261128-blush-exact-v1",{cache:"force-cache"});if(response.ok){const encoded=(await response.text()).trim();if(encoded){document.body.style.backgroundImage="linear-gradient(90deg,rgba(81,50,27,.065),rgba(255,250,248,.08) 18%,rgba(255,250,248,.08) 82%,rgba(81,50,27,.065)),url(\"data:image/webp;base64,"+encoded+"\")";document.body.style.backgroundSize="100% 100%,100% auto";document.body.style.backgroundRepeat="no-repeat,repeat-y";document.body.style.backgroundAttachment="fixed,scroll"}}}catch{}}
+async function loadHeroStorybook(){
+ const img=$("heroStorybook");
+ if(img){try{const response=await fetch("./storybook.webp.b64",{cache:"force-cache"});if(response.ok){const encoded=(await response.text()).trim();if(encoded)img.src="data:image/webp;base64,"+encoded}}catch{}}
+ try{
+  const response=await fetch("./blush-texture.webp.b64?v=20261128-blush-exact-v1",{cache:"force-cache"});
+  if(response.ok){const encoded=(await response.text()).trim();if(encoded){
+   document.body.style.backgroundColor="#F9E9E7";
+   document.body.style.backgroundImage="url(\"data:image/webp;base64,"+encoded+"\")";
+   document.body.style.backgroundSize="100% auto";
+   document.body.style.backgroundRepeat="repeat-y";
+   document.body.style.backgroundPosition="center top";
+   document.body.style.backgroundAttachment="scroll";
+  }}
+ }catch{}
+}
 async function boot(){
  bind();loadHeroStorybook();saveCart();$("year").textContent=new Date().getFullYear();
  const hash=location.hash.slice(1);
