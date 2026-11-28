@@ -9,8 +9,8 @@ const guest=ANON_KEY?createClient(SUPABASE_URL,ANON_KEY,{auth:{persistSession:fa
 const db=createClient(SUPABASE_URL,SERVICE_ROLE,{auth:{persistSession:false,autoRefreshToken:false}});
 const fn="/deela-books";
 const MEMBER_FEATURE_IDS=["profile_glow","display_name_style","profile_avatar","avatar_frame","avatar_frame_gold","avatar_frame_rose","avatar_frame_diamond","book_frame","book_frame_gold","book_frame_rose","book_frame_diamond","profile_theme","verified_badge","book_shine","book_shine_prism"] as const;
-const MEMBER_TIER_LABELS:Record<string,string>={day:"أساسية · يوم",week:"متقدمة · أسبوع",month:"الأعلى · شهر"};
-const MEMBER_DEFAULT_TIERS:Record<string,string[]> = {"day":["profile_glow","display_name_style","avatar_frame","book_frame"],"week":["profile_glow","display_name_style","profile_avatar","avatar_frame","avatar_frame_gold","book_frame","book_frame_gold","book_frame_rose","profile_theme","book_shine"],"month":["profile_glow","display_name_style","profile_avatar","avatar_frame","avatar_frame_gold","avatar_frame_rose","avatar_frame_diamond","book_frame","book_frame_gold","book_frame_rose","book_frame_diamond","profile_theme","verified_badge","book_shine","book_shine_prism"]};
+const MEMBER_TIER_LABELS:Record<string,string>={month:"عضوية الشهر",half_year:"عضوية نصف السنة",year:"عضوية السنة"};
+const MEMBER_DEFAULT_TIERS:Record<string,any>={month:["profile_glow","display_name_style","avatar_frame","book_frame"],half_year:["profile_glow","display_name_style","profile_avatar","avatar_frame","avatar_frame_gold","book_frame","book_frame_gold","book_frame_rose","profile_theme","book_shine"],year:["profile_glow","display_name_style","profile_avatar","avatar_frame","avatar_frame_gold","avatar_frame_rose","avatar_frame_diamond","book_frame","book_frame_gold","book_frame_rose","book_frame_diamond","profile_theme","verified_badge","book_shine","book_shine_prism"],prices:{month:"",half_year:"",year:""}};
 async function memberTiers(){
  const r=await db.from("deela_books_membership_tiers").select("tiers").eq("id",1).maybeSingle();
  if(r.error)throw r.error;
@@ -22,12 +22,14 @@ async function memberEntitlements(account:any,privateMode:boolean,knownSeller?:a
  const q=db.from("deela_books_promotions").select("plan_key,is_test,ends_at").eq("seller_id",seller.id).eq("kind","premium").eq("status","active").gt("ends_at",new Date().toISOString()).order("ends_at",{ascending:false}).limit(10);
  const rows=await q;if(rows.error)throw rows.error;
  const active=(rows.data||[]).filter((x:any)=>!x.is_test||privateMode);
- const rank:Record<string,number>={day:1,week:2,month:3};
+ const tierKey=(plan:string)=>plan==="sub_month"?"month":plan==="sub_half_year"?"half_year":plan==="sub_year"||plan==="month"?"year":plan==="week"?"half_year":"month";
+ const rank:Record<string,number>={day:1,sub_month:1,week:2,sub_half_year:2,month:3,sub_year:3};
  const membership=active.sort((a:any,b:any)=>(rank[b.plan_key]||0)-(rank[a.plan_key]||0))[0];
  if(!membership)return {premium_active:false,member_plan:"",member_plan_label:"مجاني",member_features:[],member_custom_features:false,premium_ends_at:null,avatar_url:null,member_appearance:{}};
  const tiers=await memberTiers(),metadata=account.user_metadata||{};
  const custom=Array.isArray(metadata.deela_member_features)?metadata.deela_member_features.filter((x:string)=>MEMBER_FEATURE_IDS.includes(x as any)):null;
- const selectedFeatures=custom||tiers[membership.plan_key]||MEMBER_DEFAULT_TIERS[membership.plan_key]||[];
+ const planKey=tierKey(membership.plan_key);
+ const selectedFeatures=custom||tiers[planKey]||MEMBER_DEFAULT_TIERS[planKey]||[];
  const features=[...new Set(selectedFeatures)];
  if(features.some((x:string)=>["avatar_frame_gold","avatar_frame_rose","avatar_frame_diamond"].includes(x))&&!features.includes("avatar_frame"))features.push("avatar_frame");
  if(features.some((x:string)=>["book_frame_gold","book_frame_rose","book_frame_diamond"].includes(x))&&!features.includes("book_frame"))features.push("book_frame");
@@ -39,7 +41,7 @@ async function memberEntitlements(account:any,privateMode:boolean,knownSeller?:a
  const wantedAvatar=String(metadata.deela_member_avatar_frame||"aurora"),wantedBook=String(metadata.deela_member_book_frame||"starlight");
  const avatarFrame=features.includes(avatarGates[wantedAvatar]||"")?wantedAvatar:"aurora",bookFrame=features.includes(bookGates[wantedBook]||"")?wantedBook:"starlight";
  const profileTheme=features.includes("profile_theme")&&["ocean","emerald","royal","rose"].includes(String(metadata.deela_member_profile_theme))?String(metadata.deela_member_profile_theme):"ocean";
- return {premium_active:true,member_plan:membership.plan_key,member_plan_label:MEMBER_TIER_LABELS[membership.plan_key]||"عضوية مميزة",member_features:features,member_custom_features:Array.isArray(custom),premium_ends_at:membership.ends_at||null,avatar_url:avatar&&!avatar.error?avatar.data.signedUrl:null,member_appearance:{display_name:String(metadata.deela_member_display_name||"").slice(0,90),avatar_path:avatarPath,avatar_frame:avatarFrame,book_frame:bookFrame,profile_theme:profileTheme,shine:metadata.deela_member_shine!==false}};
+ return {premium_active:true,member_plan:planKey,member_plan_label:MEMBER_TIER_LABELS[planKey]||"عضوية مميزة",member_features:features,member_custom_features:Array.isArray(custom),premium_ends_at:membership.ends_at||null,avatar_url:avatar&&!avatar.error?avatar.data.signedUrl:null,member_appearance:{display_name:String(metadata.deela_member_display_name||"").slice(0,90),avatar_path:avatarPath,avatar_frame:avatarFrame,book_frame:bookFrame,profile_theme:profileTheme,shine:metadata.deela_member_shine!==false}};
 }
 const FEATURE_FLAGS=["enable_seller_registration","enable_book_submissions","enable_reader_likes","enable_favorites","enable_author_follows","enable_reviews","enable_messages","enable_orders","enable_discounts","enable_featured_section","enable_launch_alerts","show_book_prices"] as const;
 const PRIVATE_SELLER_ROUTES=new Set(["GET /catalog","GET /shops","GET /me","GET /my/listings","POST /seller/premium-appearance","GET /owner/member-tiers","POST /owner/member-tiers","POST /owner/user-premium-features","GET /seller/activity","GET /seller/orders","POST /seller/order-item/status","POST /seller/apply","POST /seller/profile","POST /listing/delete","GET /orders","POST /order","POST /order/support","GET /download","POST /like","POST /follow","POST /favorite","POST /view","POST /reports","GET /reviews","POST /reviews","GET /messages","POST /messages","POST /messages/reply","GET /seller/notifications","POST /seller/notifications/read","POST /push/subscribe","POST /push/unsubscribe","GET /seller/launch-alerts","POST /seller/launch-alerts/request","GET /seller/promotions","POST /seller/promotions/test","GET /contests","POST /contests/answer","GET /launch-alerts/feed","POST /listing","POST /upload/sign"]);
@@ -205,16 +207,18 @@ async function currentListings(isOwner:boolean,search:URLSearchParams,featureEna
  let q=db.from("deela_books_listings")
    .select("*,deela_books_sellers!inner(id,user_id,shop_name,slug,status,city,latitude,longitude)");
  if(featureEnabled)q=q.order("featured",{ascending:false});
- q=q.order("created_at",{ascending:false}).limit(80);
+ const pageSize=Math.min(48,Math.max(1,Number(search.get("limit"))||24)),offset=Math.max(0,Number(search.get("offset"))||0);
+ q=q.order("created_at",{ascending:false}).range(offset,offset+pageSize);
  if(!isOwner||search.get("only_public")==="1")q=q.eq("status","published");
  if((!isOwner||search.get("only_public")==="1")&&!includeTest)q=q.eq("deela_books_sellers.status","approved");
  if(search.get("format")&&["physical","ebook","audiobook"].includes(search.get("format")!))
    q=q.eq("format",search.get("format")!);
  const result=await q;
  if(result.error)throw result.error;
+ const shopSlug=str(search.get("shop"),60).toLowerCase();if(slugRE.test(shopSlug))q=q.eq("deela_books_sellers.slug",shopSlug);
  const category=str(search.get("category"),80);
  const words=str(search.get("q"),100).toLocaleLowerCase();
- const selected=(result.data||[]).filter(p=>(!category||p.category===category)&&(!words||[p.title,p.author,p.category,p.description].some((v:string)=>String(v||"").toLocaleLowerCase().includes(words))));
+ const hasMore=(result.data||[]).length>pageSize,selected=(result.data||[]).slice(0,pageSize).filter(p=>(!category||p.category===category)&&(!words||[p.title,p.author,p.category,p.description].some((v:string)=>String(v||"").toLocaleLowerCase().includes(words))));
  const enriched=await enrichBooks(selected,includeTest),sellerMap=new Map<string,any>();
  const sellerRows=[...new Map(enriched.map((x:any)=>[x.deela_books_sellers?.id,x.deela_books_sellers]).filter((x:any)=>x[0]&&x[1]?.user_id)).values()];
  const sellerIds=sellerRows.map((x:any)=>x.id);
@@ -228,7 +232,7 @@ async function currentListings(isOwner:boolean,search:URLSearchParams,featureEna
    if(member.premium_active)sellerMap.set(s.id,{features:member.member_features,appearance:member.member_appearance,avatar_url:member.avatar_url,plan:member.member_plan});
   }));
  }
- return enriched.map((x:any)=>({...x,deela_books_sellers:{...x.deela_books_sellers,member_profile:sellerMap.get(x.deela_books_sellers?.id)||null}}));
+ return {listings:enriched.map((x:any)=>({...x,deela_books_sellers:{...x.deela_books_sellers,member_profile:sellerMap.get(x.deela_books_sellers?.id)||null}})),has_more:hasMore,next_offset:offset+Math.min(pageSize,(result.data||[]).length)};
 }
 async function ownerOverview(req:Request){
  const checks=[
@@ -432,9 +436,9 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
         if(mine.error)throw mine.error;
         ownListings=await enrichBooks(mine.data||[],true);
       }
-      const otherPublished=await currentListings(true,new URLSearchParams("only_public=1"),true,true);
+      const otherPublished=await currentListings(true,new URLSearchParams("only_public=1&limit=24&offset=0"),true,true);
       const seen=new Set(ownListings.map(x=>x.id));
-      ownListings=[...ownListings,...otherPublished.filter(x=>!seen.has(x.id))];
+      ownListings=[...ownListings,...otherPublished.listings.filter(x=>!seen.has(x.id))];
       const sellerSettings={site_public:false,private_test_mode:true,seller_pending:pendingSeller,...Object.fromEntries(FEATURE_FLAGS.map(k=>[k,conf[k]]))};
       return respond(req,{listings:ownListings,settings:sellerSettings,sections:categories.data||[],banners:[],payments_live:false,shipping_live:false,currency:"SAR"});
     }
@@ -450,9 +454,10 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
       theme_colors:conf.theme_colors,theme_material:conf.theme_material,theme_design:conf.theme_design,
       theme_sections:conf.theme_sections,theme_images:theme.theme_images,
       ...Object.fromEntries(FEATURE_FLAGS.map(k=>[k,conf[k]]))};
+    const catalogPage=await currentListings(isOwner,parsed.searchParams,conf.enable_featured_section,!conf.site_public&&!!user);
     return respond(req,{
-    listings:(await currentListings(isOwner,parsed.searchParams,conf.enable_featured_section,!conf.site_public&&!!user)).map((x:any)=>!isOwner&&!conf.show_book_prices?
-      {...x,price_sar:null,compare_at_sar:null}:x),
+    listings:catalogPage.listings.map((x:any)=>!isOwner&&!conf.show_book_prices?
+      {...x,price_sar:null,compare_at_sar:null}:x),has_more:catalogPage.has_more,next_offset:catalogPage.next_offset,
     settings:publicSettings,
     sections:await signedMerchandising(sectionRows.data||[]),
     banners:await signedMerchandising(bannerRows.data||[]),
@@ -460,10 +465,11 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
     });
   }
   if(req.method==="GET"&&path==="/shops"){
-    const q=db.from("deela_books_sellers").select("id,user_id,shop_name,slug,bio,city,status,created_at,logo_path,latitude,longitude").order("created_at",{ascending:false}).limit(70);
+    const pageSize=Math.min(40,Math.max(1,Number(parsed.searchParams.get("limit"))||24)),offset=Math.max(0,Number(parsed.searchParams.get("offset"))||0);
+    const q=db.from("deela_books_sellers").select("id,user_id,shop_name,slug,bio,city,status,created_at,logo_path,latitude,longitude").order("created_at",{ascending:false}).range(offset,offset+pageSize);
     if(!isOwner&&(!user||conf.site_public))q.eq("status","approved");
     const {data,error:e}=await q;if(e)throw e;
-    const sellers=data||[],sellerIds=sellers.map(x=>x.id);
+    const hasMore=(data||[]).length>pageSize,sellers=(data||[]).slice(0,pageSize),sellerIds=sellers.map(x=>x.id);
     const followRows=sellerIds.length?await db.from("deela_books_follows").select("seller_id,is_test").in("seller_id",sellerIds).limit(10000):{data:[],error:null};
     if(followRows.error)throw followRows.error;
     const productRows=sellerIds.length?await db.from("deela_books_listings").select("id,seller_id,featured").in("seller_id",sellerIds).eq("status","published").limit(10000):{data:[],error:null};
@@ -495,7 +501,7 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
       const logo=s.logo_path?await db.storage.from("deela-books-covers").createSignedUrl(s.logo_path,600):null;
       return {...s,logo_url:logo&&!logo.error?logo.data.signedUrl:null,follower_count:follows.get(s.id)||0,product_count:z.products,featured_count:z.featured,rating:z.count?Math.round(z.sum/z.count*10)/10:0,rating_count:z.count,premium_active:verifiedIds.has(s.id),premium_test_active:trialIds.has(s.id),member_profile:memberProfiles.get(s.id)||null};
     }));
-    return respond(req,{shops});
+    return respond(req,{shops,has_more:hasMore,next_offset:offset+sellers.length});
   }
   if(!user)return fail(req,"سجّل الدخول أولًا",401);
   if(req.method==="GET"&&path==="/me"){
@@ -678,9 +684,11 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
   }
   if(req.method==="POST"&&path==="/seller/promotions/test"){
     const seller=await sellerFor(user.id);if(!seller||!["approved","pending"].includes(seller.status))return fail(req,"أنشئ متجرك أولًا لتجربة الترويج",403);
-    const b=await req.json(),kind=str(b.kind,20),plan=str(b.plan_key,12),listingId=str(b.listing_id,60);
-    const days:Record<string,number>={day:1,week:7,month:30};
-    if(!["boost","premium"].includes(kind)||!days[plan])return fail(req,"خيار الترويج غير صالح");
+    const b=await req.json(),kind=str(b.kind,20),requestedPlan=str(b.plan_key,20),listingId=str(b.listing_id,60);
+    const boostDays:Record<string,number>={day:1,week:7,month:30};
+    const premiumMonths:Record<string,number>={month:1,half_year:6,year:12};
+    if(kind==="boost"&&!boostDays[requestedPlan]||kind==="premium"&&!premiumMonths[requestedPlan]||!["boost","premium"].includes(kind))return fail(req,"خيار الترويج غير صالح");
+    const plan=kind==="premium"?"sub_"+requestedPlan:requestedPlan;
     let linked:string|null=null;
     if(kind==="boost"){
       if(!uuid.test(listingId))return fail(req,"اختر رواية من متجرك");
@@ -688,7 +696,7 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
       if(l.error||!l.data)return fail(req,"الرواية ليست ضمن متجرك",404);
       linked=listingId;
     }
-    const now=new Date(),ends=new Date(now.getTime()+days[plan]*86400000);
+    const now=new Date(),ends=new Date(now);if(kind==="premium"){const day=ends.getDate();ends.setMonth(ends.getMonth()+premiumMonths[requestedPlan]);if(ends.getDate()<day)ends.setDate(0)}else ends.setDate(ends.getDate()+boostDays[plan]);
     const dup=await db.from("deela_books_promotions").select("id,ends_at").eq("seller_id",seller.id).eq("kind",kind).eq("plan_key",plan).eq("status","active").gt("ends_at",now.toISOString()).limit(1).maybeSingle();
     if(dup.error)throw dup.error;
     if(!dup.data){
@@ -1219,7 +1227,8 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
       const b=await req.json(),tiers=b.tiers;
       if(!tiers||typeof tiers!=="object"||Array.isArray(tiers))return fail(req,"إعدادات الباقات غير صحيحة",400);
       const clean:Record<string,string[]>={};
-      for(const key of ["day","week","month"]){const values=tiers[key];if(!Array.isArray(values)||values.some((x:any)=>!MEMBER_FEATURE_IDS.includes(x)))return fail(req,"ميزة غير معروفة في باقة "+key,400);clean[key]=[...new Set(values)];}
+      for(const key of ["month","half_year","year"]){const values=tiers[key];if(!Array.isArray(values)||values.some((x:any)=>!MEMBER_FEATURE_IDS.includes(x)))return fail(req,"ميزة غير معروفة في باقة "+key,400);clean[key]=[...new Set(values)];}
+      clean.prices={};for(const key of ["month","half_year","year"]){const value=tiers.prices?.[key];if(value===""||value===null||value===undefined)clean.prices[key]="";else{const price=Number(value);if(!Number.isFinite(price)||price<0||price>100000)return fail(req,"السعر غير صالح في "+key,400);clean.prices[key]=Math.round(price*100)/100;}}
       const saved=await db.from("deela_books_membership_tiers").upsert({id:1,tiers:clean,updated_by:user.id,updated_at:new Date().toISOString()},{onConflict:"id"});
       if(saved.error)throw saved.error;
       return respond(req,{ok:true,tiers:clean});
@@ -1237,15 +1246,17 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
       return respond(req,{ok:true,user_id:id,features:metadata.deela_member_features});
     }
     if(req.method==="GET"&&path==="/owner/users"){
-      const sellers=await db.from("deela_books_sellers").select("user_id,shop_name,slug,status,created_at").order("created_at",{ascending:false}).limit(500);
+      const pageSize=Math.min(80,Math.max(1,Number(parsed.searchParams.get("limit"))||40)),offset=Math.max(0,Number(parsed.searchParams.get("offset"))||0);
+      const sellers=await db.from("deela_books_sellers").select("user_id,shop_name,slug,status,created_at").order("created_at",{ascending:false}).range(offset,offset+pageSize);
       if(sellers.error)throw Error("تعذر قراءة حسابات بائعي DEELA Books");
-      const ids=[...new Set((sellers.data||[]).map((x:any)=>x.user_id).filter((x:any)=>uuid.test(String(x))))];
-      if(!ids.length)return respond(req,{users:[]});
+      const hasMore=(sellers.data||[]).length>pageSize,sellerRows=(sellers.data||[]).slice(0,pageSize);
+      const ids=[...new Set(sellerRows.map((x:any)=>x.user_id).filter((x:any)=>uuid.test(String(x))))];
+      if(!ids.length)return respond(req,{users:[],has_more:hasMore,next_offset:offset+sellerRows.length});
       const controls=await db.from("deela_books_user_controls").select("user_id,blocked,note,changed_at").in("user_id",ids);
       if(controls.error)throw Error("تعذر قراءة إعدادات بائعي DEELA Books");
       const controlMap=new Map((controls.data||[]).map((x:any)=>[x.user_id,x]));
-      const out=[];for(const seller of sellers.data||[]){if(await owner(seller.user_id))continue;const auth=await db.auth.admin.getUserById(seller.user_id);if(auth.error)continue;const u=auth.data.user,c=controlMap.get(seller.user_id) as any;const member=await memberEntitlements(u,!conf.site_public);out.push({id:u.id,email:u.email||"",phone:u.phone||"",created_at:seller.created_at||u.created_at,last_sign_in_at:u.last_sign_in_at,is_owner:false,blocked:c?.blocked===true,note:c?.note||"",shop_name:seller.shop_name||"",slug:seller.slug||"",seller_status:seller.status||"",...member});}
-      return respond(req,{users:out});
+      const out=[];for(const seller of sellerRows){if(await owner(seller.user_id))continue;const auth=await db.auth.admin.getUserById(seller.user_id);if(auth.error)continue;const u=auth.data.user,c=controlMap.get(seller.user_id) as any;const member=await memberEntitlements(u,!conf.site_public);out.push({id:u.id,email:u.email||"",phone:u.phone||"",created_at:seller.created_at||u.created_at,last_sign_in_at:u.last_sign_in_at,is_owner:false,blocked:c?.blocked===true,note:c?.note||"",shop_name:seller.shop_name||"",slug:seller.slug||"",seller_status:seller.status||"",...member});}
+      return respond(req,{users:out,has_more:hasMore,next_offset:offset+sellerRows.length});
     }
     if(req.method==="POST"&&path==="/owner/user-status"){
       const b=await req.json(),id=str(b.user_id,60),blocked=b.blocked===true,note=str(b.note,500);
