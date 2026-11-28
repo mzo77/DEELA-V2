@@ -1292,3 +1292,54 @@ body:not([class*="member-public-store"]) .route-loading:before{content:"";width:
  body:not([class*="member-public-store"]) .mobile-nav button{font-size:10px}
 }
 @media(prefers-reduced-motion:reduce){.route-loading:before{animation:none}}
+
+
+/* Global blush silk skin. Dedicated membership themes remain isolated. */
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]){
+ --bg:#F9E9E7;--bg2:#F5DEDC;--panel:#fff8f5;--panel2:#fff2ed;--panel3:#f9e6df;
+ --line:#e5c9c4;--line2:#d2b4ab;--white:#51321B;--muted:#775f51;--muted2:#967a68;
+ --gold:#8a6040;--rose:#b67e76;--teal:#51321B;--teal2:#68452e;
+ background-color:#F9E9E7!important;color:#51321B;
+}
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) #main,
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) #home,
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) #dynamicPage,
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) .page,
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) .page-content{background:transparent!important;color:#51321B}
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) #home .container.section,
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) #home .container.feature-banner,
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) #dynamicPage .container.section{
+ background:transparent!important;background-image:none!important;color:#51321B;border-color:#e5c9c4;
+}
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) :where(h1,h2,h3,h4,.section-title,.section-title h2,.section-title p,.muted,.form-hint){color:#51321B}
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) :where(.trust-bar,.category-grid button,.community-rail button,.book-card,.shop-card,.feature-banner,.faqs details,.panel,.metric,.order-card,.seller-card,.dashboard-card,.subscription-card,.seller-package-shell,.seller-current-plan,.seller-feature-matrix,.seller-feature-row,.promotion-plan-card,.table-wrap,.data-table,.empty-state,.profile-card,.account-panel,.form-card,.modal){
+ background-color:#fff8f5!important;background-image:none!important;border-color:#e5c9c4!important;color:#51321B;
+ box-shadow:0 8px 24px #51321b12;
+}
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) :where(.trust-bar small,.category-grid small,.muted,.form-hint,.section-title p,.seller-card small,.book-card small,.shop-card small){color:#775f51}
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) :where(.category-grid button,.community-rail button,.seller-feature-row,.table-row){border-color:#e5c9c4!important}
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) :where(input,select,textarea,.search-box,.header-search input){
+ background-color:#fffaf8!important;color:#51321B!important;border-color:#ddc4bd!important
+}
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) :where(input,select,textarea)::placeholder{color:#927b6d!important}
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) :where(.btn-primary,.wide.btn-primary){
+ background:linear-gradient(105deg,#30d9d8,#68bdf2)!important;border-color:transparent!important;color:#102f39!important
+}
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) :where(.btn-outline,.btn-secondary){
+ background:#51321B!important;border-color:#51321B!important;color:#fff8f5!important
+}
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) :where(.mobile-nav,.mobile-nav button,.mobile-nav button span){color:#51321B!important}
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) .mobile-nav{background:linear-gradient(180deg,#fff3e6,#F9DFC2)!important;border-color:#e7c5a2!important}
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) .top-menu-panel{background:linear-gradient(155deg,#F9E9E7,#F5DEDC)!important;border-color:#dfc5be!important}
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) .top-menu-panel .nav-item{background:#fff7f4cc!important;color:#51321B!important}
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) .top-menu-panel .nav-item.active,
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) .top-menu-panel .nav-item:hover{background:#F9DFC2!important;color:#51321B!important}
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) #listingForm #digitalFileField{background:#fff7f4!important;border-color:#e5c9c4!important;color:#51321B!important}
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) #listingForm #digitalFile{background:#fffaf8!important;color:#51321B!important}
+@media(max-width:700px){
+ body:not([class*="member-public-store"]):not([class*="member-tier-page"]) #home .container.section,
+ body:not([class*="member-public-store"]):not([class*="member-tier-page"]) #home .container.feature-banner,
+ body:not([class*="member-public-store"]):not([class*="member-tier-page"]) #dynamicPage .container.section{background:transparent!important}
+ body:not([class*="member-public-store"]):not([class*="member-tier-page"]) details.top-menu[open]{position:fixed;top:calc(env(safe-area-inset-top,0px) + 178px);right:14px;z-index:120}
+ body:not([class*="member-public-store"]):not([class*="member-tier-page"]) details.top-menu[open]>.top-menu-panel{display:grid;visibility:visible;opacity:1}
+}
