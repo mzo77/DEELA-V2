@@ -718,3 +718,33 @@ body[data-owner-visual-edit="true"] #homeCategories button,body[data-owner-visua
 [data-section-motion="shimmer"].feature-banner{background-size:cover,220% 100%;background-position:center,200% 50%;animation:deelaBannerShine 8s ease-in-out infinite}
 @keyframes deelaBannerShine{0%,30%{background-position:center,200% 50%}75%,100%{background-position:center,-100% 50%}}
 @media(prefers-reduced-motion:reduce){[data-section-motion="shimmer"] .faqs details:after,[data-section-motion="shimmer"].feature-banner{animation:none!important}}
+
+/* Premium membership identity and admin tier controls */
+.member-tier-box{border:1px solid var(--line);border-radius:18px;padding:16px;background:linear-gradient(145deg,#0b1730,#101c32);min-width:0}
+.member-tier-box legend{padding:0 8px;color:var(--teal);font-weight:900}
+.member-feature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px;margin:12px 0}
+.member-feature-grid .checkbox-field{margin:0;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#071225;color:var(--white);font-size:14px}
+.member-control{margin:14px 0;padding:12px;border:1px solid color-mix(in srgb,var(--teal) 34%,transparent);border-radius:15px;background:#081426}
+.member-control>summary,.premium-appearance>summary{cursor:pointer;color:var(--teal);font-weight:900;padding:5px}
+.member-feature-form{padding-top:8px}
+.premium-appearance{margin:15px 0;border:1px solid #3a9d94;border-radius:20px;background:linear-gradient(140deg,#071326,#0d1d35)}
+.member-glow{animation:deelaPremiumPulse 4.2s ease-in-out infinite;box-shadow:0 0 0 1px #5edac44d,0 0 26px #57d8c92b}
+.premium-avatar-frame{border:2px solid transparent!important;background:linear-gradient(#09172a,#09172a) padding-box,linear-gradient(135deg,#65eee0,#d5a64b,#a08cff,#65eee0) border-box!important;box-shadow:0 0 20px #71e9dc55;animation:deelaFrameGlow 5s linear infinite}
+.member-display-name{display:block;color:var(--teal);font-weight:800;margin-top:4px}
+.seller-novel-card.member-book-frame{border-color:#5ce4d2;box-shadow:0 0 0 1px #5ce4d244,0 0 22px #38d3c424;position:relative;overflow:hidden}
+.owner-welcome{overflow:hidden}
+.owner-welcome-copy{display:inline-block;white-space:nowrap;max-width:100%;animation:deelaWelcomeTicker 13s linear infinite, deelaWelcomeGlow 3.8s ease-in-out infinite}
+@keyframes deelaWelcomeTicker{0%{transform:translateX(112%)}100%{transform:translateX(-112%)}}
+@keyframes deelaWelcomeGlow{0%,100%{text-shadow:0 0 3px currentColor}50%{text-shadow:0 0 16px currentColor,0 0 28px #57d8c988}}
+@keyframes deelaPremiumPulse{0%,100%{box-shadow:0 0 0 1px #5edac433,0 0 12px #57d8c917}50%{box-shadow:0 0 0 1px #5edac477,0 0 32px #57d8c955}}
+@keyframes deelaFrameGlow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.35)}}
+/* Visible soft glints for premium books, storefronts, and key browse cards */
+.book-card,.product-card,.shop-card,.home-category-card,.seller-novel-card,.feature-banner,.hero-art,.owner-welcome{position:relative;isolation:isolate}
+.book-card:after,.product-card:after,.shop-card:after,.home-category-card:after,.seller-novel-card.member-book-frame:after{
+ content:"";position:absolute;inset:-30% auto -30% -75%;width:38%;pointer-events:none;z-index:2;transform:skewX(-18deg);
+ background:linear-gradient(100deg,transparent,#e6fffb22 42%,#ffffff55 50%,#7ff9e533 56%,transparent);
+ animation:deelaUniversalShine 8s ease-in-out infinite
+}
+@keyframes deelaUniversalShine{0%,45%{left:-75%}85%,100%{left:145%}}
+@media(prefers-reduced-motion:reduce){.member-glow,.premium-avatar-frame,.owner-welcome-copy,.book-card:after,.product-card:after,.shop-card:after,.home-category-card:after,.seller-novel-card.member-book-frame:after{animation:none!important}}
+@media(max-width:680px){.member-feature-grid{grid-template-columns:1fr 1fr}.member-tier-box{padding:12px}.owner-welcome-copy{animation-duration:16s,3.8s}}
