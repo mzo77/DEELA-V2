@@ -1210,11 +1210,16 @@ async function handleForm(ev){
    }else if(id==="sellerApplyForm"){
     const logo=form.querySelector("#sellerLogoFile")?.files?.[0],novel=form.querySelector("#authorNovelFile")?.files?.[0];
     if(novel&&novel.size>52428800)throw Error("حجم ملف الرواية يجب ألا يتجاوز 50MB");
-    const logo_path=logo?await upload(logo,"shop_logo"):"";const d=await api("/seller/apply",{method:"POST",data:{...raw,logo_path}});
+    const logo_path=logo?await upload(logo,"shop_logo"):"";const {author_novel_file,...applyData}=raw;const d=await api("/seller/apply",{method:"POST",data:{...applyData,logo_path}});
     if(novel){state.pendingAuthorNovelPath=await upload(novel,"file");sessionStorage.setItem("deela-author-first-novel-path",state.pendingAuthorNovelPath)}
     toast("تم إنشاء صفحة الكاتب: "+d.shop.shop_name);
     await reload();await route("seller",false);
-    if(state.pendingAuthorNovelPath){editor("new");const listingForm=$("listingForm"),format=listingForm?.elements.namedItem("format");if(format){format.value="ebook";format.dispatchEvent(new Event("change",{bubbles:true}))}const status=$("digitalFileStatus");if(status)status.textContent="تم إرفاق ملف الرواية. أكمل عنوانها وسعرها ثم احفظها.";}
+    if(state.pendingAuthorNovelPath){
+     editor("new");
+     const listingForm=$("listingForm"),radio=listingForm?.querySelector('input[name="format-choice"][value="ebook"]');
+     if(radio){radio.checked=true;radio.dispatchEvent(new Event("change",{bubbles:true}))}
+     const status=$("digitalFileStatus");if(status)status.textContent="تم إرفاق ملف الرواية. أكمل عنوانها وسعرها ثم احفظها.";
+    }
   }else if(id==="sellerProfileForm"){const logo=form.querySelector("#sellerLogoFile")?.files?.[0];const logo_path=logo?await upload(logo,"shop_logo"):state.me?.seller?.logo_path||"";await api("/seller/profile",{method:"POST",data:{...raw,logo_path}});toast("تم تحديث واجهة متجرك");await reload();await route("seller",false);
   }else if(id==="listingForm"){
     const cover=form.querySelector("#coverFile")?.files?.[0];
