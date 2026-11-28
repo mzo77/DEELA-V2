@@ -1006,10 +1006,11 @@ async function route(view,push=true){
  $("home").classList.toggle("active",view==="home");$("home").hidden=view!=="home";
  $("dynamicPage").hidden=view==="home";$("dynamicPage").classList.toggle("active",view!=="home");
  if(push)history.replaceState(null,"","#"+(view==="detail"?"book/"+state.current:view));
+ let refresh=Promise.resolve();
  if(view==="home")renderHome();
  else{
   paintRoute(view,routeId);
-  (async()=>{
+  refresh=(async()=>{
    try{
     if(view==="shop"&&state.shopLoadedSlug!==state.current){
      state.shopListings=[];state.shopBooksOffset=0;
@@ -1031,6 +1032,7 @@ async function route(view,push=true){
   })();
  }
  window.scrollTo({top:0,behavior:"instant"});
+ return refresh;
 }async function loadMoreSellerBooks(){if(!state.sellerListingsHasMore)return;const btn=document.querySelector("[data-load-seller-books]");if(btn)btn.disabled=true;const y=window.scrollY;try{const r=await api("/my/listings?limit=40&offset="+state.sellerListingsOffset);state.sellerListings.push(...(r.listings||[]));state.sellerListingsOffset=r.next_offset??state.sellerListings.length;state.sellerListingsHasMore=!!r.has_more;$("pageContent").innerHTML=sellerPage();window.scrollTo({top:y,behavior:"instant"})}catch(e){toast(errorMessage(e))}}
 async function loadMoreCatalog(){if(!state.catalogHasMore)return;const btn=document.querySelector("[data-load-catalog]");if(btn)btn.disabled=true;const y=window.scrollY;try{const r=await api("/catalog?limit=24&offset="+state.catalogOffset);state.listings.push(...(r.listings||[]));state.catalogOffset=r.next_offset??state.listings.length;state.catalogHasMore=!!r.has_more;await route("catalog",false);window.scrollTo({top:y,behavior:"instant"})}catch(e){toast(errorMessage(e))}}
 async function loadMoreShopBooks(){if(!state.shopBooksHasMore)return;const btn=document.querySelector("[data-load-shop-books]");if(btn)btn.disabled=true;const y=window.scrollY;try{const r=await api("/catalog?limit=24&offset="+state.shopBooksOffset+"&shop="+encodeURIComponent(state.current));state.shopListings.push(...(r.listings||[]));state.shopBooksOffset=r.next_offset??state.shopListings.length;state.shopBooksHasMore=!!r.has_more;await route("shop",false);window.scrollTo({top:y,behavior:"instant"})}catch(e){toast(errorMessage(e))}}
