@@ -130,29 +130,27 @@ function itemInput(raw:Record<string,unknown>){
  const category=str(raw.category,80)||"روايات",language=str(raw.language,50)||"العربية";
  const product_type=str(raw.product_type,30)||"book";
  const format=str(raw.format,20),condition=str(raw.book_condition,25)||"new";
- const price=currencies(raw.price_sar),shipping=currencies(raw.shipping_fee_sar??0);
+ const price=currencies(raw.price_sar);
  const compare=raw.compare_at_sar===null||raw.compare_at_sar===""||raw.compare_at_sar===undefined?null:currencies(raw.compare_at_sar);
  const stock=format==="physical"?Number(raw.stock):100000,cover=str(raw.cover_path,240),file=str(raw.file_path,240);
  const image_paths=Array.isArray(raw.image_paths)?[...new Set(raw.image_paths.map(x=>str(x,240)).filter(Boolean))].slice(0,8):[];
  const tags=Array.isArray(raw.tags)?raw.tags.map(x=>str(x,48).replace(/^#/,"").trim()).filter(Boolean).slice(0,20):str(raw.tags,900).split(/[,،\n]/).map(x=>x.trim().replace(/^#/,"")).filter(Boolean).slice(0,20);
  const pickup_available=raw.pickup_available===true;
- const shipping_available=raw.shipping_available!==false;
  const rights=raw.rights_confirmed===true;
  if(title.length<2||!["book","game","stationery","art","coffee","business_service","technology","music","collectible","fashion","home","other"].includes(product_type)||!["physical","ebook","audiobook"].includes(format)||!Number.isInteger(stock)||stock<0||stock>100000||
-   Number.isNaN(price)||Number.isNaN(shipping)||Number.isNaN(compare)||
+   Number.isNaN(price)||Number.isNaN(compare)||
    !["new","like_new","good","acceptable","not_applicable"].includes(condition)||
    !["عام","الناشئة","للبالغين"].includes(audience) ||
    (page_count!==null&&(!Number.isInteger(page_count)||page_count<1||page_count>50000))||
    (publication_year!==null&&(!Number.isInteger(publication_year)||publication_year<1000||publication_year>2100))||
-   (format==="physical"&&!pickup_available&&!shipping_available)||
    image_paths.length>8||tags.some(x=>x.length>48))
-   throw Error("تحقق من اسم المنتج ونوعه والسعر والكمية وطرق الاستلام");
+   throw Error("تحقق من اسم المنتج ونوعه والسعر والكمية");
  if(!rights)throw Error("يجب تأكيد ملكية حقوق النشر أو إذن التوزيع");
  if(format!=="physical"&&file.length===0)throw Error("الكتاب الرقمي يحتاج ملف PDF أو EPUB أو MP3 مرفوعًا");
  return {title,author,description,subtitle,audience,content_warning,page_count,publication_year,category,product_type,language,format,book_condition:format==="physical"?condition:"not_applicable",
-   price_sar:price,compare_at_sar:compare,stock,shipping_fee_sar:format==="physical"&&shipping_available?shipping:0,
+   price_sar:price,compare_at_sar:compare,stock,shipping_fee_sar:0,
    isbn:str(raw.isbn,30),city:str(raw.city,80),cover_path:cover||image_paths[0]||null,image_paths,tags,file_path:file||null,
-   pickup_available:format==="physical"&&pickup_available,shipping_available:format!=="physical"||shipping_available,
+   pickup_available:format==="physical"&&pickup_available,shipping_available:false,
    preview_excerpt:str(raw.preview_excerpt,3000),rights_confirmed:rights,updated_at:new Date().toISOString()};
 }
 function publicListing(p:Record<string,unknown>){
@@ -547,7 +545,7 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
       db.from("deela_books_favorites").select("listing_id").eq("user_id",user.id).limit(200),
       db.from("deela_books_likes").select("listing_id").eq("user_id",user.id).limit(200),
       db.from("deela_books_follows").select("seller_id").eq("user_id",user.id).limit(200),
-      db.from("deela_books_orders").select("id,code,status,total_sar,created_at,tracking_number,owner_note").eq("buyer_id",user.id).order("created_at",{ascending:false}).limit(50)
+      db.from("deela_books_orders").select("id,code,status,total_sar,created_at,owner_note").eq("buyer_id",user.id).order("created_at",{ascending:false}).limit(50)
     ]);
     if(favs.error||likes.error||follows.error||myOrders.error)throw Error("customer profile unavailable");
     const membership=await memberEntitlements(user,!conf.site_public);
@@ -603,7 +601,7 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
   }
   if(req.method==="GET"&&path==="/seller/orders"){
     const seller=await sellerFor(user.id);if(!seller)return fail(req,"أنشئ متجرًا أولًا",404);
-    let q=db.from("deela_books_order_items").select("id,order_id,listing_id,title_snapshot,quantity,unit_price_sar,shipping_sar,format_snapshot,fulfillment_method,seller_status,shipping_carrier,item_tracking_number,seller_note,seller_updated_at,deela_books_orders!inner(id,code,buyer_id,buyer_email,buyer_name,phone,address,status,total_sar,created_at,customer_note,is_test),deela_books_listings(city)").eq("seller_id",seller.id).order("seller_updated_at",{ascending:false}).limit(150);
+    let q=db.from("deela_books_order_items").select("id,order_id,listing_id,title_snapshot,quantity,unit_price_sar,format_snapshot,fulfillment_method,seller_status,seller_note,seller_updated_at,deela_books_orders!inner(id,code,buyer_id,buyer_email,buyer_name,phone,status,total_sar,created_at,customer_note,is_test),deela_books_listings(city)").eq("seller_id",seller.id).order("seller_updated_at",{ascending:false}).limit(150);
     if(conf.site_public)q=q.eq("deela_books_orders.is_test",false);
     const rows=await q;if(rows.error)throw rows.error;
     const stats=rows.data||[],responded=stats.filter(x=>x.seller_status!=="pending").length,accepted=stats.filter(x=>["accepted","preparing","shipped","delivered"].includes(x.seller_status)).length;
@@ -611,18 +609,17 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
   }
   if(req.method==="POST"&&path==="/seller/order-item/status"){
     const seller=await sellerFor(user.id);if(!seller)return fail(req,"حساب البائع غير موجود",404);
-    const b=await req.json(),id=str(b.id,60),status=str(b.status,20),carrier=str(b.shipping_carrier,80),tracking=str(b.item_tracking_number,100),seller_note=str(b.seller_note,500);
-    if(!uuid.test(id)||!["accepted","rejected","preparing","shipped","delivered","cancelled"].includes(status))return fail(req,"حالة المبيعة غير صحيحة");
+    const b=await req.json(),id=str(b.id,60),status=str(b.status,20),seller_note=str(b.seller_note,500);
+    if(!uuid.test(id)||!["accepted","rejected","preparing","delivered","cancelled"].includes(status))return fail(req,"حالة المبيعة غير صحيحة");
     const current=await db.from("deela_books_order_items").select("id,seller_id,listing_id,order_id,fulfillment_method,seller_status,deela_books_orders!inner(buyer_id,is_test),deela_books_listings(title)").eq("id",id).eq("seller_id",seller.id).maybeSingle();
     if(current.error||!current.data)return fail(req,"الطلب غير موجود في متجرك",404);
     if(conf.site_public&&!(current.data.deela_books_orders as any)?.is_test&&status!=="accepted"&&status!=="rejected")return fail(req,"يلزم تأكيد الدفع قبل تجهيز الطلب",409);
-    if(status==="shipped"&&current.data.fulfillment_method==="delivery"&&!tracking)return fail(req,"أدخل رقم التتبع قبل وضع علامة تم الشحن",400);
-    const saved=await db.from("deela_books_order_items").update({seller_status:status,shipping_carrier:carrier,item_tracking_number:tracking,seller_note,seller_updated_at:new Date().toISOString()}).eq("id",id).eq("seller_id",seller.id).select("id,seller_status,shipping_carrier,item_tracking_number").single();
+    const saved=await db.from("deela_books_order_items").update({seller_status:status,seller_note,seller_updated_at:new Date().toISOString()}).eq("id",id).eq("seller_id",seller.id).select("id,seller_status").single();
     if(saved.error)throw saved.error;
     const buyer=(current.data.deela_books_orders as any)?.buyer_id;
     if(buyer&&buyer!==user.id){
-      const titles:Record<string,string>={accepted:"قبل البائع طلبك",rejected:"تعذر قبول أحد منتجات طلبك",preparing:"بدأ تجهيز طلبك",shipped:"تم شحن منتجك",delivered:"تم تسليم المنتج",cancelled:"أُلغي منتج من طلبك"};
-      const note=await db.from("deela_books_notifications").insert({user_id:buyer,actor_id:user.id,listing_id:current.data.listing_id,event_type:"order_update",title:titles[status],body:str((current.data.deela_books_listings as any)?.title,120)+" · "+(status==="shipped"&&tracking?"رقم التتبع "+tracking:"تحديث من البائع"),is_test:!conf.site_public});
+      const titles:Record<string,string>={accepted:"قبل البائع طلبك",rejected:"تعذر قبول أحد منتجات طلبك",preparing:"بدأ تجهيز طلبك",delivered:"اكتمل طلبك",cancelled:"أُلغي منتج من طلبك"};
+      const note=await db.from("deela_books_notifications").insert({user_id:buyer,actor_id:user.id,listing_id:current.data.listing_id,event_type:"order_update",title:titles[status],body:str((current.data.deela_books_listings as any)?.title,120)+" · تحديث من البائع",is_test:!conf.site_public});
       if(note.error)throw note.error;
     }
     return respond(req,{ok:true,item:saved.data,test_mode:!conf.site_public});
@@ -1029,7 +1026,7 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
     if(!conf.enable_orders)return fail(req,"استقبال الطلبات معطل حاليًا",403);
     const b=await req.json(),items=Array.isArray(b.items)?b.items:[];
     if(items.length<1||items.length>10)return fail(req,"السلة يجب أن تحتوي من 1 إلى 10 كتب");
-    const ids=new Set<string>(),basket:{id:string;qty:number}[]=[],fulfillmentMap=new Map<string,string>((Array.isArray(b.fulfillment)?b.fulfillment:[]).map((x:any)=>[str(x.id,60),str(x.method,20)]));
+    const ids=new Set<string>(),basket:{id:string;qty:number}[]=[];
     for(const x of items){
       const id=str(x.id,60),qty=Number(x.qty);
       if(!uuid.test(id)||ids.has(id)||!Number.isInteger(qty)||qty<1||qty>10)
@@ -1040,28 +1037,25 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
     const recent=await db.from("deela_books_orders").select("id",{count:"exact",head:true}).eq("buyer_id",user.id).gte("created_at",cutoff);
     if(recent.error)throw recent.error;
     if(conf.site_public&&(recent.count||0)>=3)return fail(req,"وصلت إلى حد 3 طلبات خلال 15 دقيقة، حاول لاحقًا",429);
-    const r=await db.from("deela_books_listings").select("id,title,price_sar,shipping_fee_sar,stock,format,seller_id,status,file_path,pickup_available,shipping_available").in("id",basket.map(x=>x.id));
+    const r=await db.from("deela_books_listings").select("id,title,price_sar,stock,format,seller_id,status,file_path,pickup_available").in("id",basket.map(x=>x.id));
     if(r.error)throw r.error;
     if((r.data||[]).length!==basket.length)return fail(req,"أحد الكتب لم يعد متاحًا",409);
-    let subtotal=0,shipping=0;const lines=[];
+    let subtotal=0;const lines=[];
     for(const item of basket){
       const p=(r.data||[]).find(x=>x.id===item.id);
       if(!p||p.status!=="published"||p.stock<item.qty)return fail(req,"أحد الكتب غير متاح أو نفد",409);
       if(p.format!=="physical"&&!p.file_path)return fail(req,"لا يمكن إتمام هذا الطلب لأن ملف الكتاب الرقمي غير مرفوع بعد",409);
-      const method=p.format!=="physical"?"digital":(fulfillmentMap.get(p.id)||((p.shipping_available===false&&p.pickup_available)?"pickup":"delivery"));
-      if(p.format==="physical"&&method==="delivery"&&p.shipping_available===false)return fail(req,"التوصيل غير متاح لهذا الكتاب",400);
+      const method=p.format!=="physical"?"digital":"pickup";
       if(p.format==="physical"&&method==="pickup"&&p.pickup_available!==true)return fail(req,"الاستلام من البائع غير متاح لهذا الكتاب",400);
-      if(p.format==="physical"&&!["delivery","pickup"].includes(method))return fail(req,"اختر طريقة استلام الكتاب الورقي",400);
+      if(p.format==="physical"&&method!=="pickup")return fail(req,"الاستلام من البائع غير متاح لهذا الكتاب",400);
       subtotal+=Number(p.price_sar)*item.qty;
-      const lineShipping=p.format==="physical"&&method==="delivery"?Number(p.shipping_fee_sar)*item.qty:0;
-      shipping+=lineShipping;
-      lines.push({listing_id:p.id,seller_id:p.seller_id,title_snapshot:p.title,format_snapshot:p.format,quantity:item.qty,unit_price_sar:p.price_sar,shipping_sar:lineShipping,fulfillment_method:method});
+      lines.push({listing_id:p.id,seller_id:p.seller_id,title_snapshot:p.title,format_snapshot:p.format,quantity:item.qty,unit_price_sar:p.price_sar,shipping_sar:0,fulfillment_method:method});
     }
     const testDigital=!conf.site_public&&lines.length>0&&lines.every(x=>x.format_snapshot!=="physical");
     const couponCode=str(b.coupon_code,30).toUpperCase();
     if(couponCode&& (conf.site_public||couponCode!=="FIRST20"||!conf.enable_discounts))return fail(req,"رمز الخصم غير متاح في هذا الطلب",400);
     const discount=couponCode==="FIRST20"?Math.round(subtotal*0.2*100)/100:0;
-    const testMethodLabels:Record<string,string>={mada:"مدى",apple_pay:"Apple Pay",visa:"Visa",stc_pay:"STC Pay",tabby:"تابي",tamara:"تمارا",cash_on_delivery:"الدفع عند الاستلام"};
+    const testMethodLabels:Record<string,string>={mada:"مدى",apple_pay:"Apple Pay",visa:"Visa",stc_pay:"STC Pay",tabby:"تابي",tamara:"تمارا"};
     const selectedTestMethod=str(b.test_payment_method,24)||"mada";
     if(!conf.site_public&&!Object.hasOwn(testMethodLabels,selectedTestMethod))return fail(req,"اختر وسيلة الدفع التجريبية",400);
     const buyerNote=str(b.note,500);
@@ -1074,12 +1068,10 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
       },
       customer_note:orderNote,
       subtotal_sar:Math.round(subtotal*100)/100,discount_sar:discount,coupon_code:couponCode,
-      shipping_sar:Math.round(shipping*100)/100,
-      total_sar:Math.round(Math.max(0,subtotal-discount+shipping)*100)/100,
+      shipping_sar:0,
+      total_sar:Math.round(Math.max(0,subtotal-discount)*100)/100,
       status:testDigital?"delivered":"pending_review",payment_method:"manual",is_test:!conf.site_public
     };
-    if(lines.some(x=>x.fulfillment_method==="delivery")&&(!data.address.city||!data.address.line))
-      return fail(req,"الكتب الورقية تتطلب المدينة والعنوان");
     const order=await db.from("deela_books_orders").insert(data).select("id,code,status,total_sar").single();
     if(order.error)throw order.error;
     const itemSave=await db.from("deela_books_order_items").insert(lines.map(x=>({...x,order_id:order.data.id,seller_status:x.fulfillment_method==="digital"?"delivered":"pending"})));
@@ -1092,7 +1084,7 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
     return respond(req,{ok:true,order:order.data,payment_collected:false,test_access:testDigital,test_payment_method:!conf.site_public?selectedTestMethod:null,unlocked_listing_ids:testDigital?lines.map(x=>x.listing_id):[]},201);
   }
   if(req.method==="GET"&&path==="/orders"){
-    const r=await db.from("deela_books_orders").select("id,code,created_at,status,total_sar,tracking_number,owner_note,is_test,support_status,support_reason,support_message,support_resolution,deela_books_order_items(id,listing_id,title_snapshot,quantity,unit_price_sar,format_snapshot,seller_status,shipping_carrier,item_tracking_number,fulfillment_method)")
+    const r=await db.from("deela_books_orders").select("id,code,created_at,status,total_sar,owner_note,is_test,support_status,support_reason,support_message,support_resolution,deela_books_order_items(id,listing_id,title_snapshot,quantity,unit_price_sar,format_snapshot,seller_status,fulfillment_method)")
      .eq("buyer_id",user.id).order("created_at",{ascending:false}).limit(50);
     if(r.error)throw r.error;return respond(req,{orders:r.data||[]});
   }
@@ -1439,16 +1431,16 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
     }
     if(req.method==="POST"&&path==="/owner/order-status"){
       const b=await req.json(),id=str(b.id,60),status=str(b.status,25);
-      if(!uuid.test(id)||!["pending_review","awaiting_payment","paid","preparing","shipped","delivered","cancelled"].includes(status))
+      if(!uuid.test(id)||!["pending_review","awaiting_payment","paid","preparing","delivered","cancelled"].includes(status))
         return fail(req,"حالة الطلب غير صحيحة");
       const o=await db.from("deela_books_orders").select("id,status,payment_confirmed_at,is_test").eq("id",id).maybeSingle();
       if(o.error||!o.data)return fail(req,"الطلب غير موجود",404);
       const privateTestOrder=!conf.site_public&&o.data.is_test===true;
       // Test orders can move through the workflow without representing a payment.
-      if(["paid","preparing","shipped","delivered"].includes(status)&&!o.data.payment_confirmed_at&&b.payment_confirmed!==true&&!privateTestOrder)
+      if(["paid","preparing","delivered"].includes(status)&&!o.data.payment_confirmed_at&&b.payment_confirmed!==true&&!privateTestOrder)
         return fail(req,"يجب أن تؤكد استلام الدفع الحقيقي أولًا",409);
       const r=await db.from("deela_books_orders").update({
-        status,owner_note:str(b.owner_note,500),tracking_number:str(b.tracking_number,100),
+        status,owner_note:str(b.owner_note,500),
         payment_confirmed_at:o.data.payment_confirmed_at||
           (b.payment_confirmed===true&&!privateTestOrder?new Date().toISOString():null),
         updated_at:new Date().toISOString()
