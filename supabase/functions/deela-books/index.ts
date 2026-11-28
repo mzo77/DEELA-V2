@@ -1313,23 +1313,37 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
     }
     if(req.method==="GET"&&path==="/owner/users"){
       const pageSize=Math.min(80,Math.max(1,Number(parsed.searchParams.get("limit"))||40)),offset=Math.max(0,Number(parsed.searchParams.get("offset"))||0);
-      const sellers=await db.from("deela_books_sellers").select("user_id,shop_name,slug,status,created_at").order("created_at",{ascending:false}).range(offset,offset+pageSize);
-      if(sellers.error)throw Error("تعذر قراءة حسابات بائعي DEELA Books");
-      const hasMore=(sellers.data||[]).length>pageSize,sellerRows=(sellers.data||[]).slice(0,pageSize);
-      const ids=[...new Set(sellerRows.map((x:any)=>x.user_id).filter((x:any)=>uuid.test(String(x))))];
-      if(!ids.length)return respond(req,{users:[],has_more:hasMore,next_offset:offset+sellerRows.length});
-      const controls=await db.from("deela_books_user_controls").select("user_id,blocked,note,changed_at").in("user_id",ids);
-      if(controls.error)throw Error("تعذر قراءة إعدادات بائعي DEELA Books");
-      const controlMap=new Map((controls.data||[]).map((x:any)=>[x.user_id,x]));
-      const out=[];for(const seller of sellerRows){if(await owner(seller.user_id))continue;const auth=await db.auth.admin.getUserById(seller.user_id);if(auth.error)continue;const u=auth.data.user,c=controlMap.get(seller.user_id) as any;const member=await memberEntitlements(u,!conf.site_public);out.push({id:u.id,email:u.email||"",phone:u.phone||"",created_at:seller.created_at||u.created_at,last_sign_in_at:u.last_sign_in_at,is_owner:false,blocked:c?.blocked===true,note:c?.note||"",shop_name:seller.shop_name||"",slug:seller.slug||"",seller_status:seller.status||"",...member});}
-      return respond(req,{users:out,has_more:hasMore,next_offset:offset+sellerRows.length});
+      const page=Math.floor(offset/pageSize)+1;
+      const authPage=await db.auth.admin.listUsers({page,perPage:pageSize});
+      if(authPage.error)throw Error("تعذر قراءة حسابات DEELA Books");
+      const accountRows=authPage.data.users||[],ids=accountRows.map((x:any)=>x.id).filter((x:string)=>uuid.test(String(x)));
+      if(!ids.length)return respond(req,{users:[],has_more:accountRows.length===pageSize,next_offset:offset+accountRows.length});
+      const [sellerResult,controlResult]=await Promise.all([
+        db.from("deela_books_sellers").select("user_id,shop_name,slug,status,created_at").in("user_id",ids),
+        db.from("deela_books_user_controls").select("user_id,blocked,note,changed_at").in("user_id",ids)
+      ]);
+      if(sellerResult.error)throw Error("تعذر قراءة صفحات المؤلفين");
+      if(controlResult.error)throw Error("تعذر قراءة إعدادات الحسابات");
+      const sellerMap=new Map((sellerResult.data||[]).map((x:any)=>[x.user_id,x]));
+      const controlMap=new Map((controlResult.data||[]).map((x:any)=>[x.user_id,x]));
+      const accounts=await Promise.all(accountRows.filter((u:any)=>uuid.test(String(u.id))).map(async(u:any)=>{
+        if(await owner(u.id))return null;
+        const seller=sellerMap.get(u.id) as any,c=controlMap.get(u.id) as any;
+        const member=await memberEntitlements(u,!conf.site_public,seller||null);
+        const metadata=u.user_metadata||{},displayName=str(metadata.display_name||metadata.full_name||metadata.name||"",120);
+        return {id:u.id,email:u.email||"",phone:u.phone||"",display_name:displayName,
+          created_at:seller?.created_at||u.created_at,last_sign_in_at:u.last_sign_in_at,is_owner:false,is_seller:!!seller,
+          blocked:c?.blocked===true,note:c?.note||"",shop_name:seller?.shop_name||"",slug:seller?.slug||"",
+          seller_status:seller?.status||"",...member};
+      }));
+      const users=accounts.filter(Boolean);
+      return respond(req,{users,has_more:accountRows.length===pageSize,next_offset:offset+accountRows.length});
     }
     if(req.method==="POST"&&path==="/owner/user-status"){
       const b=await req.json(),id=str(b.user_id,60),blocked=b.blocked===true,note=str(b.note,500);
       if(!uuid.test(id)||typeof b.blocked!=="boolean")return fail(req,"بيانات حالة الحساب غير صحيحة");
       if(await owner(id))return fail(req,"حساب المالك محمي ولا يمكن إيقافه من هذه الشاشة",403);
-      const seller=await db.from("deela_books_sellers").select("user_id").eq("user_id",id).maybeSingle();if(seller.error)throw seller.error;
-      if(!seller.data)return fail(req,"إدارة الحسابات هنا مخصصة لبائعي DEELA Books فقط",403);
+      const target=await db.auth.admin.getUserById(id);if(target.error||!target.data.user)return fail(req,"الحساب غير موجود",404);
       const r=await db.from("deela_books_user_controls").upsert({user_id:id,blocked,note,changed_by:user.id,changed_at:new Date().toISOString()},{onConflict:"user_id"});
       if(r.error)throw r.error;return respond(req,{ok:true,user_id:id,blocked});
     }
