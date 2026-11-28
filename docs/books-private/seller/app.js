@@ -748,7 +748,7 @@ function accountOwnerPanel(){
  const accountFilters='<div class="owner-filter-box owner-account-filters"><input type="search" class="owner-search" placeholder="ابحث بالاسم أو البريد أو الجوال…"><select id="ownerMembershipFilter"><option value="all">كل العضويات</option><option value="premium">المميزة</option><option value="free">غير المميزة</option></select><select id="ownerAccountTypeFilter"><option value="all">كل الحسابات</option><option value="seller">المؤلفون والمتاجر</option><option value="reader">القراء</option></select></div>';
  return tierForm+'<section class="panel"><h2>حسابات DEELA Books</h2><p>تظهر هنا كل الحسابات المسجلة، مع تمييز المؤلفين والمتاجر والقراء، ويمكن تصفية الحسابات المميزة وغير المميزة.</p>'+accountFilters+'<div class="list-rows">'+(rows.length?rows.map(u=>{
   const name=u.shop_name||u.display_name||u.email||u.phone||"حساب قارئ";
-  const memberLabel=u.premium_active?"عضوية مميزة":"غير مشترك";
+  const memberLabel=u.member_status_error?"تعذر قراءة العضوية":u.premium_active?"عضوية مميزة":"غير مشترك";
   const accountLabel=u.is_seller?(statusNames[u.seller_status]||u.seller_status||"مؤلف أو متجر"):"قارئ";
   return '<article class="row-card" data-owner-row data-owner-state="'+(u.blocked?"blocked":"active")+'" data-member-state="'+(u.premium_active?"premium":"free")+'" data-account-type="'+(u.is_seller?"seller":"reader")+'"><div class="row-top"><div><strong>'+esc(name)+'</strong><p>'+esc(u.email||u.phone||u.id)+' · '+(u.is_seller?esc(u.slug||"صفحة المؤلف"):"حساب قارئ")+' · آخر دخول: '+date(u.last_sign_in_at)+' · إنشاء: '+date(u.created_at)+'</p></div><div class="owner-account-badges"><span class="status">'+(u.blocked?"موقوف":esc(accountLabel))+'</span><span class="status '+(u.premium_active?"member-active-status":"muted")+'">'+memberLabel+(u.member_plan_label&&u.premium_active?" · "+esc(u.member_plan_label):"")+'</span></div></div>'+ownerMembershipControls(u)+memberChecks(u)+'<label class="field">ملاحظة إدارية<input data-user-note="'+esc(u.id)+'" value="'+esc(u.note||"")+'" maxlength="500"></label><button class="btn '+(u.blocked?"btn-outline":"danger")+'" data-user-toggle="'+esc(u.id)+'" data-blocked="'+(!u.blocked)+'">'+(u.blocked?"إعادة تفعيل الحساب":u.is_seller?"إيقاف حساب المؤلف أو المتجر":"إيقاف الحساب")+'</button></article>';
  }).join(""):'<div class="empty-state"><h3>ما فيه حسابات مسجلة حتى الآن</h3><p>تظهر الحسابات هنا مباشرة بعد إنشائها.</p></div>')+'</div>'+(state.ownerUsersHasMore?'<div class="pagination-control"><button class="btn btn-outline" data-load-owner-users>تحميل المزيد من الحسابات</button></div>':"")+'<p>تحديث العضوية والميزات ينعكس على حساب المشترك فورًا.</p></section>';
@@ -762,7 +762,7 @@ function ownerContestsPanel(){
  '<label class="field full">السؤال أو موضوع الاستطلاع<textarea name="question_text" maxlength="1000"></textarea></label>'+
  '<label class="field full">خيارات الاستطلاع (كل خيار في سطر، من 2 إلى 6)<textarea name="poll_options" maxlength="700" placeholder="الخيار الأول&#10;الخيار الثاني&#10;الخيار الثالث"></textarea></label>'+
  '<label class="field full">الإجابة الصحيحة (للمسابقة فقط، اتركها فارغة للاستطلاع)<input name="correct_answer" maxlength="500"></label>'+
- '<button class="btn btn-primary" type="submit">نشر الإعلان أو الاستطلاع</button><span class="form-msg"></span></form></section>'+
+ '<button class="btn btn-primary" type="button" data-owner-contest-save>نشر الإعلان أو الاستطلاع</button><span class="form-msg"></span></form></section>'+
  '<section class="panel"><h2>المسابقات والإجابات</h2><div class="list-rows">'+(rows.length?rows.map(c=>'<article class="row-card"><div class="row-top"><strong>'+esc(c.title)+'</strong><span class="status">'+esc(c.status)+'</span></div><p>'+esc(c.announcement||"")+'</p><p>الموعد: '+date(c.starts_at)+' · الإجابات: '+(c.answers||[]).length+'</p>'+
  (c.question_text?'<p><strong>السؤال:</strong> '+esc(c.question_text)+'</p>':"")+
  '<div class="contest-answers">'+(c.answers||[]).map((x,i)=>'<div class="contest-answer '+(x.is_correct===true?"correct":x.is_correct===false?"incorrect":"")+'"><b>'+(i+1)+'.</b> '+esc(x.answer)+' <span>'+(x.is_correct===true?"✅ صحيح":x.is_correct===false?"✖ خطأ":"بانتظار التصحيح")+'</span><small>'+date(x.created_at)+'</small></div>').join("")+'</div>'+
@@ -1215,6 +1215,26 @@ async function oauthLogin(ev){const b=ev.currentTarget,provider=b.dataset.oauth;
 function openLogin(message=""){ $("shade").hidden=false;$("loginModal").hidden=false;switchAuthMethod("email");if(message)setAuthMessage("emailMessage",message,true);void loadAuthProviders(); }
 function closeLogin(){$("shade").hidden=true;$("loginModal").hidden=true;}
 function formData(form){return Object.fromEntries(new FormData(form).entries())}
+async function saveOwnerContest(form,button){
+ if(form.dataset.saving==="true")return;
+ const submit=button||form.querySelector('button[data-owner-contest-save],button[type="submit"]');
+ const message=form.querySelector(".form-msg");
+ const raw=formData(form),title=String(raw.title||"").trim();
+ const poll_options=String(raw.poll_options||"").split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ if(title.length<2){if(message)message.textContent="اكتب اسم المسابقة أولًا.";return toast("اكتب اسم المسابقة أولًا");}
+ if(poll_options.length===1||poll_options.length>6){if(message)message.textContent="الاستطلاع يحتاج من خيارين إلى ستة خيارات.";return toast("الاستطلاع يحتاج من خيارين إلى ستة خيارات");}
+ let starts_at=null;
+ if(raw.starts_at){const parsed=new Date(raw.starts_at);if(Number.isNaN(parsed.getTime())){if(message)message.textContent="موعد المسابقة غير صالح.";return toast("موعد المسابقة غير صالح");}starts_at=parsed.toISOString();}
+ form.dataset.saving="true";if(submit){submit.disabled=true;submit.dataset.originalText=submit.textContent;submit.textContent="جارٍ النشر…";}
+ if(message)message.textContent="جارٍ إرسال الإعلان وحفظه…";
+ try{
+  await api("/owner/contest/save",{method:"POST",data:{...raw,title,starts_at,poll_options}});
+  toast(poll_options.length?"تم نشر الاستطلاع وإشعار المستخدمين":"تم نشر إعلان المجتمع وإشعار المستخدمين");
+  state.ownerContests=(await api("/owner/contests")).contests||[];
+  await route("owner",false);
+ }catch(e){if(message)message.textContent=errorMessage(e);toast(errorMessage(e));}
+ finally{form.dataset.saving="false";if(submit){submit.disabled=false;submit.textContent=submit.dataset.originalText||"نشر الإعلان أو الاستطلاع";}}
+}
 async function handleForm(ev){
  const form=ev.target,id=form.id;if(!id||["loginForm","registerForm","phoneSendForm","phoneVerifyForm","emailVerifyForm"].includes(id))return;ev.preventDefault();
  const button=form.querySelector('button[type="submit"]');if(button)button.disabled=true;
@@ -1333,11 +1353,8 @@ async function handleForm(ev){
     if(state.settings.private_test_mode){const c=await api("/catalog");state.listings=c.listings||[];state.settings=c.settings||state.settings;state.current=raw.listing_id;await route("detail",false);}
     else await route("detail",false);
   }else if(id==="ownerContestForm"){
-    const start=raw.starts_at?new Date(raw.starts_at).toISOString():null;
-    const poll_options=(raw.poll_options||"").split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
-    const result=await api("/owner/contest/save",{method:"POST",data:{...raw,starts_at:start,poll_options}});
-    toast(poll_options.length?"تم نشر الاستطلاع وإشعار المستخدمين":"تم نشر إعلان المجتمع وإشعار المستخدمين");
-    state.ownerContests=(await api("/owner/contests")).contests||[];await route("owner",false);
+    await saveOwnerContest(form,button);
+    return;
   }else if(id==="contestAnswerForm"){
     const result=await api("/contests/answer",{method:"POST",data:{contest_id:raw.contest_id,answer:raw.answer}});
     toast("تم تسجيل مشاركتك");
@@ -1502,6 +1519,7 @@ function bind(){
  document.addEventListener("click",async ev=>{
   const t=ev.target.closest("button,a,[data-book]");
   if(!t)return;
+  if(t.hasAttribute("data-owner-contest-save")){ev.preventDefault();const form=t.closest("#ownerContestForm");if(form)return saveOwnerContest(form,t)}
   if(t.hasAttribute("data-load-seller-books")){ev.preventDefault();return loadMoreSellerBooks()}
   if(t.hasAttribute("data-load-catalog")){ev.preventDefault();return loadMoreCatalog()}
   if(t.hasAttribute("data-load-shops")){ev.preventDefault();return loadMoreShops()}
