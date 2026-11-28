@@ -1427,6 +1427,8 @@ function addOwnerHomeSettingsGears(){
 }
 
 function bind(){
+ document.addEventListener("click",ev=>{const menu=$("topMenu");if(menu?.open&&!menu.contains(ev.target))menu.open=false});
+ document.addEventListener("keydown",ev=>{if(ev.key==="Escape"){const menu=$("topMenu");if(menu?.open)menu.open=false}});
  document.addEventListener("click",async ev=>{
   const t=ev.target.closest("button,a,[data-book]");
   if(!t)return;
@@ -1499,7 +1501,7 @@ function bind(){
    '<input type="hidden" name="listing_id" value="'+esc(t.dataset.review)+'"><label class="field">التقييم<select name="rating"><option value="5">★★★★★</option><option value="4">★★★★</option><option value="3">★★★</option><option value="2">★★</option><option value="1">★</option></select></label><label class="field">رأيك<textarea name="body" required maxlength="1000"></textarea></label>')}
   if(t.dataset.report){ev.preventDefault();return quickModal("الإبلاغ عن كتاب","reportForm",
    '<input type="hidden" name="listing_id" value="'+esc(t.dataset.report)+'"><label class="field">سبب البلاغ<textarea name="reason" required minlength="10" maxlength="1000"></textarea></label>')}
-  if(t.dataset.route){ev.preventDefault();return route(t.dataset.route)}
+  if(t.dataset.route){ev.preventDefault();if(t.closest("#topMenu")){const menu=$("topMenu");if(menu)menu.open=false}return route(t.dataset.route)}
  });
  document.addEventListener("change",ev=>{
  const el=ev.target;if(!el)return;

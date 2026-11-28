@@ -5,16 +5,16 @@
 <meta name="theme-color" content="#101b2d"><meta name="robots" content="noindex,nofollow,noarchive">
 <meta name="description" content="DEELA Books — سوق الكتب والروايات، حيث يلتقي القراء بالمؤلفين والمتاجر.">
 <title>DEELA Books | عالم الكتب</title>
-<link rel="stylesheet" href="./style.css?v=20261128-premium-preview-fix-3">
+<link rel="stylesheet" href="./style.css?v=20261128-subscription-covers-menu-4">
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
-<script defer src="./app.js?v=20261128-premium-preview-fix-3"></script>
+<script defer src="./app.js?v=20261128-subscription-covers-menu-4"></script>
 </head>
 <body>
-<div class="topline"><span>✦ DEELA BOOKS</span><span id="announcement">التصفح متاح للزوار دون تسجيل دخول</span><span>✦ لكل كتاب حكاية</span></div>
+<div class="topline"><span>✦ DEELA BOOKS</span><span id="announcement" hidden></span><span>✦ لكل كتاب حكاية</span></div>
 <header class="header">
  <div class="header-inner">
   <a class="brand" href="#home" data-route="home"><span class="brand-symbol">D<span>✦</span></span><span class="brand-words"><strong>DEELA</strong><small>BOOKS & STORIES</small></span></a>
-  <div class="header-search"><span class="search-icon">⌕</span><input id="search" type="search" placeholder="ابحث عن كتاب، رواية، مؤلف أو متجر..." aria-label="البحث في الكتب" autocomplete="off"><span class="search-hint">⌘ K</span></div>
+  <div class="header-search"><span class="search-icon">⌕</span><input id="search" type="search" placeholder="بحث" aria-label="بحث" autocomplete="off"><span class="search-hint">⌘ K</span></div>
   <div class="header-actions">
    <button type="button" class="icon-button" data-route="notifications" aria-label="الإشعارات"><span>♢</span><b id="notificationCount" class="header-count" hidden>0</b><small>الإشعارات</small></button>
    <button type="button" class="icon-button" data-route="messages" aria-label="الرسائل"><span>✉</span><small>الرسائل</small></button>
@@ -26,14 +26,21 @@
  </div>
  <nav class="main-nav" aria-label="القائمة الرئيسية">
   <div class="nav-inner">
-   <button type="button" data-route="home" class="nav-item active">الرئيسية</button>
-   <button type="button" data-route="catalog" class="nav-item">جميع الكتب</button>
-   <button type="button" data-route="shops" class="nav-item">المتاجر</button>
-   <button type="button" data-route="seller" class="nav-item">انشر كتابك</button>
-   <button type="button" data-route="messages" class="nav-item">الرسائل</button>
-   <button type="button" data-route="notifications" class="nav-item">الإشعارات</button>
-   <button type="button" data-route="owner" class="nav-item owner-only">لوحة الإدارة</button>
-   <span class="private-pill">✦ التصفح مفتوح للزوار</span>
+   <details class="top-menu" id="topMenu">
+    <summary aria-label="فتح القائمة" title="القائمة"><span class="hamburger-lines" aria-hidden="true"><i></i><i></i><i></i></span><span class="sr-only">فتح القائمة</span></summary>
+    <div class="top-menu-panel">
+     <button type="button" data-route="home" class="nav-item active">الرئيسية</button>
+     <button type="button" data-route="catalog" class="nav-item">جميع الكتب</button>
+     <button type="button" data-route="shops" class="nav-item">المتاجر</button>
+     <button type="button" data-route="seller" class="nav-item">انشر كتابك</button>
+     <button type="button" data-route="favorites" class="nav-item">المفضلة</button>
+     <button type="button" data-route="orders" class="nav-item">طلباتي</button>
+     <button type="button" data-route="cart" class="nav-item">السلة</button>
+     <button type="button" data-route="messages" class="nav-item">الرسائل</button>
+     <button type="button" data-route="notifications" class="nav-item">الإشعارات</button>
+     <button type="button" data-route="owner" class="nav-item owner-only">لوحة الإدارة</button>
+    </div>
+   </details>
   </div>
  </nav>
 </header>
