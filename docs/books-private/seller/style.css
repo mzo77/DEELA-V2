@@ -731,6 +731,7 @@ body[data-owner-visual-edit="true"] #homeCategories button,body[data-owner-visua
 .member-glow{animation:deelaPremiumPulse 4.2s ease-in-out infinite;box-shadow:0 0 0 1px #5edac44d,0 0 26px #57d8c92b}
 .premium-avatar-frame{border:2px solid transparent!important;background:linear-gradient(#09172a,#09172a) padding-box,linear-gradient(135deg,#65eee0,#d5a64b,#a08cff,#65eee0) border-box!important;box-shadow:0 0 20px #71e9dc55;animation:deelaFrameGlow 5s linear infinite}
 .member-display-name{display:block;color:var(--teal);font-weight:800;margin-top:4px}
+.member-name-style{color:#ffe7a6;text-shadow:0 0 12px #f3d58588;font-weight:950}
 .seller-novel-card.member-book-frame{border-color:#5ce4d2;box-shadow:0 0 0 1px #5ce4d244,0 0 22px #38d3c424;position:relative;overflow:hidden}
 .owner-welcome{overflow:hidden}
 .owner-welcome-copy{display:inline-block;white-space:nowrap;max-width:100%;animation:deelaWelcomeTicker 13s linear infinite, deelaWelcomeGlow 3.8s ease-in-out infinite}
@@ -746,5 +747,14 @@ body[data-owner-visual-edit="true"] #homeCategories button,body[data-owner-visua
  animation:deelaUniversalShine 8s ease-in-out infinite
 }
 @keyframes deelaUniversalShine{0%,45%{left:-75%}85%,100%{left:145%}}
-@media(prefers-reduced-motion:reduce){.member-glow,.premium-avatar-frame,.owner-welcome-copy,.book-card:after,.product-card:after,.shop-card:after,.home-category-card:after,.seller-novel-card.member-book-frame:after{animation:none!important}}
+@media(prefers-reduced-motion:reduce){.member-glow,.premium-avatar-frame,.owner-welcome-copy,.book-card:after,.product-card:after,.shop-card:after,.home-category-card:after,.seller-novel-card.member-book-frame:after,.seller-novel-card.member-book-shine:after{animation:none!important}}
 @media(max-width:680px){.member-feature-grid{grid-template-columns:1fr 1fr}.member-tier-box{padding:12px}.owner-welcome-copy{animation-duration:16s,3.8s}}
+
+.premium-avatar-frame-gold{box-shadow:0 0 0 3px #d9ad50,0 0 24px #e3b84b88!important}
+.premium-avatar-frame-velvet{box-shadow:0 0 0 3px #bd78e6,0 0 25px #9b4ec888!important}
+.premium-avatar-frame-crystal{box-shadow:0 0 0 3px #91f5ef,0 0 26px #7cefe9aa!important}
+.member-book-frame-gold{border:1px solid #dbb456!important;box-shadow:0 0 0 1px #f3d98a44,0 0 24px #c79a4033!important}
+.member-book-frame-velvet{border:1px solid #ad72db!important;box-shadow:0 0 0 1px #d88cff55,0 0 26px #9d51ce44!important}
+.member-book-frame-crystal{border:1px solid #77e9e5!important;box-shadow:0 0 0 1px #d4fffd66,0 0 26px #62dce288!important}
+.member-book-frame-starlight{border:1px solid #7389e4!important;box-shadow:0 0 0 1px #bdd5ff55,0 0 26px #6d8df344!important}
+.seller-novel-card.member-book-shine:after{content:"";position:absolute;inset:-40% auto -40% -75%;width:42%;pointer-events:none;z-index:2;transform:skewX(-18deg);background:linear-gradient(100deg,transparent,#e6fffb22 42%,#ffffff75 50%,#7ff9e555 56%,transparent);animation:deelaUniversalShine 6s ease-in-out infinite}
