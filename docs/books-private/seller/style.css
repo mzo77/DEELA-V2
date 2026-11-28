@@ -990,3 +990,36 @@ body.member-tier-page-year .rating-chip,body.member-tier-page-year .book-rating{
 .top-menu-panel .nav-item.active:after{display:none}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @media(max-width:700px){.nav-inner{padding:5px 12px;min-height:46px}.top-menu>summary{width:43px;height:40px;border-radius:13px}.top-menu-panel .nav-item{padding:12px 13px;font-size:14px}}
+
+/* High-contrast ceramic member surfaces. The animated sheen stays behind all content. */
+.member-store-stage.member-store-month{
+ background:#0b4e53!important;
+ background-image:radial-gradient(ellipse at 12% 4%,#42e7d1 0%,#19b7a35c 23%,transparent 46%),radial-gradient(ellipse at 88% 88%,#238fc1 0%,#17768d66 22%,transparent 50%),linear-gradient(132deg,#105959 0%,#125069 45%,#143a61 100%)!important;
+ border:2px solid #54ead4!important;box-shadow:inset 0 1px 0 #e7fffbb0,inset 0 0 65px #5de2d22b,0 0 0 1px #197d8c,0 16px 42px #000a,0 0 34px #35d8c877!important
+}
+.member-store-stage.member-store-half-year{
+ background:#502c49!important;
+ background-image:radial-gradient(ellipse at 90% 5%,#ffc18d 0%,#e89a7d66 24%,transparent 47%),radial-gradient(ellipse at 2% 90%,#c95b9d 0%,#ad4e8a55 22%,transparent 48%),linear-gradient(132deg,#75425e 0%,#4c355b 48%,#224b69 100%)!important;
+ border:2px solid #f0b28b!important;box-shadow:inset 0 1px 0 #fff5d1aa,inset 0 0 65px #efa6812b,0 0 0 1px #7b465a,0 16px 42px #000a,0 0 34px #e7a07d77!important
+}
+.member-store-stage.member-store-year{
+ background:#39235f!important;
+ background-image:radial-gradient(ellipse at 88% 3%,#ffe17c 0%,#f3c44b80 17%,transparent 38%),radial-gradient(ellipse at 7% 30%,#b58cff 0%,#8a60dd88 24%,transparent 48%),radial-gradient(ellipse at 95% 92%,#d9952e 0%,#a36a2355 22%,transparent 44%),linear-gradient(132deg,#58358a 0%,#392867 39%,#1b3659 72%,#68451d 100%)!important;
+ border:2px solid #ffe07a!important;box-shadow:inset 0 1px 0 #fffbd2cc,inset 0 0 78px #d5a4ff3b,0 0 0 1px #a87822,0 16px 46px #000b,0 0 40px #f4cf5e99!important
+}
+.member-store-stage:before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;border-radius:inherit;opacity:.78;background:linear-gradient(112deg,transparent 0%,#fff0 32%,#fff8 46%,#fff2 50%,transparent 60%,transparent 100%);background-size:240% 100%;background-position:160% 0;animation:deelaCeramicBacklight 6.5s ease-in-out infinite}
+.member-store-stage>*{position:relative;z-index:1}
+.member-store-stage.member-store-year .shop-profile{background:linear-gradient(135deg,#513879f5,#202e4df4 56%,#624a22f5)!important;border:1px solid #ffe17c!important;box-shadow:inset 0 1px 0 #fffbd1bb,inset 0 -12px 32px #f6d26924,0 0 30px #f2ce5f77!important}
+.member-store-stage.member-store-half-year .shop-profile{background:linear-gradient(135deg,#75485ff5,#35415af4 55%,#1d5366f5)!important;border:1px solid #f3b38d!important;box-shadow:inset 0 1px 0 #fff1d4a6,0 0 28px #ed9d8066!important}
+.member-store-stage.member-store-month .shop-profile{background:linear-gradient(135deg,#16796ff5,#174c67f4 58%,#0d3c59f5)!important;border:1px solid #62ecd8!important;box-shadow:inset 0 1px 0 #defffbaa,0 0 26px #51dfd177!important}
+.member-store-stage.member-store-year .book-card{border-color:#ffdf76!important;box-shadow:inset 0 1px 0 #fff9,0 0 0 1px #bd8d31,0 10px 26px #0009,0 0 25px #f2cb5680!important}
+.member-store-stage.member-store-half-year .book-card{border-color:#edb08a!important;box-shadow:0 0 20px #e2a07d4d!important}
+.member-store-stage.member-store-month .book-card{border-color:#62dccb!important;box-shadow:0 0 20px #45d3c355!important}
+@keyframes deelaCeramicBacklight{0%,16%{background-position:160% 0}68%,100%{background-position:-120% 0}}
+.member-seller-workspace{isolation:isolate;overflow:hidden}
+.member-seller-workspace:before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;border-radius:inherit;opacity:.7;background:linear-gradient(112deg,transparent 0%,#fff0 33%,#fff6 46%,#fff1 50%,transparent 61%);background-size:240% 100%;background-position:160% 0;animation:deelaCeramicBacklight 7s ease-in-out infinite}
+.member-seller-workspace>*{position:relative;z-index:1}
+.member-seller-workspace.member-store-month{background:#0b4e53!important;background-image:radial-gradient(ellipse at 12% 4%,#38dccaaa,transparent 44%),radial-gradient(ellipse at 90% 85%,#187e9d88,transparent 42%),linear-gradient(132deg,#105959,#125069 50%,#143a61)!important;border:2px solid #54ead4!important;box-shadow:inset 0 1px 0 #e7fffbb0,inset 0 0 65px #5de2d22b,0 0 34px #35d8c877!important}
+.member-seller-workspace.member-store-half-year{background:#502c49!important;background-image:radial-gradient(ellipse at 90% 5%,#e9a47fbb,transparent 45%),radial-gradient(ellipse at 2% 90%,#b24e8a77,transparent 45%),linear-gradient(132deg,#75425e,#4c355b 48%,#224b69)!important;border:2px solid #f0b28b!important;box-shadow:inset 0 1px 0 #fff5d1aa,inset 0 0 65px #efa6812b,0 0 34px #e7a07d77!important}
+.member-seller-workspace.member-store-year{background:#39235f!important;background-image:radial-gradient(ellipse at 88% 3%,#ffe17c 0%,#f3c44b70 17%,transparent 38%),radial-gradient(ellipse at 7% 30%,#a981eff0 0%,#8a60dd75 25%,transparent 48%),radial-gradient(ellipse at 95% 92%,#d9952e88 0%,transparent 44%),linear-gradient(132deg,#58358a 0%,#392867 39%,#1b3659 72%,#68451d 100%)!important;border:2px solid #ffe07a!important;box-shadow:inset 0 1px 0 #fffbd2cc,inset 0 0 78px #d5a4ff3b,0 0 0 1px #a87822,0 16px 46px #000b,0 0 40px #f4cf5e99!important}
+@media(prefers-reduced-motion:reduce){.member-store-stage:before,.member-seller-workspace:before{animation:none!important}}
