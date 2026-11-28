@@ -1042,10 +1042,25 @@ body.member-public-store-month .member-store-stage,body.member-public-store-half
 @keyframes deelaWholePageColor{0%,100%{background-position:0% 0%}50%{background-position:100% 100%}}
 @media(prefers-reduced-motion:reduce){body.member-public-store-month,body.member-public-store-half_year,body.member-public-store-year{animation:none!important}}
 
-/* Keep the storefront content-fit; the full-page theme is painted on body instead. */
-body.member-public-store-month .member-store-stage,body.member-public-store-half_year .member-store-stage,body.member-public-store-year .member-store-stage{min-height:0!important}
+/* Compact member identity and keep the tier label directly under the breadcrumb/title. */
+.member-store-stage>.member-tier-ribbon{display:inline-flex;width:auto;max-width:100%;justify-content:flex-start;gap:6px;padding:7px 12px;margin:3px 0 10px;border-radius:999px}
+.member-store-stage>.member-tier-ribbon small{display:none!important}
+.shop-profile{height:auto!important;min-height:0!important;padding:15px 17px!important;margin:8px 0 14px!important;border-radius:18px}
+.shop-identity-row{display:flex;align-items:center;gap:12px;min-height:0}
+.shop-identity-row .shop-avatar{width:56px;height:56px;flex:0 0 56px}
+.member-shop-identity{min-width:0;flex:1}
+.member-shop-identity h2{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:18px}
+.member-shop-identity p{margin:3px 0 0!important;font-size:12px}
+.shop-profile .member-profile-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px}
+body.member-public-store-month .member-store-stage,body.member-public-store-half_year .member-store-stage,body.member-public-store-year .member-store-stage{height:auto!important;min-height:0!important}
+body.member-public-store-month .member-book-page{background:linear-gradient(145deg,#115954e8,#16435ce8 55%,#153153e8)!important;border:1px solid #58ddcb!important;box-shadow:inset 0 1px 0 #eafff344,0 0 25px #34d4c033!important}
+body.member-public-store-half_year .member-book-page{background:linear-gradient(145deg,#663b56ed,#3b304fed 55%,#20445bed)!important;border:1px solid #eab08f!important;box-shadow:inset 0 1px 0 #fff4d044,0 0 25px #dc93723b!important}
+body.member-public-store-year .member-book-page{background:radial-gradient(ellipse at 92% 3%,#dfa94744,transparent 37%),linear-gradient(145deg,#4c3074ed,#28284fed 49%,#3b2f1ced)!important;border:1px solid #f2d064!important;box-shadow:inset 0 1px 0 #fff9,inset 0 0 52px #c79cfa1e,0 0 0 1px #a87a29,0 0 30px #f1ca5b44!important}
 @media(max-width:700px){
- body.member-public-store-month .member-store-stage,body.member-public-store-half_year .member-store-stage,body.member-public-store-year .member-store-stage{min-height:0!important;padding:10px!important;margin-block:8px!important}
- body.member-public-store-month .shop-profile,body.member-public-store-half_year .shop-profile,body.member-public-store-year .shop-profile{min-height:0!important;padding:15px!important;margin:9px 0 14px!important}
- body.member-public-store-month .member-tier-ribbon,body.member-public-store-half_year .member-tier-ribbon,body.member-public-store-year .member-tier-ribbon{margin-bottom:10px!important}
+ .shop-profile{padding:12px 13px!important;margin:7px 0 11px!important;border-radius:16px}
+ .shop-identity-row{gap:9px}
+ .shop-identity-row .shop-avatar{width:50px;height:50px;flex-basis:50px}
+ .member-shop-identity h2{font-size:16px;line-height:1.4}
+ .member-shop-identity p{font-size:11px}
+ .member-store-stage>.member-tier-ribbon{margin:2px 0 8px;padding:6px 10px;font-size:11px}
 }

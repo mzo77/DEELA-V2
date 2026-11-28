@@ -357,7 +357,7 @@ function shopCard(s){
 }
 function heading(title,desc="",label="DEELA BOOKS"){
  return '<div class="breadcrumbs"><a href="#home" data-route="home">الرئيسية</a> › '+esc(title)+'</div>'+
- '<div class="page-heading"><div><span class="eyebrow">'+esc(label)+'</span><h1>'+esc(title)+'</h1><p>'+esc(desc)+'</p></div></div>';
+ '<div class="page-heading"><div>'+(label?'<span class="eyebrow">'+esc(label)+'</span>':"")+'<h1>'+esc(title)+'</h1><p>'+esc(desc)+'</p></div></div>';
 }
 function listingGrid(items,showSamples=false){
  return '<div class="books-grid books-rail" dir="rtl">'+(items.length?items.map(card).join(""):showSamples?demoCovers():
@@ -417,13 +417,14 @@ function memberReviewCard(r){
 }
 function detailPage(){
  const b=state.listings.find(x=>x.id===state.current);
- if(!b)return heading("الكتاب غير موجود","ربما حُذف أو لم يُعتمد بعد.")+'<button class="btn btn-primary" data-route="catalog">العودة للمكتبة</button>';
+ if(!b){applyPublicStorePageTheme("");return heading("الكتاب غير موجود","ربما حُذف أو لم يُعتمد بعد.")+'<button class="btn btn-primary" data-route="catalog">العودة للمكتبة</button>';}
  const available=b.status==="published"&&(b.format!=="physical"||Number(b.stock)>0);
  const sellerProfile=b.deela_books_sellers?.member_profile,memberTier=sellerProfile?.plan||"",memberTierClass=memberTier==="year"?"member-store-year":memberTier==="half_year"?"member-store-half-year":memberTier==="month"?"member-store-month":"";
+ applyPublicStorePageTheme(memberTier);
  const tierLabel=memberTier==="year"?"إصدار سنوي مميز":memberTier==="half_year"?"إصدار نصف سنوي مميز":memberTier==="month"?"إصدار شهري مميز":"";
  return '<div class="member-book-page '+memberTierClass+'"><div class="breadcrumbs"><a href="#home" data-route="home">الرئيسية</a> › <a href="#catalog" data-route="catalog">الكتب</a> › '+esc(b.title)+'</div>'+
  '<div class="detail-grid"><div class="detail-cover">'+productGallery(b)+'</div>'+
- '<div class="detail-desc"><span class="eyebrow">DEELA BOOKS · '+esc(b.category)+'</span><h1>'+esc(b.title)+'</h1>'+
+ '<div class="detail-desc"><h1>'+esc(b.title)+'</h1>'+
  (b.subtitle?'<p class="book-subtitle">'+esc(b.subtitle)+'</p>':"")+
  '<p>تأليف '+esc(b.author||"مؤلف مستقل")+' · <button class="text-button" data-shop="'+esc(b.deela_books_sellers?.slug||"")+'">'+esc(b.deela_books_sellers?.shop_name||"متجر ديلا")+'</button></p>'+
  '<div class="community-strip detail-community">'+
@@ -479,10 +480,10 @@ function shopPage(){
  const tierLabel=tier==="year"?"العضوية السنوية":tier==="half_year"?"عضوية نصف السنة":tier==="month"?"عضوية الشهر":"";
  const memberAppearance=profile?.appearance||{};
  const avatar=features.includes("profile_avatar")&&profile?.avatar_url?'<img src="'+esc(profile.avatar_url)+'" alt="">':s.logo_url?'<img src="'+esc(s.logo_url)+'" alt="">':esc((s.shop_name||"D").slice(0,1));
- return '<div class="member-store-stage '+tierClass+'">'+heading(s.shop_name,s.bio||"متجر كتب مستقل","AUTHOR & BOOKSELLER STORE")+
+ const membershipRibbon=tierLabel?'<div class="member-tier-ribbon member-tier-ribbon-'+tier+'"><span>✦ '+tierLabel+'</span></div>':"";
+ return '<div class="member-store-stage '+tierClass+'">'+heading(s.shop_name,s.bio||"متجر كتب مستقل","")+membershipRibbon+
  '<div class="panel shop-profile member-profile-tier-'+(tier||"free")+' '+(features.includes("profile_glow")?"member-glow":"")+' '+(features.includes("profile_theme")?"member-theme-"+(memberAppearance.profile_theme||"ocean"):"")+'>'+
- (tierLabel?'<div class="member-tier-ribbon member-tier-ribbon-'+tier+'"><span>✦ '+tierLabel+'</span><small>'+(tier==="year"?"إطار ذهبي · هوية ماسية · لمعان منشوري":tier==="half_year"?"إطار ذهبي وردي · ثيم خاص":"هوية ديلا · إطار متحرك")+'</small></div>':"")+
- '<span class="shop-avatar '+(features.includes("avatar_frame")?"premium-avatar-frame premium-avatar-frame-"+(memberAppearance.avatar_frame||"aurora"):"")+'">'+avatar+'</span><div class="member-shop-identity"><h2 class="'+(features.includes("display_name_style")?"member-name-style":"")+'">'+esc(memberAppearance.display_name||s.shop_name)+(features.includes("verified_badge")?'<span class="verified-badge member-verified-gold" title="عضوية مميزة موثقة">✓</span>':"")+(s.premium_test_active?'<span class="premium-test-badge">✦ عضوية تجريبية</span>':"")+'</h2><p>'+esc(s.city||"كاتب في مجتمع ديلا")+'</p></div>'+
+ '<div class="shop-identity-row"><span class="shop-avatar '+(features.includes("avatar_frame")?"premium-avatar-frame premium-avatar-frame-"+(memberAppearance.avatar_frame||"aurora"):"")+'">'+avatar+'</span><div class="member-shop-identity"><h2 class="'+(features.includes("display_name_style")?"member-name-style":"")+'">'+esc(memberAppearance.display_name||s.shop_name)+(features.includes("verified_badge")?'<span class="verified-badge member-verified-gold" title="عضوية مميزة موثقة">✓</span>':"")+'</h2><p>'+esc(s.city||"كاتب في مجتمع ديلا")+'</p></div></div>'+
  (enabled("enable_author_follows")?'<div class="toolbar member-profile-actions"><span class="status">'+Number(s.follower_count||0)+' متابع</span>'+
  (state.me?.seller?.id===s.id?'<span class="status own-store-label">هذا متجرك</span>':'<button class="btn btn-soft" data-follow="'+esc(s.id)+'">'+(state.me?.following?.includes(s.id)?"إلغاء متابعة المتجر":"متابعة المؤلف والمتجر +")+'</button>')+'</div>':"")+'</div>'+
  listingGrid(state.shopListings.filter(b=>b.deela_books_sellers?.slug===s.slug))+(state.shopBooksHasMore?'<div class="pagination-control"><button class="btn btn-outline" data-load-shop-books>عرض المزيد من كتب المتجر</button></div>':"")+'</div>';
@@ -983,7 +984,7 @@ async function route(view,push=true){
  if(view==="owner"&&!state.me?.is_owner){toast("مركز الإدارة خاص بالمالك");return}
 
  state.view=view;state.current=state.current||"";
- if(view!=="shop")applyPublicStorePageTheme("");
+ if(view!=="shop"&&view!=="detail")applyPublicStorePageTheme("");
  document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("active",b.dataset.route===view));
  $("home").classList.toggle("active",view==="home");$("home").hidden=view!=="home";
  $("dynamicPage").hidden=view==="home";$("dynamicPage").classList.toggle("active",view!=="home");
