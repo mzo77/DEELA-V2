@@ -1211,9 +1211,11 @@ async function handleForm(ev){
     const logo=form.querySelector("#sellerLogoFile")?.files?.[0],novel=form.querySelector("#authorNovelFile")?.files?.[0];
     if(novel&&novel.size>52428800)throw Error("حجم ملف الرواية يجب ألا يتجاوز 50MB");
     const logo_path=logo?await upload(logo,"shop_logo"):"";const {author_novel_file,...applyData}=raw;const d=await api("/seller/apply",{method:"POST",data:{...applyData,logo_path}});
-    if(novel){state.pendingAuthorNovelPath=await upload(novel,"file");sessionStorage.setItem("deela-author-first-novel-path",state.pendingAuthorNovelPath)}
+    let novelUploadError="";
+    if(novel){try{state.pendingAuthorNovelPath=await upload(novel,"file");sessionStorage.setItem("deela-author-first-novel-path",state.pendingAuthorNovelPath)}catch(e){novelUploadError=errorMessage(e)}}
     toast("تم إنشاء صفحة الكاتب: "+d.shop.shop_name);
     await reload();await route("seller",false);
+    if(novelUploadError)toast("تم إنشاء الصفحة، لكن تعذر رفع ملف الرواية. أرفقه من قسم «أضف رواية»: "+novelUploadError);
     if(state.pendingAuthorNovelPath){
      editor("new");
      const listingForm=$("listingForm"),radio=listingForm?.querySelector('input[name="format-choice"][value="ebook"]');
