@@ -263,7 +263,7 @@ function cover(b){
 }
 function card(b){
  const isPublished=b.status==="published",isOwn=Boolean(state.me?.seller?.id&&state.me.seller.id===b.seller_id),fav=state.me?.favorites?.includes(b.id),liked=state.me?.likes?.includes(b.id);
- const packageKey=b.deela_books_sellers?.seller_package||"free",packageBadge=packageKey!=="free"?'<span class="seller-package-badge seller-package-'+packageKey+'">'+(packageKey==="pro"?"Pro":"Plus")+'</span>':"",promotionBadge=Number(b.promotion_rank)>0&&(!b.promotion_ends_at||new Date(b.promotion_ends_at)>new Date())?'<span class="listing-promo-badge">مميز</span>':"";
+ const packageKey=b.deela_books_sellers?.seller_package||"free",packageBadge=packageKey!=="free"?'<span class="seller-package-badge seller-package-'+packageKey+'">'+(packageKey==="pro"?"Pro":"Plus")+'</span>':"",promotionBadge=Number(b.promotion_rank)>=2&&(!b.promotion_ends_at||new Date(b.promotion_ends_at)>new Date())?'<span class="listing-promo-badge">مميز</span>':"";
  const kind=kinds[b.format]||"كتاب",kindLabel=b.format==="physical"?"ورقي":b.format==="audiobook"?"صوتي":"رقمي",sellerTier=b.deela_books_sellers?.member_profile?.plan||"",sellerTierClass=sellerTier==="year"?"member-store-year":sellerTier==="half_year"?"member-store-half-year":sellerTier==="month"?"member-store-month":"";
  return '<article class="book-card '+sellerTierClass+' '+((b.deela_books_sellers?.member_profile?.features||[]).includes("profile_glow")?"member-glow":"")+' '+((b.deela_books_sellers?.member_profile?.features||[]).includes("book_frame")?"member-book-frame member-book-frame-"+(b.deela_books_sellers?.member_profile?.appearance?.book_frame||"starlight"):"")+' '+((b.deela_books_sellers?.member_profile?.features||[]).includes("book_shine")&&b.deela_books_sellers?.member_profile?.appearance?.shine!==false?"member-book-shine":"")+' '+((b.deela_books_sellers?.member_profile?.features||[]).includes("book_shine_prism")&&b.deela_books_sellers?.member_profile?.appearance?.shine!==false?"member-book-shine-prism":"")+'"><div class="cover-wrap '+(b.format==="ebook"?"purple":b.format==="audiobook"?"teal":"gold")+'" data-book="'+esc(b.id)+'">'+
  (b.cover_url?'<img src="'+esc(b.cover_url)+'" alt="غلاف '+esc(b.title)+'" loading="lazy">':
@@ -586,9 +586,8 @@ function field(label,name,type="text",required=false,placeholder="",value=""){
 }
 const SELLER_PACKAGE_FEATURES=[
  ["ظهور متجرك ومنتجاتك في نتائج DEELA",true,true,true],
- ["ترتيب أعلى للمتجر والمنتجات في التصفح",true,true,true],
- ["شارة Plus أو Pro على المتجر",false,true,true],
- ["شارة تمييز على المنتج المروّج",false,true,true],
+ ["أولوية ترتيب أعلى حسب الباقة",false,true,true],
+ ["شارة Plus أو Pro على المتجر والمنتجات",false,true,true],
  ["إحصاءات الطلبات داخل لوحة البائع",false,true,true],
  ["خصم 20% على الترويج داخل الموقع",false,true,true],
  ["خصم 50% على الترويج داخل الموقع",false,false,true]
