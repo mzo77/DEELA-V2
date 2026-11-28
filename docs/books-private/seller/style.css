@@ -768,3 +768,24 @@ body[data-owner-visual-edit="true"] #homeCategories button,body[data-owner-visua
 .filter-selects #cityFilter{min-width:165px}
 .filter-selects #priceSortFilter{min-width:180px}
 @media(max-width:600px){.books-grid.books-rail{gap:11px}.books-grid.books-rail>.book-card{flex-basis:clamp(176px,54vw,220px);width:clamp(176px,54vw,220px);min-width:clamp(176px,54vw,220px)}.filter-selects #cityFilter,.filter-selects #priceSortFilter{flex:1;min-width:145px}}
+
+/* Premium membership looks: metallic frames and selectable shop themes */
+.premium-avatar-frame-rose{background:linear-gradient(#09172a,#09172a) padding-box,linear-gradient(135deg,#fff0d2,#e6a3a8,#d8b27a,#fff0d2) border-box!important;box-shadow:0 0 0 2px #e9b2a7,0 0 24px #df9a9188!important}
+.premium-avatar-frame-diamond{background:linear-gradient(#09172a,#09172a) padding-box,conic-gradient(from 0deg,#fff,#77e9ff,#f9f0ff,#a4a9ff,#fff,#8df7e7,#fff) border-box!important;box-shadow:0 0 0 2px #bff8ff,0 0 28px #7ceeffaa!important;animation:deelaFrameGlow 2.8s linear infinite}
+.member-book-frame-rose{border:1px solid #e8b7a7!important;box-shadow:0 0 0 1px #ffdaca77,0 0 26px #d88f8066!important}
+.member-book-frame-diamond{border:1px solid #e7fcff!important;box-shadow:0 0 0 1px #adf2ff99,0 0 30px #70dfffb0!important;background-image:linear-gradient(145deg,#fff2 0%,transparent 28%,#b2eaff18 55%,transparent 100%)}
+.member-theme-ocean{--member-accent:#65e4d5}.member-theme-emerald{--member-accent:#6df0b2}.member-theme-royal{--member-accent:#f0c96c}.member-theme-rose{--member-accent:#f0a8c7}
+.shop-card.member-theme-ocean,.shop-card.member-theme-emerald,.shop-card.member-theme-royal,.shop-card.member-theme-rose,.shop-profile.member-theme-ocean,.shop-profile.member-theme-emerald,.shop-profile.member-theme-royal,.shop-profile.member-theme-rose{border-color:color-mix(in srgb,var(--member-accent) 55%,var(--line));box-shadow:0 0 24px color-mix(in srgb,var(--member-accent) 18%,transparent)}
+.shop-card[class*=member-theme-] .shop-kicker,.shop-profile[class*=member-theme-] h2,.shop-card[class*=member-theme-] .shop-copy>h3{color:var(--member-accent)}
+.member-book-shine-prism:after{content:"";position:absolute;inset:-55% auto -55% -85%;width:58%;pointer-events:none;z-index:3;transform:skewX(-20deg);background:linear-gradient(100deg,transparent,#d5fbff30 30%,#fff 47%,#f8d8ff 52%,#9bf7eb99 57%,transparent);animation:deelaPrismShine 4.4s ease-in-out infinite}
+@keyframes deelaPrismShine{0%,42%{left:-85%;opacity:0}48%{opacity:.9}75%,100%{left:125%;opacity:0}}
+@media(prefers-reduced-motion:reduce){.premium-avatar-frame-diamond,.member-book-shine-prism:after{animation:none!important}}
+
+/* Clear visual hierarchy for the three membership levels */
+.member-tier-box{transition:border-color .25s ease,box-shadow .25s ease,transform .25s ease}
+.member-tier-box .tier-note{margin:4px 0 12px;color:var(--muted);font-size:.86rem;line-height:1.65}
+.member-tier-day{border-color:#51cfc466!important}
+.member-tier-week{border-color:#d5a45c88!important;box-shadow:inset 0 0 24px #d5a45c0c}
+.member-tier-month{border-color:#f0c96c!important;box-shadow:0 0 0 1px #f0c96c33,0 0 26px #d2a23a25,inset 0 0 24px #e4b64c0d}
+.member-tier-month legend{color:#f4d98a;text-shadow:0 0 12px #eac76666}
+.member-tier-month:hover{transform:translateY(-2px);box-shadow:0 0 0 1px #f0c96c66,0 0 34px #d2a23a36}
