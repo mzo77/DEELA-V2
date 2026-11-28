@@ -1436,3 +1436,13 @@ body:not([class*="member-public-store"]):not([class*="member-tier-page"]) #heroT
  color:#51321B!important;text-decoration-color:#51321B!important
 }
 body:not([class*="member-public-store"]):not([class*="member-tier-page"]) #heroTitle em{font-style:normal}
+
+/* Hero title stays one solid brand color, including nested spans and emphasis. */
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) #heroTitle,
+body:not([class*="member-public-store"]):not([class*="member-tier-page"]) #heroTitle *{
+ color:#51321B!important;
+ -webkit-text-fill-color:#51321B!important;
+ background-image:none!important;
+ background-clip:border-box!important;
+ text-shadow:none!important;
+}
