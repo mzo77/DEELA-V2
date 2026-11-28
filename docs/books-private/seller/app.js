@@ -29,6 +29,7 @@ const state={token:window.__DEELA_BOOKS_TOKEN||sessionStorage.getItem("deela-boo
  email:"",view:"home",listings:[],shopListings:[],shopLoadedSlug:"",shopBooksOffset:0,shopBooksHasMore:false,shops:[],catalogOffset:0,catalogHasMore:false,shopsOffset:0,shopsHasMore:false,ownerUsersOffset:0,ownerUsersHasMore:false,cart:[],me:null,settings:{},
  current:null,category:"الكل",productType:"all",format:"all",sort:"newest",search:"",couponCode:"",condition:"all",nearbyOnly:false,userCoords:null,radiusKm:25,discountOnly:false,cityFilter:"",priceOrder:"",ownerTab:"overview",sellerTab:"books",subscriptionTab:"packages",selectedSellerPackage:"plus",selectedPackageTerm:"month",selectedPromotionTerm:"day",sellerPaidRequests:{subscriptions:[],promotions:[],seller:null},
  sellerListings:[],sellerListingsOffset:0,sellerListingsHasMore:false,sellerActivity:[],sellerNotifications:[],sellerNotificationIds:new Set(),contestIds:new Set(),contestTimer:null,sellerNotificationsReady:false,sellerNotificationTimer:null,sellerLaunchAlerts:[],sellerPromotions:[],contests:[],ownerContests:[],launchAlertPrice:0,launchAlertFeed:[],launchAlertIds:new Set(),launchAlertTimer:null,launchAlertsReady:false,ownerData:null,ownerSellersOffset:0,ownerSellersHasMore:false,ownerListingsOffset:0,ownerListingsHasMore:false,editing:null,formNote:"",loading:false,sections:[],banners:[]};
+state.pendingAuthorNovelPath=sessionStorage.getItem("deela-author-first-novel-path")||"";
 try{let c=JSON.parse(localStorage.getItem("deela-books-cart-v1")||"[]");if(Array.isArray(c))state.cart=c.filter(x=>typeof x.id==="string"&&Number.isInteger(x.qty)&&x.qty>0&&x.qty<=10).slice(0,10)}catch{}
 let noticeTimer;
 function applyMemberTierTheme(plan){const tiers=["month","half_year","year"];document.body.classList.remove(...tiers.map(x=>"member-tier-page-"+x));if(tiers.includes(plan))document.body.classList.add("member-tier-page-"+plan);document.body.dataset.memberTier=tiers.includes(plan)?plan:""}
@@ -188,13 +189,13 @@ function applySections(config){
  const h=node.querySelector("h2");if(h){h.dataset.originalTitle??=h.textContent;if(k!=="banner"||d.title)h.textContent=d.title||h.dataset.originalTitle;}
  node.dataset.material=Object.hasOwn(materials,d.material)?d.material:"none";node.dataset.sectionKey=k;node.dataset.sectionMotion=d.motion||"shimmer";node.style.setProperty("--section-scale",String(Math.min(1.2,Math.max(.85,(Number(d.scale)||100)/100))));
  const description=node.querySelector(".section-title p");if(description){description.dataset.originalDescription??=description.textContent;description.textContent=d.description||description.dataset.originalDescription;}const link=node.querySelector(".section-title .text-button")||(k==="banner"?node.querySelector(".btn"):null);if(link){link.dataset.originalLabel??=link.textContent;link.textContent=d.link_text||link.dataset.originalLabel;}const limit=Number(d.items_limit)||({categories:12,books:8,shops:6,faq:4,contests:6}[k]||6);node.querySelectorAll(".faqs>details").forEach((el,i)=>el.hidden=i>=limit);
- const bannerUrl=safeImage(d.banner_url||"");if(k==="banner")node.style.backgroundImage=bannerUrl?'linear-gradient(90deg,#07101dcc,#07101d88),url("'+bannerUrl.replaceAll('"',"%22")+'")':"";
+ const bannerUrl=safeImage(d.banner_url||"");if(k==="banner")node.style.backgroundImage="";
  node.querySelectorAll(".community-tile").forEach(el=>{el.style.minHeight=(152*(Number(d.scale)||100)/100)+"px";el.style.fontSize=(Number(d.scale)||100)+"%"});
  node.querySelectorAll(".book-card").forEach(el=>{el.style.width=(220*(Number(d.scale)||100)/100)+"px";el.style.setProperty("--book-cover-height",(251*(Number(d.scale)||100)/100)+"px")});
  node.querySelectorAll(".shop-card,.faq-item,.contest-card").forEach(el=>{el.style.fontSize=(Number(d.scale)||100)+"%"});
- node.style.setProperty("--section-bg",/^#[0-9a-f]{6}$/i.test(d.background_color||"")?d.background_color:"var(--panel)");node.style.backgroundColor=/^#[0-9a-f]{6}$/i.test(d.background_color||"")?d.background_color:"";
- node.style.setProperty("--section-accent",/^#[0-9a-f]{6}$/i.test(d.accent_color||"")?d.accent_color:"var(--teal)");
- node.style.borderColor="var(--section-accent)";
+ node.style.setProperty("--section-bg","#F9E9E7");node.style.backgroundColor="transparent";
+ node.style.setProperty("--section-accent","#51321B");
+ node.style.borderColor="#e5c9c4";
  node.dataset.ownerHidden=d.visible===false?"true":"false";node.classList.toggle("owner-section-hidden",d.visible===false&&!!state.me?.is_owner);node.hidden=d.visible===false&&!state.me?.is_owner;
  return {node,order:Number(d.order)||i+1};
  }).filter(Boolean).sort((a,b)=>a.order-b.order);
@@ -619,10 +620,10 @@ function sellerPage(){
  field("اسم الكاتب الظاهر للقراء","shop_name","text",true,"اسمك أو اسمك الأدبي")+
  field("معرّف صفحة الكاتب بالإنجليزية","slug","text",true,"my-novels")+
  field("المدينة","city","text",false,"جدة")+'<button type="button" class="btn btn-outline" data-store-location>تحديد موقع المتجر على الخريطة</button><input type="hidden" name="latitude"><input type="hidden" name="longitude"><small class="field full">يُحفظ موقع المتجر بعد تقريبه؛ لا يُرسل موقع المشتري إلى الخادم.</small>'+
- '<label class="field full">شعار صفحة الكاتب (اختياري)<input id="sellerLogoFile" type="file" accept="image/png,image/jpeg,image/webp"></label>'+
+ '<label class="field full author-novel-field">ملف روايتك الأولى (PDF أو EPUB أو MP3)<input id="authorNovelFile" name="author_novel_file" type="file" accept="application/pdf,.pdf,application/epub+zip,.epub,audio/mpeg,.mp3"><small>أرفق الرواية الآن؛ بعد إنشاء الصفحة نكمل بيانات العنوان والسعر قبل حفظها.</small></label><label class="field full">شعار صفحة الكاتب (اختياري)<input id="sellerLogoFile" type="file" accept="image/png,image/jpeg,image/webp"></label>'+
  '<label class="field">الدولة<select name="country"><option>السعودية</option><option>الإمارات</option><option>الكويت</option><option>قطر</option><option>البحرين</option><option>عُمان</option><option>أخرى</option></select></label>'+
  '<label class="field full">نبذة قصيرة عنك وعن رواياتك<textarea name="bio" maxlength="1000" placeholder="عرّف القراء بأسلوبك ونوع الروايات التي تكتبها"></textarea></label>'+
- '<div class="form-actions"><button type="submit" class="btn btn-primary">إنشاء صفحة الكاتب ومتابعة ←</button></div></form></div>';
+ '<div class="form-actions"><button type="submit" class="btn btn-primary">إنشاء صفحة الكاتب وإضافة الرواية ←</button></div></form></div>';
  const available=seller.status==="approved",novels=state.sellerListings.length,memberPlan=state.me?.member_plan||"",memberTierClass=memberPlan==="year"?"member-store-year":memberPlan==="half_year"?"member-store-half-year":memberPlan==="month"?"member-store-month":"",memberTierLabel=memberPlan==="year"?"العضوية السنوية":memberPlan==="half_year"?"عضوية نصف السنة":memberPlan==="month"?"عضوية الشهر":"";
  const views=state.sellerListings.reduce((n,x)=>n+Number(x.view_count||0),0),likes=state.sellerListings.reduce((n,x)=>n+Number(x.like_count||0),0),sellerPackage=state.sellerPaidRequests?.seller?.seller_package||seller.seller_package||"free",sellerAnalytics=["plus","pro"].includes(sellerPackage);
  const published=state.sellerListings.filter(x=>x.status==="published").length;
@@ -1206,10 +1207,14 @@ async function handleForm(ev){
     const avatar=form.querySelector("#premiumAvatarFile")?.files?.[0],avatar_path=avatar?await upload(avatar,"avatar"):state.me?.member_appearance?.avatar_path||"";
     await api("/seller/premium-appearance",{method:"POST",data:{display_name:raw.display_name,avatar_path,avatar_frame:raw.avatar_frame,book_frame:raw.book_frame,profile_theme:raw.profile_theme,shine:form.elements.shine?.checked===true}});
     toast("تم حفظ الهوية المميزة");await reload();return route("seller",false);
-  }else if(id==="sellerApplyForm"){
-    const logo=form.querySelector("#sellerLogoFile")?.files?.[0];const logo_path=logo?await upload(logo,"shop_logo"):"";const d=await api("/seller/apply",{method:"POST",data:{...raw,logo_path}});
-    toast("تم إنشاء صفحة متجرك: "+d.shop.shop_name);
+   }else if(id==="sellerApplyForm"){
+    const logo=form.querySelector("#sellerLogoFile")?.files?.[0],novel=form.querySelector("#authorNovelFile")?.files?.[0];
+    if(novel&&novel.size>52428800)throw Error("حجم ملف الرواية يجب ألا يتجاوز 50MB");
+    const logo_path=logo?await upload(logo,"shop_logo"):"";const d=await api("/seller/apply",{method:"POST",data:{...raw,logo_path}});
+    if(novel){state.pendingAuthorNovelPath=await upload(novel,"file");sessionStorage.setItem("deela-author-first-novel-path",state.pendingAuthorNovelPath)}
+    toast("تم إنشاء صفحة الكاتب: "+d.shop.shop_name);
     await reload();await route("seller",false);
+    if(state.pendingAuthorNovelPath){editor("new");const listingForm=$("listingForm"),format=listingForm?.elements.namedItem("format");if(format){format.value="ebook";format.dispatchEvent(new Event("change",{bubbles:true}))}const status=$("digitalFileStatus");if(status)status.textContent="تم إرفاق ملف الرواية. أكمل عنوانها وسعرها ثم احفظها.";}
   }else if(id==="sellerProfileForm"){const logo=form.querySelector("#sellerLogoFile")?.files?.[0];const logo_path=logo?await upload(logo,"shop_logo"):state.me?.seller?.logo_path||"";await api("/seller/profile",{method:"POST",data:{...raw,logo_path}});toast("تم تحديث واجهة متجرك");await reload();await route("seller",false);
   }else if(id==="listingForm"){
     const cover=form.querySelector("#coverFile")?.files?.[0];
@@ -1220,7 +1225,7 @@ async function handleForm(ev){
     const coverPath=cover?await upload(cover,"cover"):existing?.cover_path||"";
     const galleryPaths=await Promise.all(gallery.map(file=>upload(file,"cover")));
     const imagePaths=[...new Set([...(coverPath?[coverPath]:[]),...galleryPaths,...(existing?.image_paths||[])])].slice(0,8);
-    const filePath=digital?await upload(digital,"file"):existing?.file_path||"";
+    const filePath=digital?await upload(digital,"file"):existing?.file_path||state.pendingAuthorNovelPath||"";
     const payload={...raw,cover_path:coverPath||imagePaths[0]||"",image_paths:imagePaths,file_path:filePath,shipping_available:false,pickup_available:raw.pickup_available==="on",
       id:form.dataset.id||undefined,rights_confirmed:form.querySelector('[name="rights_confirmed"]')?.checked===true,test_publish:form.querySelector('[name="test_publish"]')?.checked===true,
       stock:Number(raw.stock),price_sar:Number(raw.price_sar),shipping_fee_sar:0,
@@ -1229,6 +1234,7 @@ async function handleForm(ev){
       publication_year:raw.publication_year===""?null:Number(raw.publication_year)};
     const msg=$("listingMessage");if(msg)msg.textContent="جارٍ رفع الكتاب وحفظه…";
     const saved=await api("/listing",{method:"POST",data:payload});
+    if(state.pendingAuthorNovelPath){state.pendingAuthorNovelPath="";sessionStorage.removeItem("deela-author-first-novel-path")}
     toast(saved.listing?.status==="published"?"نُشرت الرواية في مساحة الاختبار ويمكن للحسابات المسجّلة رؤيتها.":"تم حفظ الرواية؛ تحقق من الملف الرقمي وحالة النشر.");
     state.editing=null;await reload();await route("seller",false);
   }else if(id==="checkoutForm"){
