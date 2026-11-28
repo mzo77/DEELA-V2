@@ -481,7 +481,9 @@ function shopPage(){
  const memberAppearance=profile?.appearance||{};
  const avatar=features.includes("profile_avatar")&&profile?.avatar_url?'<img src="'+esc(profile.avatar_url)+'" alt="">':s.logo_url?'<img src="'+esc(s.logo_url)+'" alt="">':esc((s.shop_name||"D").slice(0,1));
  const membershipRibbon=tierLabel?'<div class="member-tier-ribbon member-tier-ribbon-'+tier+'"><span>✦ '+tierLabel+'</span></div>':"";
- return '<div class="member-store-stage '+tierClass+'">'+heading(s.shop_name,s.bio||"متجر كتب مستقل","")+membershipRibbon+
+ return '<div class="member-store-stage '+tierClass+'">'+
+ '<div class="breadcrumbs"><a href="#home" data-route="home">الرئيسية</a> › '+esc(s.shop_name)+'</div>'+membershipRibbon+
+ '<div class="page-heading"><div><h1>'+esc(s.shop_name)+'</h1><p>'+esc(s.bio||"متجر كتب مستقل")+'</p></div></div>'+
  '<div class="panel shop-profile member-profile-tier-'+(tier||"free")+' '+(features.includes("profile_glow")?"member-glow":"")+' '+(features.includes("profile_theme")?"member-theme-"+(memberAppearance.profile_theme||"ocean"):"")+'>'+
  '<div class="shop-identity-row"><span class="shop-avatar '+(features.includes("avatar_frame")?"premium-avatar-frame premium-avatar-frame-"+(memberAppearance.avatar_frame||"aurora"):"")+'">'+avatar+'</span><div class="member-shop-identity"><h2 class="'+(features.includes("display_name_style")?"member-name-style":"")+'">'+esc(memberAppearance.display_name||s.shop_name)+(features.includes("verified_badge")?'<span class="verified-badge member-verified-gold" title="عضوية مميزة موثقة">✓</span>':"")+'</h2><p>'+esc(s.city||"كاتب في مجتمع ديلا")+'</p></div></div>'+
  (enabled("enable_author_follows")?'<div class="toolbar member-profile-actions"><span class="status">'+Number(s.follower_count||0)+' متابع</span>'+
