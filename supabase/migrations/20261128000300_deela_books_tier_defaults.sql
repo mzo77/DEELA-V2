@@ -1,0 +1,1 @@
+update public.deela_books_membership_tiers set tiers='{"day":["profile_glow","display_name_style"],"week":["profile_glow","display_name_style","profile_avatar","avatar_frame","book_frame"],"month":["profile_glow","display_name_style","profile_avatar","avatar_frame","book_frame","verified_badge","book_shine"]}'::jsonb,updated_at=now() where id=1;
