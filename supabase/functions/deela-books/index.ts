@@ -548,6 +548,7 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
   }
   if(!user)return fail(req,"سجّل الدخول أولًا",401);
   if(req.method==="GET"&&path==="/me"){
+    if(user.user_metadata?.deela_books_account!==true){const tagged=await db.auth.admin.updateUserById(user.id,{user_metadata:{...(user.user_metadata||{}),deela_books_account:true}});if(tagged.error)console.error("books-account-tag",user.id,tagged.error.message||String(tagged.error));}
     const [seller,favs,likes,follows,myOrders]=await Promise.all([
       sellerFor(user.id),
       db.from("deela_books_favorites").select("listing_id").eq("user_id",user.id).limit(200),
@@ -1344,26 +1345,35 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
     }
     if(req.method==="GET"&&path==="/owner/users"){
       const pageSize=Math.min(80,Math.max(1,Number(parsed.searchParams.get("limit"))||40)),offset=Math.max(0,Number(parsed.searchParams.get("offset"))||0);
-      const page=Math.floor(offset/pageSize)+1;
-      const authPage=await db.auth.admin.listUsers({page,perPage:pageSize});
-      if(authPage.error)throw Error("تعذر قراءة حسابات DEELA Books");
-      const accountRows=authPage.data.users||[],ids=accountRows.map((x:any)=>x.id).filter((x:string)=>uuid.test(String(x)));
-      if(!ids.length)return respond(req,{users:[],has_more:accountRows.length===pageSize,next_offset:offset+accountRows.length});
-      const [sellerResult,controlResult]=await Promise.all([
-        db.from("deela_books_sellers").select("user_id,shop_name,slug,status,created_at").in("user_id",ids),
-        db.from("deela_books_user_controls").select("user_id,blocked,note,changed_at").in("user_id",ids)
-      ]);
-      const sellerMap=new Map((sellerResult.error?[]:(sellerResult.data||[])).map((x:any)=>[x.user_id,x]));
-      const controlMap=new Map((controlResult.error?[]:(controlResult.data||[])).map((x:any)=>[x.user_id,x]));
-      if(sellerResult.error)console.error("owner-users-sellers",sellerResult.error.message||String(sellerResult.error));
-      if(controlResult.error)console.error("owner-users-controls",controlResult.error.message||String(controlResult.error));
-      const accounts=await Promise.all(accountRows.filter((u:any)=>uuid.test(String(u.id))).map(async(u:any)=>{
-        const profile=await db.from("profiles").select("role").eq("id",u.id).maybeSingle();
-        const isOwner=profile.data?.role==="owner"||await owner(u.id);
-        if(isOwner)return null;
-        const seller=sellerMap.get(u.id) as any,c=controlMap.get(u.id) as any;
+      const scanSize=100,bookAccounts:any[]=[];
+      let sourcePage=1,authMayHaveMore=true;
+      while(bookAccounts.length<offset+pageSize+1&&authMayHaveMore&&sourcePage<=100){
+        const authPage=await db.auth.admin.listUsers({page:sourcePage,perPage:scanSize});
+        if(authPage.error)throw Error("تعذر قراءة حسابات DEELA Books");
+        const rows=authPage.data.users||[],ids=rows.map((x:any)=>x.id).filter((x:string)=>uuid.test(String(x)));
+        const sellerResult=ids.length?await db.from("deela_books_sellers").select("user_id,shop_name,slug,status,created_at").in("user_id",ids):{data:[],error:null};
+        if(sellerResult.error)console.error("owner-users-sellers",sellerResult.error.message||String(sellerResult.error));
+        const sellerMap=new Map((sellerResult.error?[]:(sellerResult.data||[])).map((x:any)=>[x.user_id,x]));
+        for(const account of rows){
+          if(!uuid.test(String(account.id)))continue;
+          const seller=sellerMap.get(account.id) as any;
+          // Shared Supabase auth is also used by DEELA Apps; Books accounts are explicitly tagged
+          // when they sign into Books, or are identified by an existing DEELA Books seller record.
+          if(account.user_metadata?.deela_books_account!==true&&!seller)continue;
+          if(await owner(account.id))continue;
+          bookAccounts.push({account,seller:seller||null});
+        }
+        authMayHaveMore=rows.length===scanSize;
+        sourcePage++;
+      }
+      const pageRows=bookAccounts.slice(offset,offset+pageSize),ids=pageRows.map((x:any)=>x.account.id);
+      const controls=ids.length?await db.from("deela_books_user_controls").select("user_id,blocked,note,changed_at").in("user_id",ids):{data:[],error:null};
+      if(controls.error)console.error("owner-users-controls",controls.error.message||String(controls.error));
+      const controlMap=new Map((controls.error?[]:(controls.data||[])).map((x:any)=>[x.user_id,x]));
+      const users=await Promise.all(pageRows.map(async({account:u,seller}:any)=>{
+        const c=controlMap.get(u.id) as any;
         let member:any;
-        try{member=await memberEntitlements(u,!conf.site_public,seller||null)}
+        try{member=await memberEntitlements(u,!conf.site_public,seller)}
         catch(e){console.error("owner-user-membership",u.id,e instanceof Error?e.message:String(e));member={premium_active:false,member_plan:"",member_plan_label:"تعذر قراءة العضوية",member_features:[],member_custom_features:false,premium_ends_at:null,avatar_url:null,member_appearance:{},manual_member_plan:"",member_status_error:true};}
         const metadata=u.user_metadata||{},displayName=str(metadata.display_name||metadata.full_name||metadata.name||"",120);
         return {id:u.id,email:u.email||"",phone:u.phone||"",display_name:displayName,
@@ -1371,8 +1381,7 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
           blocked:c?.blocked===true,note:c?.note||"",shop_name:seller?.shop_name||"",slug:seller?.slug||"",
           seller_status:seller?.status||"",manual_member_plan:member.manual_member_plan||"",member_status_error:member.member_status_error===true,...member};
       }));
-      const users=accounts.filter(Boolean);
-      return respond(req,{users,has_more:accountRows.length===pageSize,next_offset:offset+accountRows.length});
+      return respond(req,{users,has_more:bookAccounts.length>offset+pageSize||authMayHaveMore,next_offset:offset+users.length});
     }
         if(req.method==="POST"&&path==="/owner/user-status"){
       const b=await req.json(),id=str(b.user_id,60),blocked=b.blocked===true,note=str(b.note,500);
