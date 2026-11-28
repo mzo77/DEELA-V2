@@ -404,7 +404,9 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
   const pendingSeller=!!sellerAccount&&sellerAccount.status==="pending"&&!conf.site_public;
   const privateApplicant=!!user&&!isOwner&&!sellerAccount&&!conf.site_public&&conf.enable_seller_registration===true;
   // The private marketplace permits only the signed-in applicant profile and application endpoints before owner approval.
-  if(!isOwner&&!conf.site_public){
+  const readerRoutes=new Set(["GET /me","GET /contests","GET /reviews","GET /orders","GET /messages","GET /seller/notifications","GET /launch-alerts/feed","POST /order","POST /like","POST /follow","POST /favorite","POST /view","POST /reports","POST /reviews","POST /messages","POST /messages/reply","POST /seller/notifications/read","POST /contests/answer","GET /download"]);
+  const signedReader=!!user&&readerRoutes.has(req.method+" "+path);
+  if(!isOwner&&!conf.site_public&&!signedReader){
     if(!privateSeller&&!pendingSeller&&!privateApplicant)return fail(req,"موقع DEELA Books خاص، ويتطلب دخول المالك أو بائعًا معتمدًا",403);
     const pendingRoutes=new Set(["GET /catalog","GET /shops","GET /me","GET /my/listings","GET /seller/notifications","POST /seller/notifications/read","GET /seller/launch-alerts","POST /seller/launch-alerts/request","POST /listing","POST /upload/sign"]);
     const allowed=PRIVATE_SELLER_ROUTES.has(req.method+" "+path)||new Set(["GET /me","POST /seller/apply"]).has(req.method+" "+path);
