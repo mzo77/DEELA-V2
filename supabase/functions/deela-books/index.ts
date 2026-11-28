@@ -215,7 +215,7 @@ async function currentListings(isOwner:boolean,search:URLSearchParams,featureEna
   const ids=new Set((promos.data||[]).map((x:any)=>x.seller_id));
   await Promise.all(sellerRows.filter((s:any)=>ids.has(s.id)).map(async(s:any)=>{
    const auth=await db.auth.admin.getUserById(s.user_id);if(auth.error||!auth.data.user)return;
-   const member=await memberEntitlements(auth.data.user,!conf.site_public,s);
+   const member=await memberEntitlements(auth.data.user,includeTest,s);
    if(member.premium_active)sellerMap.set(s.id,{features:member.member_features,appearance:member.member_appearance,avatar_url:member.avatar_url,plan:member.member_plan});
   }));
  }
