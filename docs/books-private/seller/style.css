@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap');
 :root{
  color-scheme:dark;--bg:#0c1524;--bg2:#111f31;--panel:#18283d;--panel2:#1e344b;--panel3:#243b51;
  --line:#355069;--line2:#4c6d80;--white:#eff7ff;--muted:#a3b8cb;--muted2:#7392aa;
@@ -7,7 +6,7 @@
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:145px}
-body{margin:0;min-height:100vh;background:var(--bg);color:var(--white);font:500 14px/1.9 Cairo,Tahoma,sans-serif}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--white);font:500 14px/1.9 system-ui,Tahoma,Arial,sans-serif}
 button,input,select,textarea{font:inherit}
 button{cursor:pointer;transition:background .18s,color .18s,transform .18s,border-color .18s}
 button:disabled{opacity:.5;cursor:not-allowed}
@@ -789,3 +788,17 @@ body[data-owner-visual-edit="true"] #homeCategories button,body[data-owner-visua
 .member-tier-month{border-color:#f0c96c!important;box-shadow:0 0 0 1px #f0c96c33,0 0 26px #d2a23a25,inset 0 0 24px #e4b64c0d}
 .member-tier-month legend{color:#f4d98a;text-shadow:0 0 12px #eac76666}
 .member-tier-month:hover{transform:translateY(-2px);box-shadow:0 0 0 1px #f0c96c66,0 0 34px #d2a23a36}
+
+
+/* Subscription tier storefronts: subtle, light-weight ambient backgrounds. */
+.member-store-stage{position:relative;isolation:isolate;padding:clamp(10px,2vw,20px);margin-block:16px;border:1px solid rgba(105,222,211,.2);border-radius:24px;background-size:180% 180%;animation:deelaStoreAmbient 20s ease-in-out infinite;overflow:hidden}
+.member-store-stage>*{position:relative;z-index:1}
+.member-store-month{background-image:radial-gradient(ellipse at 8% 8%,rgba(29,190,168,.17),transparent 48%),linear-gradient(140deg,rgba(7,32,47,.88),rgba(10,19,38,.94) 60%,rgba(4,48,54,.62))}
+.member-store-half-year{border-color:rgba(231,188,96,.38);background-image:radial-gradient(ellipse at 88% 8%,rgba(223,177,73,.2),transparent 44%),linear-gradient(140deg,rgba(38,30,28,.8),rgba(10,22,43,.96) 58%,rgba(20,48,55,.65))}
+.member-store-year{border-color:rgba(190,152,255,.48);box-shadow:0 0 32px rgba(144,94,255,.12),inset 0 0 30px rgba(232,191,92,.06);background-image:radial-gradient(ellipse at 82% 4%,rgba(228,189,92,.18),transparent 38%),radial-gradient(ellipse at 10% 22%,rgba(133,97,255,.2),transparent 44%),linear-gradient(142deg,rgba(26,19,59,.88),rgba(8,18,43,.96) 54%,rgba(25,37,66,.9))}
+.shop-card.member-store-month{border-color:rgba(98,220,203,.38)}.shop-card.member-store-half-year{border-color:rgba(234,191,99,.45)}.shop-card.member-store-year{border-color:rgba(202,164,255,.5)}
+.member-store-year .shop-profile,.member-store-year .book-card{box-shadow:0 0 24px rgba(163,115,255,.1),0 10px 28px rgba(0,0,0,.2)}
+.pagination-control{display:flex;justify-content:center;padding:20px 12px;min-height:64px}.pagination-control .btn{min-width:min(100%,260px)}
+.member-tier-box.member-tier-month{border-color:rgba(94,218,202,.34)}.member-tier-box.member-tier-half_year{border-color:rgba(228,188,97,.45)}.member-tier-box.member-tier-year{border-color:rgba(193,155,255,.5)}
+@keyframes deelaStoreAmbient{0%,100%{background-position:0% 20%}50%{background-position:100% 80%}}
+@media(prefers-reduced-motion:reduce){.member-store-stage{animation:none;background-position:center}}
