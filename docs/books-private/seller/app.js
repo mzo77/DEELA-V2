@@ -99,7 +99,7 @@ async function loadGuest(){
  state.me=null;state.email="";applyMemberTierTheme("");state.ownerData=null;state.sellerListings=[];state.sellerNotifications=[];state.contests=[];
  state.listings=[];state.shops=[];state.banners=[];state.sections=[];state.settings={};
  document.querySelectorAll(".owner-only").forEach(x=>x.hidden=true);
- $("accountButton").innerHTML="الدخول ◌";const mobile=$("mobileAccountButton");if(mobile)mobile.innerHTML="<span>⇥</span>الدخول";
+ $("accountButton").innerHTML="حسابي ◌";const mobile=$("mobileAccountButton");if(mobile)mobile.innerHTML="<span aria-hidden=\"true\">♙</span>حسابي";
  try{
   const [catalog,shops]=await Promise.all([api("/catalog?limit=24&offset=0"),api("/shops?limit=24&offset=0")]);
   state.listings=catalog.listings||[];state.shops=shops.shops||[];state.catalogOffset=catalog.next_offset||state.listings.length;state.catalogHasMore=!!catalog.has_more;state.shopsOffset=shops.next_offset||state.shops.length;state.shopsHasMore=!!shops.has_more;state.settings=catalog.settings||{};state.sections=catalog.sections||[];state.banners=catalog.banners||[];
