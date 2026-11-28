@@ -47,7 +47,11 @@ async function memberEntitlements(account:any,privateMode:boolean,knownSeller?:a
  return {premium_active:true,member_plan:planKey,member_plan_label:MEMBER_TIER_LABELS[planKey]||"عضوية مميزة",member_features:features,member_custom_features:Array.isArray(custom),premium_ends_at:membership.ends_at||null,avatar_url:avatar&&!avatar.error?avatar.data.signedUrl:null,member_appearance:{display_name:String(metadata.deela_member_display_name||"").slice(0,90),avatar_path:avatarPath,avatar_frame:avatarFrame,book_frame:bookFrame,profile_theme:profileTheme,shine:metadata.deela_member_shine!==false}};
 }
 const FEATURE_FLAGS=["enable_seller_registration","enable_book_submissions","enable_reader_likes","enable_favorites","enable_author_follows","enable_reviews","enable_messages","enable_orders","enable_discounts","enable_featured_section","enable_launch_alerts","show_book_prices"] as const;
-const PRIVATE_SELLER_ROUTES=new Set(["GET /catalog","GET /shops","GET /me","GET /my/listings","POST /seller/premium-appearance","GET /owner/member-tiers","POST /owner/member-tiers","POST /owner/user-premium-features","GET /seller/activity","GET /seller/orders","POST /seller/order-item/status","POST /seller/apply","POST /seller/profile","POST /listing/delete","GET /orders","POST /order","POST /order/support","GET /download","POST /like","POST /follow","POST /favorite","POST /view","POST /reports","GET /reviews","POST /reviews","GET /messages","POST /messages","POST /messages/reply","GET /seller/notifications","POST /seller/notifications/read","POST /push/subscribe","POST /push/unsubscribe","GET /seller/launch-alerts","POST /seller/launch-alerts/request","GET /seller/promotions","POST /seller/promotions/test","GET /contests","POST /contests/answer","GET /launch-alerts/feed","POST /listing","POST /upload/sign"]);
+const SELLER_PACKAGE_PRICES={plus:{month:69,quarter:186,half_year:352,year:662},pro:{month:199,quarter:537,half_year:1015,year:1910}} as const;
+const PACKAGE_MONTHS={month:1,quarter:3,half_year:6,year:12} as const;
+const PROMOTION_PRICES={day:14,week:49,month:149} as const;
+const PACKAGE_RANK={free:0,plus:1,pro:2} as const;
+const PRIVATE_SELLER_ROUTES=new Set(["GET /catalog","GET /shops","GET /me","GET /my/listings","POST /seller/premium-appearance","GET /owner/paid-requests","POST /owner/paid-requests/review","GET /owner/member-tiers","POST /owner/member-tiers","POST /owner/user-premium-features","GET /seller/activity","GET /seller/orders","POST /seller/order-item/status","POST /seller/apply","POST /seller/profile","POST /listing/delete","GET /orders","POST /order","POST /order/support","GET /download","POST /like","POST /follow","POST /favorite","POST /view","POST /reports","GET /reviews","POST /reviews","GET /messages","POST /messages","POST /messages/reply","GET /seller/notifications","POST /seller/notifications/read","POST /push/subscribe","POST /push/unsubscribe","GET /seller/launch-alerts","POST /seller/launch-alerts/request","GET /seller/promotions","POST /seller/promotions/test","GET /seller/paid-requests","POST /seller/subscription-request","POST /seller/promotion-request","GET /contests","POST /contests/answer","GET /launch-alerts/feed","POST /listing","POST /upload/sign"]);
 
 const trusted=new Set(["https://mzo77.github.io","https://appassets.androidplatform.net"]);
 const allowedOrigins=(req:Request)=>trusted.has(req.headers.get("origin")||"")?req.headers.get("origin")!:"https://mzo77.github.io";
@@ -221,9 +225,22 @@ async function enrichBooks(books:any[],includeTest=false){
    reviews:r?.items||[]};
  });
 }
+async function refreshExpiredSellerBenefits(){
+ const now=new Date().toISOString();
+ const [sellers,listings,subscriptions,promotions,promotionRequests]=await Promise.all([
+  db.from("deela_books_sellers").update({seller_package:"free",seller_package_rank:0,seller_package_expires_at:null,updated_at:now}).neq("seller_package","free").lte("seller_package_expires_at",now),
+  db.from("deela_books_listings").update({promotion_rank:0,promotion_ends_at:null,updated_at:now}).gt("promotion_rank",0).lte("promotion_ends_at",now),
+  db.from("deela_books_seller_subscription_requests").update({status:"expired",updated_at:now}).eq("status","active").lte("ends_at",now),
+  db.from("deela_books_promotions").update({status:"expired"}).eq("kind","boost").eq("status","active").eq("is_test",false).lte("ends_at",now),
+  db.from("deela_books_promotion_requests").update({status:"expired",updated_at:now}).eq("status","active").lte("ends_at",now)
+ ]);
+ if(sellers.error||listings.error||subscriptions.error||promotions.error||promotionRequests.error)throw Error("تعذر تحديث انتهاء مزايا الباقات");
+}
 async function currentListings(isOwner:boolean,search:URLSearchParams,featureEnabled=true,includeTest=false,showTestTiers=false){
+ await refreshExpiredSellerBenefits();
  let q=db.from("deela_books_listings")
-   .select("*,deela_books_sellers!inner(id,user_id,shop_name,slug,status,city,latitude,longitude)");
+   .select("*,deela_books_sellers!inner(id,user_id,shop_name,slug,status,city,latitude,longitude,seller_package,seller_package_rank,seller_package_expires_at)");
+ q=q.order("seller_package_rank",{referencedTable:"deela_books_sellers",ascending:false}).order("promotion_rank",{ascending:false});
  if(featureEnabled)q=q.order("featured",{ascending:false});
  const pageSize=Math.min(48,Math.max(1,Number(search.get("limit"))||24)),offset=Math.max(0,Number(search.get("offset"))||0);
  q=q.order("created_at",{ascending:false}).range(offset,offset+pageSize);
@@ -484,8 +501,9 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
     });
   }
   if(req.method==="GET"&&path==="/shops"){
+    await refreshExpiredSellerBenefits();
     const pageSize=Math.min(40,Math.max(1,Number(parsed.searchParams.get("limit"))||24)),offset=Math.max(0,Number(parsed.searchParams.get("offset"))||0);
-    const q=db.from("deela_books_sellers").select("id,user_id,shop_name,slug,bio,city,status,created_at,logo_path,latitude,longitude").order("created_at",{ascending:false}).range(offset,offset+pageSize);
+    const q=db.from("deela_books_sellers").select("id,user_id,shop_name,slug,bio,city,status,created_at,logo_path,latitude,longitude,seller_package,seller_package_rank,seller_package_expires_at").order("seller_package_rank",{ascending:false}).order("created_at",{ascending:false}).range(offset,offset+pageSize);
     if(!isOwner&&(!user||conf.site_public))q.eq("status","approved");
     const {data,error:e}=await q;if(e)throw e;
     const hasMore=(data||[]).length>pageSize,sellers=(data||[]).slice(0,pageSize),sellerIds=sellers.map(x=>x.id);
@@ -589,7 +607,7 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
     if(conf.site_public)q=q.eq("deela_books_orders.is_test",false);
     const rows=await q;if(rows.error)throw rows.error;
     const stats=rows.data||[],responded=stats.filter(x=>x.seller_status!=="pending").length,accepted=stats.filter(x=>["accepted","preparing","shipped","delivered"].includes(x.seller_status)).length;
-    return respond(req,{orders:stats,metrics:{count:stats.length,responded,accepted,acceptance_rate:responded?Math.round(accepted/responded*100):null},payments_live:false});
+    return respond(req,{orders:stats,metrics:["plus","pro"].includes(seller.seller_package||"free")?{count:stats.length,responded,accepted,acceptance_rate:responded?Math.round(accepted/responded*100):null}:null,payments_live:false});
   }
   if(req.method==="POST"&&path==="/seller/order-item/status"){
     const seller=await sellerFor(user.id);if(!seller)return fail(req,"حساب البائع غير موجود",404);
@@ -696,6 +714,41 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
     const update=status==="published"?{status,payment_confirmed_by:user.id,payment_confirmed_at:now,published_at:now,updated_at:now}:{status,updated_at:now};
     const saved=await db.from("deela_books_launch_alerts").update(update).eq("id",id).select("id,status,published_at").single();
     if(saved.error)throw saved.error;return respond(req,{ok:true,campaign:saved.data,payment_live:false,push_background_enabled:false});
+  }
+  if(req.method==="GET"&&path==="/seller/paid-requests"){
+    await refreshExpiredSellerBenefits();
+    const seller=await sellerFor(user.id);if(!seller)return fail(req,"متجر الكاتب غير موجود",404);
+    const [subs,promos]=await Promise.all([
+      db.from("deela_books_seller_subscription_requests").select("*").eq("seller_id",seller.id).order("requested_at",{ascending:false}).limit(30),
+      db.from("deela_books_promotion_requests").select("*,deela_books_listings(title)").eq("seller_id",seller.id).order("requested_at",{ascending:false}).limit(50)
+    ]);
+    if(subs.error||promos.error)throw Error("تعذر تحميل طلبات الاشتراك والترويج");
+    return respond(req,{seller:{id:seller.id,status:seller.status,seller_package:seller.seller_package||"free",seller_package_rank:seller.seller_package_rank||0,seller_package_expires_at:seller.seller_package_expires_at||null},subscriptions:subs.data||[],promotions:promos.data||[],payments_live:false,shipping_live:false});
+  }
+  if(req.method==="POST"&&path==="/seller/subscription-request"){
+    await refreshExpiredSellerBenefits();
+    const seller=await sellerFor(user.id);if(!seller||seller.status!=="approved")return fail(req,"يجب اعتماد متجرك قبل طلب باقة مدفوعة",403);
+    const b=await req.json(),tier=str(b.tier_key,10) as "plus"|"pro",term=str(b.term_key,20) as keyof typeof PACKAGE_MONTHS;
+    if(!["plus","pro"].includes(tier)||!PACKAGE_MONTHS[term])return fail(req,"اختر باقة ومدة صحيحتين");
+    if(seller.seller_package&&seller.seller_package!=="free"&&seller.seller_package_expires_at&&new Date(seller.seller_package_expires_at)>new Date())return fail(req,"لديك باقة مدفوعة مفعّلة حاليًا",409);
+    const pending=await db.from("deela_books_seller_subscription_requests").select("id").eq("seller_id",seller.id).eq("status","pending").limit(1).maybeSingle();
+    if(pending.error)throw pending.error;if(pending.data)return fail(req,"لديك طلب اشتراك بانتظار المراجعة بالفعل",409);
+    const price=SELLER_PACKAGE_PRICES[tier][term];
+    const saved=await db.from("deela_books_seller_subscription_requests").insert({seller_id:seller.id,tier_key:tier,term_key:term,price_sar:price,status:"pending",payment_status:"awaiting_confirmation"}).select("id,tier_key,term_key,price_sar,status,payment_status,requested_at").single();
+    if(saved.error)throw saved.error;return respond(req,{ok:true,request:saved.data,message:"سُجل طلبك. يتفعّل بعد تأكيد المالك استلام المبلغ."},201);
+  }
+  if(req.method==="POST"&&path==="/seller/promotion-request"){
+    await refreshExpiredSellerBenefits();
+    const seller=await sellerFor(user.id);if(!seller||seller.status!=="approved")return fail(req,"يجب اعتماد متجرك قبل طلب الترويج",403);
+    const b=await req.json(),plan=str(b.plan_key,10) as keyof typeof PROMOTION_PRICES,listingId=str(b.listing_id,60);
+    if(!PROMOTION_PRICES[plan]||!uuid.test(listingId))return fail(req,"اختر منتجًا ومدة ترويج صحيحة");
+    const listing=await db.from("deela_books_listings").select("id,status").eq("id",listingId).eq("seller_id",seller.id).maybeSingle();
+    if(listing.error||!listing.data||listing.data.status!=="published")return fail(req,"اختر منتجًا منشورًا من متجرك",404);
+    const pending=await db.from("deela_books_promotion_requests").select("id").eq("seller_id",seller.id).eq("listing_id",listingId).eq("status","pending").limit(1).maybeSingle();
+    if(pending.error)throw pending.error;if(pending.data)return fail(req,"يوجد طلب ترويج لهذا المنتج بانتظار المراجعة",409);
+    const discount=seller.seller_package==="pro"?0.5:seller.seller_package==="plus"?0.2:0,price=Math.round(PROMOTION_PRICES[plan]*(1-discount)*100)/100;
+    const saved=await db.from("deela_books_promotion_requests").insert({seller_id:seller.id,listing_id:listingId,plan_key:plan,price_sar:price,status:"pending",payment_status:"awaiting_confirmation"}).select("id,listing_id,plan_key,price_sar,status,payment_status,requested_at").single();
+    if(saved.error)throw saved.error;return respond(req,{ok:true,request:saved.data,message:"سُجل طلب الترويج. يتفعّل بعد تأكيد المالك استلام المبلغ."},201);
   }
   if(req.method==="GET"&&path==="/seller/promotions"){
     const seller=await sellerFor(user.id);if(!seller)return fail(req,"متجر الكاتب غير موجود",404);
@@ -1287,6 +1340,28 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
       if(!seller.data)return fail(req,"إدارة الحسابات هنا مخصصة لبائعي DEELA Books فقط",403);
       const r=await db.from("deela_books_user_controls").upsert({user_id:id,blocked,note,changed_by:user.id,changed_at:new Date().toISOString()},{onConflict:"user_id"});
       if(r.error)throw r.error;return respond(req,{ok:true,user_id:id,blocked});
+    }
+    if(req.method==="GET"&&path==="/owner/paid-requests"){
+      const [subs,promos]=await Promise.all([
+        db.from("deela_books_seller_subscription_requests").select("*,deela_books_sellers!inner(id,shop_name,user_id,slug)").order("requested_at",{ascending:false}).limit(200),
+        db.from("deela_books_promotion_requests").select("*,deela_books_sellers!inner(id,shop_name,user_id,slug),deela_books_listings!inner(title)").order("requested_at",{ascending:false}).limit(200)
+      ]);
+      if(subs.error||promos.error)throw Error("تعذر تحميل طلبات الباقات");
+      return respond(req,{subscriptions:subs.data||[],promotions:promos.data||[]});
+    }
+    if(req.method==="POST"&&path==="/owner/paid-requests/review"){
+      const b=await req.json(),kind=str(b.kind,20),id=str(b.id,60),decision=str(b.decision,20);
+      if(!uuid.test(id)||!["subscription","promotion"].includes(kind)||!["confirm","reject"].includes(decision))return fail(req,"بيانات المراجعة غير صحيحة");
+      const table=kind==="subscription"?"deela_books_seller_subscription_requests":"deela_books_promotion_requests";
+      const existing=await db.from(table).select("id,status").eq("id",id).maybeSingle();if(existing.error||!existing.data)return fail(req,"الطلب غير موجود",404);
+      if(existing.data.status!=="pending")return fail(req,"تمت مراجعة هذا الطلب مسبقًا",409);
+      if(decision==="reject"){
+        const saved=await db.from(table).update({status:"rejected",reviewed_by:user.id,reviewed_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",id).eq("status","pending").select("id,status").single();
+        if(saved.error)throw saved.error;return respond(req,{ok:true,request:saved.data});
+      }
+      const rpc=kind==="subscription"?"deela_activate_seller_package":"deela_activate_book_promotion";
+      const activated=await db.rpc(rpc,{p_request_id:id,p_owner_id:user.id});
+      if(activated.error)throw activated.error;return respond(req,{ok:true,activation:activated.data});
     }
     if(req.method==="GET"&&path==="/owner/sellers"){
       const pageSize=Math.min(80,Math.max(1,Number(parsed.searchParams.get("limit"))||40)),offset=Math.max(0,Number(parsed.searchParams.get("offset"))||0);
