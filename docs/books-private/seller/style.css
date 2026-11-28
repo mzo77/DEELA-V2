@@ -758,3 +758,13 @@ body[data-owner-visual-edit="true"] #homeCategories button,body[data-owner-visua
 .member-book-frame-crystal{border:1px solid #77e9e5!important;box-shadow:0 0 0 1px #d4fffd66,0 0 26px #62dce288!important}
 .member-book-frame-starlight{border:1px solid #7389e4!important;box-shadow:0 0 0 1px #bdd5ff55,0 0 26px #6d8df344!important}
 .seller-novel-card.member-book-shine:after{content:"";position:absolute;inset:-40% auto -40% -75%;width:42%;pointer-events:none;z-index:2;transform:skewX(-18deg);background:linear-gradient(100deg,transparent,#e6fffb22 42%,#ffffff75 50%,#7ff9e555 56%,transparent);animation:deelaUniversalShine 6s ease-in-out infinite}
+
+/* Swipeable RTL book rows */
+.books-grid.books-rail{display:flex;flex-flow:row nowrap;direction:rtl;align-items:stretch;gap:14px;overflow-x:auto;overflow-y:hidden;padding:6px 2px 18px;scroll-snap-type:x mandatory;scrollbar-width:thin;scrollbar-color:var(--teal) transparent;overscroll-behavior-inline:contain;touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch}
+.books-grid.books-rail>.book-card{flex:0 0 clamp(178px,52vw,232px);width:clamp(178px,52vw,232px);min-width:clamp(178px,52vw,232px);scroll-snap-align:start}
+.books-grid.books-rail>.empty-state{flex:0 0 100%;scroll-snap-align:none}
+.books-grid.books-rail::-webkit-scrollbar{height:5px}
+.books-grid.books-rail::-webkit-scrollbar-thumb{background:linear-gradient(90deg,var(--teal),var(--blue));border-radius:99px}
+.filter-selects #cityFilter{min-width:165px}
+.filter-selects #priceSortFilter{min-width:180px}
+@media(max-width:600px){.books-grid.books-rail{gap:11px}.books-grid.books-rail>.book-card{flex-basis:clamp(176px,54vw,220px);width:clamp(176px,54vw,220px);min-width:clamp(176px,54vw,220px)}.filter-selects #cityFilter,.filter-selects #priceSortFilter{flex:1;min-width:145px}}
