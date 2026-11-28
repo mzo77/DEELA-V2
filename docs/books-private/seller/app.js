@@ -224,9 +224,10 @@ document.addEventListener("change",async ev=>{
  }catch(e){status.textContent=errorMessage(e);input.value="";}
 });
 function applyImages(images){
- for(const [key,selector] of [["background","body"],["banner",".feature-banner"]]){
+ for(const [key,selector] of [["banner",".feature-banner"]]){
  const el=document.querySelector(selector),url=safeImage(images?.[key]);if(el)el.style.backgroundImage=url?'url('+JSON.stringify(url)+')':"";
  }
+ /* The site-wide silk texture is fixed; legacy background settings must not erase it. */
  document.querySelectorAll(".brand-symbol").forEach(el=>{
  const url=safeImage(images?.logo);let img=el.querySelector("img");
  if(url){if(!img){img=document.createElement("img");img.alt="DEELA";img.referrerPolicy="no-referrer";img.style.cssText="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;border-radius:inherit;background:var(--panel)";el.append(img)}img.src=url;}else img?.remove();
