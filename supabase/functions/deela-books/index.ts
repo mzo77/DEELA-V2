@@ -17,7 +17,7 @@ async function memberTiers(){
  return r.data?.tiers||MEMBER_DEFAULT_TIERS;
 }
 async function memberEntitlements(account:any,privateMode:boolean,knownSeller?:any){
- const metadata=account.user_metadata||{},seller=knownSeller||await sellerFor(account.id);
+ const metadata=account.user_metadata||{},seller=knownSeller!==undefined?knownSeller:await sellerFor(account.id);
  const rawManualPlan=str(metadata.deela_manual_member_plan,20);
  const manualPlan=["month","half_year","year"].includes(rawManualPlan)?rawManualPlan:"";
  const manualEndsAt=str(metadata.deela_manual_member_ends_at,50);
@@ -34,7 +34,7 @@ async function memberEntitlements(account:any,privateMode:boolean,knownSeller?:a
  const rank:Record<string,number>={day:1,sub_month:1,week:2,sub_half_year:2,month:3,sub_year:3};
  const membership=manualActive?null:active.sort((a:any,b:any)=>(rank[b.plan_key]||0)-(rank[a.plan_key]||0))[0];
  if(!manualActive&&!membership)return freeResult;
- const tiers=await memberTiers();
+ let tiers;try{tiers=await memberTiers()}catch(e){console.error("member-tiers-fallback",e instanceof Error?e.message:String(e));tiers=MEMBER_DEFAULT_TIERS;}
  const custom=Array.isArray(metadata.deela_member_features)?metadata.deela_member_features.filter((x:string)=>MEMBER_FEATURE_IDS.includes(x as any)):null;
  const planKey=manualActive?manualPlan:tierKey(membership.plan_key);
  const selectedFeatures=custom||tiers[planKey]||MEMBER_DEFAULT_TIERS[planKey]||[];
@@ -1353,24 +1353,28 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
         db.from("deela_books_sellers").select("user_id,shop_name,slug,status,created_at").in("user_id",ids),
         db.from("deela_books_user_controls").select("user_id,blocked,note,changed_at").in("user_id",ids)
       ]);
-      if(sellerResult.error)throw Error("تعذر قراءة صفحات المؤلفين");
-      if(controlResult.error)throw Error("تعذر قراءة إعدادات الحسابات");
-      const sellerMap=new Map((sellerResult.data||[]).map((x:any)=>[x.user_id,x]));
-      const controlMap=new Map((controlResult.data||[]).map((x:any)=>[x.user_id,x]));
+      const sellerMap=new Map((sellerResult.error?[]:(sellerResult.data||[])).map((x:any)=>[x.user_id,x]));
+      const controlMap=new Map((controlResult.error?[]:(controlResult.data||[])).map((x:any)=>[x.user_id,x]));
+      if(sellerResult.error)console.error("owner-users-sellers",sellerResult.error.message||String(sellerResult.error));
+      if(controlResult.error)console.error("owner-users-controls",controlResult.error.message||String(controlResult.error));
       const accounts=await Promise.all(accountRows.filter((u:any)=>uuid.test(String(u.id))).map(async(u:any)=>{
-        if(await owner(u.id))return null;
+        const profile=await db.from("profiles").select("role").eq("id",u.id).maybeSingle();
+        const isOwner=profile.data?.role==="owner"||await owner(u.id);
+        if(isOwner)return null;
         const seller=sellerMap.get(u.id) as any,c=controlMap.get(u.id) as any;
-        const member=await memberEntitlements(u,!conf.site_public,seller||null);
+        let member:any;
+        try{member=await memberEntitlements(u,!conf.site_public,seller||null)}
+        catch(e){console.error("owner-user-membership",u.id,e instanceof Error?e.message:String(e));member={premium_active:false,member_plan:"",member_plan_label:"تعذر قراءة العضوية",member_features:[],member_custom_features:false,premium_ends_at:null,avatar_url:null,member_appearance:{},manual_member_plan:"",member_status_error:true};}
         const metadata=u.user_metadata||{},displayName=str(metadata.display_name||metadata.full_name||metadata.name||"",120);
         return {id:u.id,email:u.email||"",phone:u.phone||"",display_name:displayName,
           created_at:seller?.created_at||u.created_at,last_sign_in_at:u.last_sign_in_at,is_owner:false,is_seller:!!seller,
           blocked:c?.blocked===true,note:c?.note||"",shop_name:seller?.shop_name||"",slug:seller?.slug||"",
-          seller_status:seller?.status||"",manual_member_plan:member.manual_member_plan||"",...member};
+          seller_status:seller?.status||"",manual_member_plan:member.manual_member_plan||"",member_status_error:member.member_status_error===true,...member};
       }));
       const users=accounts.filter(Boolean);
       return respond(req,{users,has_more:accountRows.length===pageSize,next_offset:offset+accountRows.length});
     }
-    if(req.method==="POST"&&path==="/owner/user-status"){
+        if(req.method==="POST"&&path==="/owner/user-status"){
       const b=await req.json(),id=str(b.user_id,60),blocked=b.blocked===true,note=str(b.note,500);
       if(!uuid.test(id)||typeof b.blocked!=="boolean")return fail(req,"بيانات حالة الحساب غير صحيحة");
       if(await owner(id))return fail(req,"حساب المالك محمي ولا يمكن إيقافه من هذه الشاشة",403);
