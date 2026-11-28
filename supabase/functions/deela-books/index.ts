@@ -17,18 +17,26 @@ async function memberTiers(){
  return r.data?.tiers||MEMBER_DEFAULT_TIERS;
 }
 async function memberEntitlements(account:any,privateMode:boolean,knownSeller?:any){
- const seller=knownSeller||await sellerFor(account.id);
- if(!seller)return {premium_active:false,member_plan:"",member_plan_label:"مجاني",member_features:[],member_custom_features:false,premium_ends_at:null,avatar_url:null,member_appearance:{}};
- const q=db.from("deela_books_promotions").select("plan_key,is_test,ends_at").eq("seller_id",seller.id).eq("kind","premium").eq("status","active").gt("ends_at",new Date().toISOString()).order("ends_at",{ascending:false}).limit(10);
- const rows=await q;if(rows.error)throw rows.error;
- const active=(rows.data||[]).filter((x:any)=>!x.is_test||privateMode);
+ const metadata=account.user_metadata||{},seller=knownSeller||await sellerFor(account.id);
+ const rawManualPlan=str(metadata.deela_manual_member_plan,20);
+ const manualPlan=["month","half_year","year"].includes(rawManualPlan)?rawManualPlan:"";
+ const manualEndsAt=str(metadata.deela_manual_member_ends_at,50);
+ const manualActive=!!manualPlan&&!!manualEndsAt&&Date.parse(manualEndsAt)>Date.now();
+ const freeResult={premium_active:false,member_plan:"",member_plan_label:"مجاني",member_features:[],member_custom_features:false,premium_ends_at:null,avatar_url:null,member_appearance:{}};
+ if(rawManualPlan==="free")return {...freeResult,manual_member_plan:"free"};
+ let active:any[]=[];
+ if(seller){
+  const q=await db.from("deela_books_promotions").select("plan_key,is_test,ends_at").eq("seller_id",seller.id).eq("kind","premium").eq("status","active").gt("ends_at",new Date().toISOString()).order("ends_at",{ascending:false}).limit(10);
+  if(q.error)throw q.error;
+  active=(q.data||[]).filter((x:any)=>!x.is_test||privateMode);
+ }
  const tierKey=(plan:string)=>plan==="sub_month"?"month":plan==="sub_half_year"?"half_year":plan==="sub_year"||plan==="month"?"year":plan==="week"?"half_year":"month";
  const rank:Record<string,number>={day:1,sub_month:1,week:2,sub_half_year:2,month:3,sub_year:3};
- const membership=active.sort((a:any,b:any)=>(rank[b.plan_key]||0)-(rank[a.plan_key]||0))[0];
- if(!membership)return {premium_active:false,member_plan:"",member_plan_label:"مجاني",member_features:[],member_custom_features:false,premium_ends_at:null,avatar_url:null,member_appearance:{}};
- const tiers=await memberTiers(),metadata=account.user_metadata||{};
+ const membership=manualActive?null:active.sort((a:any,b:any)=>(rank[b.plan_key]||0)-(rank[a.plan_key]||0))[0];
+ if(!manualActive&&!membership)return freeResult;
+ const tiers=await memberTiers();
  const custom=Array.isArray(metadata.deela_member_features)?metadata.deela_member_features.filter((x:string)=>MEMBER_FEATURE_IDS.includes(x as any)):null;
- const planKey=tierKey(membership.plan_key);
+ const planKey=manualActive?manualPlan:tierKey(membership.plan_key);
  const selectedFeatures=custom||tiers[planKey]||MEMBER_DEFAULT_TIERS[planKey]||[];
  const features=[...new Set(selectedFeatures)];
  if(features.some((x:string)=>["avatar_frame_gold","avatar_frame_rose","avatar_frame_diamond"].includes(x))&&!features.includes("avatar_frame"))features.push("avatar_frame");
@@ -44,7 +52,7 @@ async function memberEntitlements(account:any,privateMode:boolean,knownSeller?:a
  const avatarFrame=features.includes(avatarGates[wantedAvatar]||"")?wantedAvatar:"aurora",bookFrame=features.includes(bookGates[wantedBook]||"")?wantedBook:"starlight";
  const wantedTheme=appearanceCustomized?String(metadata.deela_member_profile_theme||preset.theme):preset.theme;
  const profileTheme=features.includes("profile_theme")&&["ocean","emerald","royal","rose"].includes(wantedTheme)?wantedTheme:"ocean";
- return {premium_active:true,member_plan:planKey,member_plan_label:MEMBER_TIER_LABELS[planKey]||"عضوية مميزة",member_features:features,member_custom_features:Array.isArray(custom),premium_ends_at:membership.ends_at||null,avatar_url:avatar&&!avatar.error?avatar.data.signedUrl:null,member_appearance:{display_name:String(metadata.deela_member_display_name||"").slice(0,90),avatar_path:avatarPath,avatar_frame:avatarFrame,book_frame:bookFrame,profile_theme:profileTheme,shine:metadata.deela_member_shine!==false}};
+ return {premium_active:true,member_plan:planKey,member_plan_label:MEMBER_TIER_LABELS[planKey]||"عضوية مميزة",member_features:features,member_custom_features:Array.isArray(custom),premium_ends_at:manualActive?manualEndsAt:membership.ends_at||null,manual_member_plan:manualActive?planKey:"",avatar_url:avatar&&!avatar.error?avatar.data.signedUrl:null,member_appearance:{display_name:String(metadata.deela_member_display_name||"").slice(0,90),avatar_path:avatarPath,avatar_frame:avatarFrame,book_frame:bookFrame,profile_theme:profileTheme,shine:metadata.deela_member_shine!==false}};
 }
 const FEATURE_FLAGS=["enable_seller_registration","enable_book_submissions","enable_reader_likes","enable_favorites","enable_author_follows","enable_reviews","enable_messages","enable_orders","enable_discounts","enable_featured_section","enable_launch_alerts","show_book_prices"] as const;
 const SELLER_PACKAGE_PRICES={plus:{month:69,quarter:186,half_year:352,year:662},pro:{month:199,quarter:537,half_year:1015,year:1910}} as const;
@@ -1311,6 +1319,29 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
       const saved=await db.auth.admin.updateUserById(id,{user_metadata:metadata});if(saved.error)throw saved.error;
       return respond(req,{ok:true,user_id:id,features:metadata.deela_member_features});
     }
+    if(req.method==="POST"&&path==="/owner/user-membership"){
+      if(!isOwner)return fail(req,"هذه العملية للمالك فقط",403);
+      const b=await req.json(),id=str(b.user_id,60),plan=str(b.plan,20);
+      if(!uuid.test(id)||!["free","month","half_year","year"].includes(plan))return fail(req,"حدد حسابًا وباقة صحيحة");
+      if(await owner(id))return fail(req,"لا يمكن تغيير عضوية حساب المالك من هنا",403);
+      const target=await db.auth.admin.getUserById(id);if(target.error||!target.data.user)return fail(req,"الحساب غير موجود",404);
+      const metadata={...(target.data.user.user_metadata||{})};
+      delete metadata.deela_member_features;delete metadata.deela_member_custom_features;
+      if(plan==="free"){
+        metadata.deela_manual_member_plan="free";
+        delete metadata.deela_manual_member_ends_at;
+      }else{
+        const durationMonths:Record<string,number>={month:1,half_year:6,year:12};
+        const end=new Date();end.setUTCMonth(end.getUTCMonth()+durationMonths[plan]);
+        metadata.deela_manual_member_plan=plan;
+        metadata.deela_manual_member_ends_at=end.toISOString();
+        metadata.deela_manual_member_granted_by=user.id;
+        metadata.deela_manual_member_granted_at=new Date().toISOString();
+      }
+      const saved=await db.auth.admin.updateUserById(id,{user_metadata:metadata});
+      if(saved.error)throw saved.error;
+      return respond(req,{ok:true,user_id:id,manual_member_plan:plan,ends_at:metadata.deela_manual_member_ends_at||null});
+    }
     if(req.method==="GET"&&path==="/owner/users"){
       const pageSize=Math.min(80,Math.max(1,Number(parsed.searchParams.get("limit"))||40)),offset=Math.max(0,Number(parsed.searchParams.get("offset"))||0);
       const page=Math.floor(offset/pageSize)+1;
@@ -1334,7 +1365,7 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
         return {id:u.id,email:u.email||"",phone:u.phone||"",display_name:displayName,
           created_at:seller?.created_at||u.created_at,last_sign_in_at:u.last_sign_in_at,is_owner:false,is_seller:!!seller,
           blocked:c?.blocked===true,note:c?.note||"",shop_name:seller?.shop_name||"",slug:seller?.slug||"",
-          seller_status:seller?.status||"",...member};
+          seller_status:seller?.status||"",manual_member_plan:member.manual_member_plan||"",...member};
       }));
       const users=accounts.filter(Boolean);
       return respond(req,{users,has_more:accountRows.length===pageSize,next_offset:offset+accountRows.length});
