@@ -1064,3 +1064,9 @@ body.member-public-store-year .member-book-page{background:radial-gradient(ellip
  .member-shop-identity p{font-size:11px}
  .member-store-stage>.member-tier-ribbon{margin:2px 0 8px;padding:6px 10px;font-size:11px}
 }
+
+
+/* Keep the desktop keyboard hint out of the mobile search field. */
+@media (max-width: 760px) {
+  .search-hint { display: none !important; }
+}
