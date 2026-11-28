@@ -70,8 +70,8 @@ async function reload(){
   const [catalog,shops,contestData]=await Promise.all([api("/catalog?limit=24&offset=0"),api("/shops?limit=24&offset=0"),api("/contests")]);
   state.contests=contestData.contests||[];state.listings=catalog.listings||[];state.shops=shops.shops||[];state.catalogOffset=catalog.next_offset||state.listings.length;state.catalogHasMore=!!catalog.has_more;state.shopsOffset=shops.next_offset||state.shops.length;state.shopsHasMore=!!shops.has_more;state.me=me;state.settings=catalog.settings||{};state.sections=catalog.sections||[];state.banners=catalog.banners||[];
   applyTheme(state.settings.theme_colors);applyMaterial(state.settings.theme_material);applyDesign(state.settings.theme_design);applySections(state.settings.theme_sections);applyImages(state.settings.theme_images);state.cart=state.cart.filter(x=>state.listings.some(b=>b.id===x.id));saveCart();
-  $("heroTitle").textContent=state.settings.hero_title||"لكل كتاب حكاية، ولكل قارئ عالم";
-  $("heroSubtitle").textContent=state.settings.hero_subtitle||"سوق ديلا للكتب والروايات.";
+  $("heroTitle").textContent=state.settings.hero_title||"ستجد بين السطور ما عجزت عن قوله!";
+  $("heroSubtitle").textContent=state.settings.hero_subtitle||"ليست مجرد كلمات، بل مشاعر…";
   $("announcement").textContent=state.settings.announcement||"DEELA Books";
   const promo=document.querySelector(".feature-banner");
   if(promo){
@@ -104,8 +104,8 @@ async function loadGuest(){
   const [catalog,shops]=await Promise.all([api("/catalog?limit=24&offset=0"),api("/shops?limit=24&offset=0")]);
   state.listings=catalog.listings||[];state.shops=shops.shops||[];state.catalogOffset=catalog.next_offset||state.listings.length;state.catalogHasMore=!!catalog.has_more;state.shopsOffset=shops.next_offset||state.shops.length;state.shopsHasMore=!!shops.has_more;state.settings=catalog.settings||{};state.sections=catalog.sections||[];state.banners=catalog.banners||[];
   applyTheme(state.settings.theme_colors);applyMaterial(state.settings.theme_material);applyDesign(state.settings.theme_design);applySections(state.settings.theme_sections);applyImages(state.settings.theme_images);
-  $("heroTitle").textContent=state.settings.hero_title||"لكل كتاب حكاية، ولكل قارئ عالم";
-  $("heroSubtitle").textContent=state.settings.hero_subtitle||"سوق ديلا للكتب والروايات؛ اكتشف، اقرأ، وبع كتبك في مكان واحد.";
+  $("heroTitle").textContent=state.settings.hero_title||"ستجد بين السطور ما عجزت عن قوله!";
+  $("heroSubtitle").textContent=state.settings.hero_subtitle||"ليست مجرد كلمات، بل مشاعر…";
   $("announcement").textContent=state.settings.announcement||"عالم ديلا للكتب والروايات — تصفح مفتوح";
   document.querySelectorAll('[data-route="messages"],[data-route="favorites"],[data-route="orders"],[data-route="cart"],[data-route="notifications"],[data-route="alerts"],[data-route="profile"]').forEach(el=>el.hidden=true);
  }catch(e){toast(errorMessage(e));}
@@ -667,7 +667,7 @@ function editorPage(b=null){
  '<label class="field full">مضمون الرواية وملخص أحداثها (اختياري، بدون حرق)<textarea name="description" maxlength="5000" rows="6" placeholder="اكتب نبذة قصيرة اختيارية تشجع القارئ دون كشف الأحداث أو النهاية">'+esc(b?.description||"")+'</textarea></label>'+
  '<label class="field full">تنبيهات المحتوى (اختياري)<textarea name="content_warning" maxlength="350" rows="2" placeholder="مثلًا: مشاهد رعب، عنف، موضوعات للكبار">'+esc(b?.content_warning||"")+'</textarea></label>'+
  '<label class="field full">مقتطف للمعاينة (اختياري)<textarea name="preview_excerpt" rows="4">'+esc(b?.preview_excerpt||"")+'</textarea></label>'+
- '<label class="field digital-only">ملف الكتاب الرقمي (PDF/EPUB/MP3، حتى 50MB)<input id="digitalFile" type="file" accept=".pdf,.epub,.mp3"></label>'+
+ '<label class="field full" id="digitalFileField">ملف الكتاب (PDF أو EPUB أو MP3، حتى 50MB)<input id="digitalFile" name="digital_file" type="file" accept="application/pdf,.pdf,application/epub+zip,.epub,audio/mpeg,.mp3"><small id="digitalFileStatus">أرفق نسخة الكتاب الرقمية عند توفرها. الملفات لا تظهر للعامة.</small></label>'+
  (state.settings.private_test_mode?'<label class="field full"><span class="checkfield"><input type="checkbox" name="test_publish" checked>'+
  'انشرها فورًا لكل الحسابات المسجّلة في مساحة الاختبار الخاصة. لن تظهر للعامة.</span></label>':"")+
  '<label class="field full"><span class="checkfield"><input type="checkbox" name="rights_confirmed" required '+(b?.rights_confirmed?"checked":"")+'>'+
@@ -1365,7 +1365,7 @@ function editor(id){
  if(id==="close"){state.editing=null;$("sellerEditor").innerHTML="";return}
  state.editing=id==="new"?null:state.sellerListings.find(x=>x.id===id)||null;
  $("sellerEditor").innerHTML=editorPage(state.editing);
- const initialFormat=state.editing?.format||"physical";document.querySelectorAll("#listingForm .physical-only").forEach(x=>x.hidden=initialFormat!=="physical");document.querySelectorAll("#listingForm .digital-only").forEach(x=>x.hidden=initialFormat==="physical");
+ const initialFormat=state.editing?.format||"physical";document.querySelectorAll("#listingForm .physical-only").forEach(x=>x.hidden=initialFormat!=="physical");document.querySelectorAll("#listingForm .digital-only").forEach(x=>x.hidden=false);
  $("sellerEditor").scrollIntoView({behavior:"smooth",block:"start"});
 }
 async function ownerArchiveListing(id){
@@ -1427,6 +1427,11 @@ function addOwnerHomeSettingsGears(){
 }
 
 function bind(){
+ const topMenu=$("topMenu");let menuScrollY=0;
+ topMenu?.addEventListener("toggle",()=>{
+  if(topMenu.open&&window.matchMedia("(max-width:700px)").matches){menuScrollY=window.scrollY;document.documentElement.classList.add("mobile-menu-open");document.body.style.position="fixed";document.body.style.top=`-${menuScrollY}px`;document.body.style.left="0";document.body.style.right="0";document.body.style.width="100%"}
+  else{document.documentElement.classList.remove("mobile-menu-open");document.body.style.position="";document.body.style.top="";document.body.style.left="";document.body.style.right="";document.body.style.width="";if(menuScrollY)window.scrollTo(0,menuScrollY)}
+ });
  document.addEventListener("click",ev=>{const menu=$("topMenu");if(menu?.open&&!menu.contains(ev.target))menu.open=false});
  document.addEventListener("keydown",ev=>{if(ev.key==="Escape"){const menu=$("topMenu");if(menu?.open)menu.open=false}});
  document.addEventListener("click",async ev=>{
@@ -1553,11 +1558,12 @@ function bind(){
   if(ev.target?.closest("#listingForm")&&ev.target.name==="format-choice"){
    const form=ev.target.closest("#listingForm"),select=form.querySelector('[name="format"]');if(select)select.value=ev.target.value;
    form.querySelectorAll(".format-card").forEach(x=>x.classList.toggle("active",x.querySelector("input")===ev.target));
-   const physical=ev.target.value==="physical";form.querySelectorAll(".physical-only").forEach(x=>x.hidden=!physical);form.querySelectorAll(".digital-only").forEach(x=>x.hidden=physical);
+   const physical=ev.target.value==="physical";form.querySelectorAll(".physical-only").forEach(x=>x.hidden=!physical);form.querySelectorAll(".digital-only").forEach(x=>x.hidden=false);
   }
   if(ev.target?.closest("#listingForm")&&ev.target.name==="format"){
-   const physical=ev.target.value==="physical";document.querySelectorAll("#listingForm .physical-only").forEach(x=>x.hidden=!physical);document.querySelectorAll("#listingForm .digital-only").forEach(x=>x.hidden=physical);
+   const physical=ev.target.value==="physical";document.querySelectorAll("#listingForm .physical-only").forEach(x=>x.hidden=!physical);document.querySelectorAll("#listingForm .digital-only").forEach(x=>x.hidden=false);
   }
+  if(ev.target?.id==="digitalFile"){const status=document.getElementById("digitalFileStatus");if(status)status.textContent=ev.target.files?.[0]?.name||"أرفق نسخة الكتاب الرقمية عند توفرها. الملفات لا تظهر للعامة."}
   if(ev.target?.id==="productTypeFilter"){state.productType=ev.target.value;route("catalog",false)}
   if(ev.target?.id==="nearbyRadius"){state.radiusKm=Number(ev.target.value)||25;route("catalog",false)}
   if(ev.target?.id==="formatFilter"){state.format=ev.target.value;route("catalog",false)}
@@ -1580,8 +1586,9 @@ async function logout(){
  for(const key of ["deela-books-token","deela-books-refresh","deela-books-auth-v1","deela-books-pending-phone"])sessionStorage.removeItem(key);
  state.token="";state.refreshToken="";state.me=null;state.email="";state.sellerListings=[];state.sellerNotifications=[];state.sellerLaunchAlerts=[];state.listings=[];state.shops=[];state.sections=[];state.banners=[];state.ownerData=null;state.settings={};state.view="home";renderHome();openLogin("تم تسجيل الخروج من DEELA Books.");
 }
+async function loadHeroStorybook(){const img=$("heroStorybook");if(!img)return;try{const response=await fetch("./storybook.webp.b64",{cache:"force-cache"});if(!response.ok)return;const encoded=(await response.text()).trim();if(encoded)img.src="data:image/webp;base64,"+encoded}catch{}}
 async function boot(){
- bind();saveCart();$("year").textContent=new Date().getFullYear();
+ bind();loadHeroStorybook();saveCart();$("year").textContent=new Date().getFullYear();
  const hash=location.hash.slice(1);
  if(hash.startsWith("book/")){state.current=hash.slice(5);state.view="detail"}
  else if(["catalog","shops","seller","favorites","orders","messages","cart","owner"].includes(hash))state.view=hash;
