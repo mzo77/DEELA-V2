@@ -831,3 +831,106 @@ body[data-owner-visual-edit="true"] #homeCategories button,body[data-owner-visua
 .member-shop-identity{min-width:0;flex:1}
 .member-profile-actions{width:100%;justify-content:flex-start}
 .member-profile-tier-year .member-tier-ribbon{margin-bottom:20px}
+
+/* Subscription identity styles the book page and its social controls. */
+.member-book-page{position:relative;border-radius:24px;padding:clamp(10px,2vw,20px);margin-block:10px}
+.member-book-page.member-store-month{background:radial-gradient(ellipse at 5% 0%,#35d0ba18,transparent 30%),linear-gradient(180deg,#071a2a66,#07122422)}
+.member-book-page.member-store-half-year{background:radial-gradient(ellipse at 95% 2%,#ffe0a522,transparent 34%),linear-gradient(180deg,#22162966,#07122422)}
+.member-book-page.member-store-year{background:radial-gradient(ellipse at 90% 0%,#ffdf7020,transparent 28%),radial-gradient(ellipse at 4% 25%,#be8aff15,transparent 33%),linear-gradient(180deg,#20182b55,#07122411)}
+.member-book-page.member-store-year .detail-desc,.member-book-page.member-store-year .detail-story,.member-book-page.member-store-year .book-review-form{border:1px solid transparent;background:linear-gradient(145deg,#081529,#111b34 55%,#191a31) padding-box,linear-gradient(140deg,#fff3ad,#c28a1b 17%,#fff0a0 34%,#80500b 48%,#f7d46a 64%,#a96d09 82%,#fff1a1) border-box;box-shadow:inset 0 1px 0 #fff8,inset 0 -4px 9px #67450644,0 12px 35px #0008,0 0 25px #e2b23a24}
+.member-book-page.member-store-year .detail-cover{border:3px solid transparent;background:linear-gradient(#091629,#091629) padding-box,linear-gradient(140deg,#fff4b0,#c08816,#fff6c2,#7f5109,#f8d76a) border-box;box-shadow:inset 0 0 0 2px #fff5,0 0 0 2px #80560c,0 0 24px #e6bb5544}
+.member-book-page.member-store-year .detail-community .rating-chip,.member-book-page.member-store-year .detail-community .like-chip{border:1px solid #d4a841;background:linear-gradient(145deg,#35280e,#192039 62%,#3b2b0e);color:#ffe7a0;box-shadow:inset 0 1px 0 #fff6,0 2px 12px #d29b3833}
+.member-book-page.member-store-year .reader-review{border:1px solid #d5ad55;background:linear-gradient(145deg,#17182b,#101d32 56%,#272015);box-shadow:inset 0 1px 0 #fff7,0 0 19px #d5a83c1e;animation:deelaReviewGlow 5s ease-in-out infinite}
+.member-book-page.member-store-year .reader-review:nth-child(even){background:linear-gradient(145deg,#201d2d,#101a2d 56%,#36270e)}
+.member-book-page.member-store-year .member-rating-stars{border-color:#ffda6b;color:#fff0ad;text-shadow:0 0 9px #ffd54a;animation:deelaStarsGlow 2.5s ease-in-out infinite}
+.member-book-page.member-store-year .member-review-form .field textarea,.member-book-page.member-store-year .member-review-form select{border-color:#c8a141;box-shadow:inset 0 2px 9px #0006,0 0 11px #e9c25718}
+.member-book-page.member-store-year .member-review-form button[type=submit],.member-book-page.member-store-year .detail-buttons [data-like]{border:1px solid #f3d575;background:linear-gradient(145deg,#fff0a8,#c18a17 25%,#5c3c0b 42%,#f5d466 68%,#8c5b0e);color:#201603;font-weight:950;box-shadow:inset 0 2px 2px #fff9,inset 0 -4px 8px #5a390b,0 0 19px #e6be4d44}
+.member-book-page.member-store-year .detail-buttons [data-like]{animation:deelaHeartHover 2.8s ease-in-out infinite}
+.member-book-page.member-store-year .detail-buttons [data-like].liked,.member-book-page.member-store-year .detail-buttons [data-like]:active{color:#ff4d86;box-shadow:0 0 0 3px #ff669944,0 0 25px #ff4388aa;animation:deelaHeartBeat .75s ease-in-out}
+.member-book-page.member-store-year .book-likers .activity-person{border:1px solid #e3bd56;background:linear-gradient(135deg,#4a3510,#171a30);color:#ffe9a5;box-shadow:0 0 13px #edc54b33}
+.member-book-page.member-store-half-year .detail-desc,.member-book-page.member-store-half-year .detail-story,.member-book-page.member-store-half-year .book-review-form,.member-book-page.member-store-half-year .reader-review{border-color:#d6a373;background-color:#211b2b;box-shadow:0 0 18px #dc9c7430}
+.member-book-page.member-store-half-year .detail-community .rating-chip,.member-book-page.member-store-half-year .detail-community .like-chip{border-color:#dcb18a;color:#ffe0c2;background:#3a2730}
+.member-book-page.member-store-half-year .detail-buttons [data-like]{animation:deelaHeartHover 3.4s ease-in-out infinite}
+.member-book-page.member-store-month .detail-community .rating-chip,.member-book-page.member-store-month .detail-community .like-chip{border-color:#5bd1bf;color:#c4fff3;background:#0c3438}
+.member-book-page.member-store-month .reader-review{border-color:#63cabb;background:#102631;box-shadow:0 0 13px #3fc9b41c}
+.member-book-page .member-section-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.member-tier-pill{display:inline-flex;align-items:center;padding:5px 11px;border-radius:999px;border:1px solid #efca62;background:linear-gradient(120deg,#39290b,#171d31);color:#ffe7a0;font-size:11px;font-weight:900}
+.member-store-year .book-card{border:2px solid transparent;background:linear-gradient(145deg,#08162b,#17223a 54%,#172035) padding-box,linear-gradient(130deg,#fff6c2,#c48b1c,#fff5bf,#81540d,#f8d969,#a96f10) border-box;box-shadow:inset 0 1px 0 #fff8,inset 0 -4px 9px #593b0c33,0 10px 28px #0008,0 0 22px #e3b43c2b}
+.member-store-year .book-card:hover{box-shadow:inset 0 1px 0 #fff9,0 14px 32px #0009,0 0 34px #ffd65d66;transform:translateY(-4px)}
+.member-store-year .cover-wrap{outline:1px solid #d6ae43;outline-offset:-5px}
+.member-store-year .shop-card{border:2px solid transparent;background:linear-gradient(145deg,#10192b,#1c1b2c 62%,#253148) padding-box,linear-gradient(140deg,#fff0a6,#bf8519,#fff4ba,#82550d,#efd05a) border-box;box-shadow:inset 0 1px 0 #fff7,0 8px 25px #0006}
+.member-store-half-year .book-card,.member-store-half-year .shop-card{border-color:#dcae86;box-shadow:inset 0 1px 0 #ffe3c688,0 0 21px #d99c7428}
+.member-store-month .book-card,.member-store-month .shop-card{border-color:#56caba;box-shadow:0 0 18px #51cdbd27}
+@keyframes deelaReviewGlow{0%,100%{box-shadow:inset 0 1px 0 #fff5,0 0 9px #e0b84915}50%{box-shadow:inset 0 1px 0 #fff9,0 0 22px #f1c75355}}
+@keyframes deelaStarsGlow{0%,100%{text-shadow:0 0 3px #ffe98255}50%{text-shadow:0 0 13px #ffe982,0 0 22px #efbb3e99}}
+@keyframes deelaHeartHover{0%,100%{filter:brightness(.99);transform:scale(1)}50%{filter:brightness(1.14);transform:scale(1.045)}}
+@keyframes deelaHeartBeat{0%,100%{transform:scale(1)}25%{transform:scale(1.28)}55%{transform:scale(.92)}}
+@media(prefers-reduced-motion:reduce){.member-book-page .reader-review,.member-book-page [data-like],.member-rating-stars{animation:none!important}}
+
+/* Tier themes span the member's dashboard and all site pages they browse. */
+body.member-tier-page-month{--tier-accent:#6de0cf;--tier-soft:#133a40}
+body.member-tier-page-half_year{--tier-accent:#f0bb91;--tier-soft:#3b2630}
+body.member-tier-page-year{--tier-accent:#f4d267;--tier-soft:#3b2b11}
+body.member-tier-page-month #dynamicPage .panel,body.member-tier-page-month #dynamicPage .detail-story{border-color:#55cbbd;box-shadow:0 0 15px #48c7b722}
+body.member-tier-page-half_year #dynamicPage .panel,body.member-tier-page-half_year #dynamicPage .detail-story{border-color:#d8a079;box-shadow:0 0 17px #d8997630}
+body.member-tier-page-year #dynamicPage .panel,body.member-tier-page-year #dynamicPage .detail-story{border-color:#c9a346;box-shadow:inset 0 1px 0 #fff5,0 8px 28px #0006,0 0 20px #e8be471c}
+body.member-tier-page-year #dynamicPage .seller-profile-card{border:1px solid #e8c453;background:radial-gradient(ellipse at 88% 5%,#ffe57b3c,transparent 38%),linear-gradient(135deg,#46300d,#201a35 55%,#102342);box-shadow:inset 0 1px 0 #fff8,0 0 30px #e4b94144}
+body.member-tier-page-year #dynamicPage .detail-community .rating-chip,body.member-tier-page-year #dynamicPage .community-strip .rating-chip,body.member-tier-page-year #dynamicPage .like-chip{border-color:#d2ac4b;background:linear-gradient(145deg,#3a2a0d,#171f32);color:#ffe7a0}
+.member-seller-workspace{position:relative;padding:clamp(10px,2vw,20px);border-radius:24px;margin-block:8px}
+.member-seller-workspace.member-store-month{background:radial-gradient(ellipse at 4% 0%,#52dac720,transparent 35%),linear-gradient(180deg,#06252a22,transparent)}
+.member-seller-workspace.member-store-half-year{background:radial-gradient(ellipse at 95% 0%,#e8b18426,transparent 35%),linear-gradient(180deg,#2b1c2722,transparent)}
+.member-seller-workspace.member-store-year{background:radial-gradient(ellipse at 92% 0%,#f4d2672c,transparent 33%),radial-gradient(ellipse at 6% 23%,#bd8aff14,transparent 35%),linear-gradient(180deg,#2d220c22,transparent)}
+.member-seller-workspace.member-store-year .seller-profile-edit,.member-seller-workspace.member-store-year .premium-appearance,.member-seller-workspace.member-store-year .seller-promo-card,.member-seller-workspace.member-store-year .seller-stat{border-color:#b99131}
+.member-seller-workspace.member-store-year .community-strip .like-chip,.member-seller-workspace.member-store-year .community-strip .rating-chip{border:1px solid #d6b44f;background:linear-gradient(145deg,#4a360d,#151d33);color:#ffecaf;box-shadow:inset 0 1px 0 #fff8,0 0 14px #e7c0442a}
+.member-seller-workspace.member-store-year .seller-novel-card{border:2px solid transparent;background:linear-gradient(145deg,#09162a,#192238) padding-box,linear-gradient(135deg,#fff4af,#c08a14,#fff1a2,#81530a,#f3d368) border-box;box-shadow:inset 0 1px 0 #fff8,0 0 18px #d9ac3b29}
+.member-seller-workspace.member-store-year .seller-novel-card .like-chip,.member-seller-workspace.member-store-year .seller-novel-card .rating-chip{animation:deelaStarsGlow 3s ease-in-out infinite}
+body.member-tier-page-year #dynamicPage .btn-primary{border:1px solid #f0cf66;background:linear-gradient(145deg,#ffe994,#c08a18 28%,#5d3d0c 48%,#f4d56c 73%,#986511);color:#211803;font-weight:950;box-shadow:inset 0 2px 2px #fff9,inset 0 -4px 8px #553807,0 5px 18px #e2b34433}
+body.member-tier-page-half_year #dynamicPage .btn-primary{border-color:#e0ad82;background:linear-gradient(130deg,#f5c7a1,#74485a 50%,#19394b);color:#fff2e5}
+body.member-tier-page-month #dynamicPage .btn-primary{border-color:#55cbbb;background:linear-gradient(130deg,#1b736f,#143b5b);color:#e6fffa}
+@media(prefers-reduced-motion:reduce){body.member-tier-page-year *,body.member-tier-page-half_year *,body.member-tier-page-month *{scroll-behavior:auto}}
+
+/* Member reactions animate by the viewer's active tier; free accounts keep the base controls. */
+body.member-tier-page-month .card-love,body.member-tier-page-month .detail-buttons [data-like]{border-color:#55cbbb;box-shadow:0 0 12px #55cbbb33;animation:deelaHeartHover 3s ease-in-out infinite}
+body.member-tier-page-month .card-love.active,body.member-tier-page-month .detail-buttons [data-like].liked{color:#8ffff0;box-shadow:0 0 0 3px #57d7c544,0 0 22px #5ee7dbaa;animation:deelaHeartBeat .75s ease-in-out}
+body.member-tier-page-half_year .card-love,body.member-tier-page-half_year .detail-buttons [data-like]{border-color:#e6aa87;box-shadow:0 0 14px #de9d7338;animation:deelaHeartHover 2.8s ease-in-out infinite}
+body.member-tier-page-half_year .card-love.active,body.member-tier-page-half_year .detail-buttons [data-like].liked{color:#ff8eae;box-shadow:0 0 0 3px #ff8eae55,0 0 24px #ff78a8bb;animation:deelaHeartBeat .75s ease-in-out}
+body.member-tier-page-year .card-love,body.member-tier-page-year .detail-buttons [data-like]{border:1px solid #f3d575;background:linear-gradient(145deg,#fff0a8,#c18a17 25%,#5c3c0b 42%,#f5d466 68%,#8c5b0e);color:#291d07;font-weight:950;box-shadow:inset 0 2px 2px #fff9,inset 0 -4px 8px #5a390b,0 0 17px #e6be4d44;animation:deelaHeartHover 2.3s ease-in-out infinite}
+body.member-tier-page-year .card-love.active,body.member-tier-page-year .detail-buttons [data-like].liked{color:#fff1a8;box-shadow:0 0 0 3px #f2ce6366,0 0 27px #ffd84bbb;animation:deelaHeartBeat .7s ease-in-out}
+body.member-tier-page-month #dynamicPage .rating-chip,body.member-tier-page-month #dynamicPage .book-rating{color:#a8fff1;text-shadow:0 0 9px #44decb66}
+body.member-tier-page-half_year #dynamicPage .rating-chip,body.member-tier-page-half_year #dynamicPage .book-rating{color:#ffe0c2;text-shadow:0 0 9px #edaa7c66}
+body.member-tier-page-year #dynamicPage .rating-chip,body.member-tier-page-year #dynamicPage .book-rating{border-color:#e5c461;color:#fff1b6;text-shadow:0 0 10px #ffd65a99;box-shadow:inset 0 1px 0 #fff8,0 0 14px #e6bc4235}
+.member-review-top{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}
+.member-review-badge{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:4px 9px;font-size:10px;font-weight:900;letter-spacing:.01em}
+.member-review-card.member-store-month.paid-review{border-color:#62d8c8;background:radial-gradient(ellipse at 95% 0%,#4ad7c720,transparent 55%),linear-gradient(145deg,#092d35,#0b1a2d);box-shadow:inset 0 1px 0 #c7fff433,0 0 16px #3dd0c62c;animation:deelaReviewGlow 4.2s ease-in-out infinite}
+.member-review-badge.member-store-month{border-color:#54caba;background:#0d3436;color:#aaffef}
+.member-review-card.member-store-half-year.paid-review{border-color:#dcaa88;background:radial-gradient(ellipse at 95% 0%,#d79b7525,transparent 52%),linear-gradient(145deg,#33212c,#101a2d);box-shadow:inset 0 1px 0 #fff6,0 0 18px #dc9c7439;animation:deelaReviewGlow 3.8s ease-in-out infinite}
+.member-review-badge.member-store-half-year{border-color:#d6a373;background:#3a2730;color:#ffe0c2}
+.member-review-card.member-store-year.paid-review{border:1px solid transparent;background:linear-gradient(145deg,#10182b,#191c2a 55%,#30240f) padding-box,linear-gradient(125deg,#fff5bb,#bf8519,#fff2aa,#76500e,#f8d968,#a16e12) border-box;box-shadow:inset 0 1px 0 #fff9,inset 0 -3px 8px #69480b44,0 0 22px #e0b74345;animation:deelaReviewGlow 3.2s ease-in-out infinite}
+.member-review-badge.member-store-year{border-color:#e7c85b;background:linear-gradient(130deg,#fff0a9,#bd8619 35%,#50360c 62%,#f3d363);color:#261a05;box-shadow:inset 0 1px 1px #fff9,0 0 13px #f2ca55aa}
+.member-review-card.paid-review .member-rating-stars{animation:deelaStarsGlow 2s ease-in-out infinite}
+.member-review-card.paid-review p{line-height:1.9}
+body.member-tier-page-year #dynamicPage .seller-profile-card,body.member-tier-page-year #dynamicPage .seller-profile-card .seller-avatar{position:relative}
+body.member-tier-page-year #dynamicPage .premium-avatar-frame-gold,body.member-tier-page-year #dynamicPage .premium-avatar-frame-ceramic-gold{border:4px solid transparent!important;border-radius:30%!important;background:linear-gradient(#07152b,#07152b) padding-box,conic-gradient(from 0deg,#fff8c8,#bd8214 10%,#fff0a0 20%,#76480b 31%,#fff5be 43%,#b77d12 55%,#fff3a4 69%,#82530c 82%,#fff5bf)!important;box-shadow:inset 0 2px 3px #fff9,inset 0 -5px 8px #573807,0 0 0 2px #9c6e1c,0 0 0 5px #3a2a0f,0 0 24px #f4cd5eaa,0 0 44px #c68e304d!important;animation:deelaCeramicGold 5s linear infinite}
+@keyframes deelaCeramicGold{0%,100%{filter:drop-shadow(0 0 5px #ffd65d66) brightness(1)}50%{filter:drop-shadow(0 0 13px #ffd65d) brightness(1.12)}}
+@media(prefers-reduced-motion:reduce){body.member-tier-page-month #dynamicPage *,body.member-tier-page-half_year #dynamicPage *,body.member-tier-page-year #dynamicPage *, .member-review-card.paid-review{animation:none!important}}
+
+/* A subscriber's tier follows them across the landing page, catalog, profiles, and reading detail. */
+body.member-tier-page-month{background:radial-gradient(ellipse at 95% 4%,#168e861f,transparent 28%),#081422}
+body.member-tier-page-half_year{background:radial-gradient(ellipse at 95% 4%,#d58a571c,transparent 28%),#081422}
+body.member-tier-page-year{background:radial-gradient(ellipse at 96% 4%,#f1cc5a22,transparent 27%),radial-gradient(ellipse at 4% 42%,#9f70ff12,transparent 32%),#081422}
+body.member-tier-page-month .header,body.member-tier-page-month .mobile-nav{border-color:#50cab944}
+body.member-tier-page-half_year .header,body.member-tier-page-half_year .mobile-nav{border-color:#dc9e7955}
+body.member-tier-page-year .header,body.member-tier-page-year .mobile-nav{border-color:#d5ad4c77;box-shadow:0 5px 24px #d8b13b18}
+body.member-tier-page-month .hero{box-shadow:inset 0 0 38px #39c5b312,0 0 24px #37cbb51b}
+body.member-tier-page-half_year .hero{box-shadow:inset 0 0 38px #d7905b14,0 0 25px #d78c601f}
+body.member-tier-page-year .hero{box-shadow:inset 0 0 44px #ffd45014,0 0 0 1px #f5d56b44,0 0 30px #dcae3b22}
+body.member-tier-page-month .trust-bar,body.member-tier-page-month .feature-banner{border-color:#53c8b855}
+body.member-tier-page-half_year .trust-bar,body.member-tier-page-half_year .feature-banner{border-color:#d89b7455}
+body.member-tier-page-year .trust-bar,body.member-tier-page-year .feature-banner{border-color:#d4ab4b77;box-shadow:inset 0 1px 0 #fff5,0 0 21px #e6bd4020}
+body.member-tier-page-year .section-title .eyebrow{color:#f2cf68;text-shadow:0 0 13px #e3b44355}
+body.member-tier-page-half_year .section-title .eyebrow{color:#f2b98f;text-shadow:0 0 12px #dc9a7033}
+body.member-tier-page-month .section-title .eyebrow{color:#71e2d2;text-shadow:0 0 12px #41c9b833}
+body.member-tier-page-month .rating-chip,body.member-tier-page-month .book-rating{color:#a8fff1;text-shadow:0 0 9px #44decb66}
+body.member-tier-page-half_year .rating-chip,body.member-tier-page-half_year .book-rating{color:#ffe0c2;text-shadow:0 0 9px #edaa7c66}
+body.member-tier-page-year .rating-chip,body.member-tier-page-year .book-rating{border-color:#e5c461;color:#fff1b6;text-shadow:0 0 10px #ffd65a99;box-shadow:inset 0 1px 0 #fff8,0 0 14px #e6bc4235}
+@media(prefers-reduced-motion:reduce){body.member-tier-page-month *,body.member-tier-page-half_year *,body.member-tier-page-year *{animation:none!important;scroll-behavior:auto!important}}
