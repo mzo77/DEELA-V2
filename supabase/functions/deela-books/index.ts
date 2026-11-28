@@ -593,13 +593,15 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
   if(req.method==="GET"&&path==="/my/listings"){
     const seller=await sellerFor(user.id);
     if(!seller)return respond(req,{listings:[]});
-    const r=await db.from("deela_books_listings").select("*").eq("seller_id",seller.id).order("created_at",{ascending:false}).limit(120);
+    const pageSize=Math.min(80,Math.max(1,Number(parsed.searchParams.get("limit"))||40)),offset=Math.max(0,Number(parsed.searchParams.get("offset"))||0);
+    const r=await db.from("deela_books_listings").select("*").eq("seller_id",seller.id).order("created_at",{ascending:false}).range(offset,offset+pageSize);
     if(r.error)throw r.error;
-    const enriched=await enrichBooks(r.data||[],!conf.site_public);
-    const original=new Map((r.data||[]).map(p=>[p.id,p]));
+    const hasMore=(r.data||[]).length>pageSize,listings=(r.data||[]).slice(0,pageSize);
+    const enriched=await enrichBooks(listings,!conf.site_public);
+    const original=new Map(listings.map(p=>[p.id,p]));
     return respond(req,{listings:enriched.map(p=>({...p,
       file_path:original.get(p.id)?.file_path,
-      rights_confirmed:original.get(p.id)?.rights_confirmed}))});
+      rights_confirmed:original.get(p.id)?.rights_confirmed})),has_more:hasMore,next_offset:offset+listings.length});
   }
   if(req.method==="GET"&&path==="/seller/activity"){
     const seller=await sellerFor(user.id);if(!seller)return respond(req,{activity:[]});
@@ -1268,16 +1270,19 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
       if(r.error)throw r.error;return respond(req,{ok:true,user_id:id,blocked});
     }
     if(req.method==="GET"&&path==="/owner/sellers"){
-      const r=await db.from("deela_books_sellers").select("*").order("created_at",{ascending:false}).limit(120);
-      if(r.error)throw r.error;return respond(req,{sellers:r.data||[]});
+      const pageSize=Math.min(80,Math.max(1,Number(parsed.searchParams.get("limit"))||40)),offset=Math.max(0,Number(parsed.searchParams.get("offset"))||0);
+      const r=await db.from("deela_books_sellers").select("*").order("created_at",{ascending:false}).range(offset,offset+pageSize);
+      if(r.error)throw r.error;const rows=r.data||[],hasMore=rows.length>pageSize,sellers=rows.slice(0,pageSize);return respond(req,{sellers,has_more:hasMore,next_offset:offset+sellers.length});
     }
     if(req.method==="GET"&&path==="/owner/listings"){
+      const pageSize=Math.min(80,Math.max(1,Number(parsed.searchParams.get("limit"))||40)),offset=Math.max(0,Number(parsed.searchParams.get("offset"))||0);
       const [r,categories]=await Promise.all([
-        db.from("deela_books_listings").select("*,deela_books_sellers(shop_name,slug)").order("created_at",{ascending:false}).limit(200),
+        db.from("deela_books_listings").select("*,deela_books_sellers(shop_name,slug)").order("created_at",{ascending:false}).range(offset,offset+pageSize),
         db.from("deela_books_sections").select("category").eq("kind","category")
       ]);
       if(r.error||categories.error)throw Error("Owner listings unavailable");
-      return respond(req,{listings:await enrichBooks(r.data||[],!conf.site_public),categories:[...new Set((categories.data||[]).map((x:any)=>x.category).filter(Boolean))]});
+      const rows=r.data||[],hasMore=rows.length>pageSize,listings=rows.slice(0,pageSize);
+      return respond(req,{listings:await enrichBooks(listings,!conf.site_public),has_more:hasMore,next_offset:offset+listings.length,categories:[...new Set((categories.data||[]).map((x:any)=>x.category).filter(Boolean))]});
     }
     if(req.method==="POST"&&path==="/owner/listing-category"){
       const b=await req.json(),id=str(b.id,60),category=str(b.category,80);
