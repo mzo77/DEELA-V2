@@ -38,9 +38,12 @@ async function memberEntitlements(account:any,privateMode:boolean,knownSeller?:a
  const avatar=avatarPath.startsWith(account.id+"/avatars/")?await db.storage.from("deela-books-covers").createSignedUrl(avatarPath,600):null;
  const avatarGates:Record<string,string>={aurora:"avatar_frame",velvet:"avatar_frame",crystal:"avatar_frame",gold:"avatar_frame_gold",rose:"avatar_frame_rose",diamond:"avatar_frame_diamond"};
  const bookGates:Record<string,string>={starlight:"book_frame",velvet:"book_frame",crystal:"book_frame",gold:"book_frame_gold",rose:"book_frame_rose",diamond:"book_frame_diamond"};
- const wantedAvatar=String(metadata.deela_member_avatar_frame||"aurora"),wantedBook=String(metadata.deela_member_book_frame||"starlight");
+ const appearanceDefaults:Record<string,{avatar:string,book:string,theme:string}>={month:{avatar:"aurora",book:"starlight",theme:"ocean"},half_year:{avatar:"gold",book:"rose",theme:"emerald"},year:{avatar:"gold",book:"gold",theme:"royal"}};
+ const preset=appearanceDefaults[planKey]||appearanceDefaults.month,appearanceCustomized=metadata.deela_member_appearance_customized===true;
+ const wantedAvatar=appearanceCustomized?String(metadata.deela_member_avatar_frame||preset.avatar):preset.avatar,wantedBook=appearanceCustomized?String(metadata.deela_member_book_frame||preset.book):preset.book;
  const avatarFrame=features.includes(avatarGates[wantedAvatar]||"")?wantedAvatar:"aurora",bookFrame=features.includes(bookGates[wantedBook]||"")?wantedBook:"starlight";
- const profileTheme=features.includes("profile_theme")&&["ocean","emerald","royal","rose"].includes(String(metadata.deela_member_profile_theme))?String(metadata.deela_member_profile_theme):"ocean";
+ const wantedTheme=appearanceCustomized?String(metadata.deela_member_profile_theme||preset.theme):preset.theme;
+ const profileTheme=features.includes("profile_theme")&&["ocean","emerald","royal","rose"].includes(wantedTheme)?wantedTheme:"ocean";
  return {premium_active:true,member_plan:planKey,member_plan_label:MEMBER_TIER_LABELS[planKey]||"عضوية مميزة",member_features:features,member_custom_features:Array.isArray(custom),premium_ends_at:membership.ends_at||null,avatar_url:avatar&&!avatar.error?avatar.data.signedUrl:null,member_appearance:{display_name:String(metadata.deela_member_display_name||"").slice(0,90),avatar_path:avatarPath,avatar_frame:avatarFrame,book_frame:bookFrame,profile_theme:profileTheme,shine:metadata.deela_member_shine!==false}};
 }
 const FEATURE_FLAGS=["enable_seller_registration","enable_book_submissions","enable_reader_likes","enable_favorites","enable_author_follows","enable_reviews","enable_messages","enable_orders","enable_discounts","enable_featured_section","enable_launch_alerts","show_book_prices"] as const;
@@ -549,7 +552,7 @@ const sellerAccount=user&&!isOwner?await sellerFor(user.id):null;
     if(book_frame&&!features.includes(bookGates[book_frame]))return fail(req,"هذا الإطار غير متاح في باقتك",403);
     if(profile_theme&&!features.includes("profile_theme"))return fail(req,"ثيم المتجر غير متاح في باقتك",403);
     if(profile_theme&&!["ocean","emerald","royal","rose"].includes(profile_theme))return fail(req,"الثيم المختار غير صالح",400);
-    Object.assign(metadata,{deela_member_display_name:display_name||"",deela_member_avatar_path:avatar_path||"",deela_member_avatar_frame:avatar_frame||"aurora",deela_member_book_frame:book_frame||"starlight",deela_member_profile_theme:profile_theme||"ocean",deela_member_shine:features.includes("book_shine")&&b.shine!==false});
+    Object.assign(metadata,{deela_member_display_name:display_name||"",deela_member_avatar_path:avatar_path||"",deela_member_avatar_frame:avatar_frame||"aurora",deela_member_book_frame:book_frame||"starlight",deela_member_profile_theme:profile_theme||"ocean",deela_member_appearance_customized:true,deela_member_shine:features.includes("book_shine")&&b.shine!==false});
     const saved=await db.auth.admin.updateUserById(user.id,{user_metadata:metadata});if(saved.error)throw saved.error;
     return respond(req,{ok:true,message:"تم حفظ هوية العضوية المميزة"});
   }
